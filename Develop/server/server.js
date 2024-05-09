@@ -2,7 +2,7 @@
 const express = require("express");
 const { ApolloServer } = require("@apollo/server");
 const { expressMiddleware } = require("@apollo/server/express4");
-const { path } = require("path");
+const path  = require("path");
 
 //include local definitions
 const { typeDefs, resolvers } = require("./schemas");
@@ -14,9 +14,9 @@ const PORT = process.env.PORT || 3001;
 //create express and appolo instances
 const app = express();
 const server = new ApolloServer({
-  typeDefs,
-  resolvers,
-});
+    typeDefs,
+    resolvers,
+  });
 
 const startApolloServer = async () => {
   await server.start();
