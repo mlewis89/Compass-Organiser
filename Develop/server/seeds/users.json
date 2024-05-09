@@ -1,6 +1,6 @@
-[
+
   {
-    "Names": [
+    "names": [
       "Aaran",
       "Aaren",
       "Aarez",
@@ -2742,6 +2742,6 @@
     ],
     "status": ["Enquiry", "Trail", "Active", "Retired"],
     "gender": ["Male", "Female", "Other"],
-    "Section": ["JOEYS", "CUBS", "SCOUTS", "VENT", "ROVER", "COMMITEE"]
+    "section": ["JOEYS", "CUBS", "SCOUTS", "VENT", "ROVER", "COMMITEE"]
   }
-]
+

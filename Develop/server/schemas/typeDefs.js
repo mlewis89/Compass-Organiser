@@ -1,5 +1,6 @@
 const typeDefs = `
     type User {
+        _id: ID!
         scoutRego: String,
         firstName: String!
         lastName: String!
@@ -19,6 +20,7 @@ const typeDefs = `
     }
 
     type BoardPost{
+        _id: ID!
         title: String,
         content: String,
         image: String,
@@ -29,6 +31,7 @@ const typeDefs = `
     }
 
     type Event {
+        _id: ID!
         Title: String!,
         PrimaryOrangisor: User,
         startDate:  String,
@@ -44,10 +47,12 @@ const typeDefs = `
     }
 
     type Family {
+        _id: ID!
         users: [User],
     }
 
     type Payment {
+        _id: ID!
         reckonId: String,
         FamilyId: Family,
         Items: [String],
@@ -56,6 +61,7 @@ const typeDefs = `
     }
 
     type Role {
+        _id: ID!
         name: String,
         prequistes: String,
         RequiredTraining: String,
@@ -63,10 +69,12 @@ const typeDefs = `
         isUniformed : Boolean,
     }
     type Skill {
+        _id: ID!
         name: String!,
     }
 
     type Task {
+        _id: ID!
         Name: String,
         requiredSkills: [Skill],
         dueDate: String,
