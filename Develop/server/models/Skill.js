@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const{Schema} = mongoose;
 
 const skillSchema = new Schema({
-    Name: {
+    name: {
         type: String
     },
 

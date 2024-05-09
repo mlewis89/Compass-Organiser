@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const{Schema} = mongoose;
 
 const taskSchema = new Schema({
-    Name: {
+    name: {
         type: String
     },
     requiredSkills: [
@@ -29,7 +29,7 @@ const taskSchema = new Schema({
           type: Schema.Types.ObjectId,
           ref: 'User'
         },
-    Priority: {
+    priority: {
         type: Number,
     },
 })

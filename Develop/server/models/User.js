@@ -30,7 +30,7 @@ const userSchema = new Schema({
     dob: {
         type: Date,
     },
-    Section: {
+    section: {
         type: String,
     },
     
@@ -47,11 +47,11 @@ const userSchema = new Schema({
         type: Number,
         default: 0,
     },
-    Family: {
+    family: {
         type: Schema.Types.ObjectId,
         ref: 'Family'
     },
-    ParentGardian: [
+    parentGardian: [
         {
           type: Schema.Types.ObjectId,
           ref: 'User'

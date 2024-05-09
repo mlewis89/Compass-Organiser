@@ -1,6 +1,6 @@
 [
   {
-    "Title": "Scout Hike 2024",
+    "title": "Scout Hike 2024",
     "startDate": "2024-05-24T17:00:00.000Z",
     "endDate": "2024-05-26T18:00:00.000Z",
     "isPublic": false,
@@ -12,7 +12,7 @@
     "cost": 200
   },
   {
-    "Title": "Bunning BBQ ",
+    "title": "Bunning BBQ ",
     "startDate": "2024-08-25T09:00:36.000Z",
     "endDate": "2024-08-25T15:00:00.000Z",
     "isPublic": true,
@@ -21,7 +21,7 @@
     "status": "Planned"
   },
   {
-    "Title": "Star wars group camp",
+    "title": "Star wars group camp",
     "startDate": "2024-05-03T17:00:00.000Z",
     "endDate": "2024-05-05T18:00:00.000Z",
     "isPublic": false,
@@ -33,7 +33,7 @@
     "cost": 200
   },
   {
-    "Title": "Group end of ear break up",
+    "title": "Group end of ear break up",
     "startDate": "2024-12-01T09:00:00.000Z",
     "endDate": "2024-12-01T18:00:00.000Z",
     "isPublic": false,

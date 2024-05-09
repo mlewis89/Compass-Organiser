@@ -7,17 +7,17 @@ const paymentSchema = new Schema({
     reckonId: {
         type: String,
     },
-    FamilyId: 
+    familyId: 
         {
           type: Schema.Types.ObjectId,
           ref: 'Family'
         }
       ,
-    Items: [],
+    items: [],
     total: {
         type: Number,
     },
-    Status: {
+    status: {
         type: String,
     }
 

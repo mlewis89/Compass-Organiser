@@ -4,12 +4,12 @@ const User = require("./User");
 const { Schema } = mongoose;
 
 const eventSchema = new Schema({
-  Title: {
+  title: {
     type: String,
     required: true,
     trim: true,
   },
-  PrimaryOrangisor: {
+  organisor: {
     type: Schema.Types.ObjectId,
     ref: "User",
   },

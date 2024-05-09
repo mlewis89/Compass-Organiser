@@ -32,8 +32,8 @@ const typeDefs = `
 
     type Event {
         _id: ID!
-        Title: String!,
-        PrimaryOrangisor: User,
+        title: String!,
+        organisor: User,
         startDate:  String,
         endDate: String,
         isPublic: Boolean,

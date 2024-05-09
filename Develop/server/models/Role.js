@@ -3,16 +3,16 @@ const mongoose = require('mongoose');
 const{Schema} = mongoose;
 
 const roleSchema = new Schema({
-    Name: {
+    name: {
         type: String
     },
-    Prequistes: {
+    prequistes: {
         type: String
     },
-    RequiredTraining: {
+    requiredTraining: {
         type: String
     },
-    ReportsTo : {
+    reportsTo : {
         type: mongoose.Schema.Types.ObjectId, 
         ref: 'Role'
     },

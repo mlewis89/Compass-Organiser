@@ -23,7 +23,7 @@ const postSchema = new Schema({
           ref: 'User'
         }
       ,
-    Priority: {
+    priority: {
         type: Number,
     },
 })
