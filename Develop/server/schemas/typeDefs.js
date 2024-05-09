@@ -29,7 +29,7 @@ const typeDefs = `
     }
 
     type Event {
-        Title: String!
+        Title: String!,
         PrimaryOrangisor: User,
         startDate:  String,
         endDate: String,

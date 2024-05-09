@@ -1,0 +1,47 @@
+[
+  {
+    "Title": "Scout Hike 2024",
+    "startDate": "2024-05-24T17:00:00.000Z",
+    "endDate": "2024-05-26T18:00:00.000Z",
+    "isPublic": false,
+    "description": "A competetition hike",
+    "location": "tallarook state park",
+    "plan": "Leave friday night on a bus, hike for the weekend, win the coholder title and come home exhausted",
+    "riskManagement": "See event risk Management",
+    "status": "Planned",
+    "cost": 200
+  },
+  {
+    "Title": "Bunning BBQ ",
+    "startDate": "2024-08-25T09:00:36.000Z",
+    "endDate": "2024-08-25T15:00:00.000Z",
+    "isPublic": true,
+    "description": "come support us and buy a sausage",
+    "location": "Springvale bunnings",
+    "status": "Planned"
+  },
+  {
+    "Title": "Star wars group camp",
+    "startDate": "2024-05-03T17:00:00.000Z",
+    "endDate": "2024-05-05T18:00:00.000Z",
+    "isPublic": false,
+    "description": "a family friend camp as a group, packed full of activities and food",
+    "location": "Bay Park Scout Camp",
+    "plan": "Arrive when you can on friday, food and camping gear provided",
+    "riskManagement": "",
+    "status": "toReview",
+    "cost": 200
+  },
+  {
+    "Title": "Group end of ear break up",
+    "startDate": "2024-12-01T09:00:00.000Z",
+    "endDate": "2024-12-01T18:00:00.000Z",
+    "isPublic": false,
+    "description": "a family friend event as a group, packed full of activities and food",
+    "location": "TBA",
+    "plan": "TBA",
+    "riskManagement": "",
+    "status": "inProgress",
+    "cost": 200
+  }
+]

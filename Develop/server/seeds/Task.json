@@ -1,0 +1,11 @@
+[
+  { "Name": "pack trailer", "duration": 2, "Priority": 8 },
+  { "Name": "build website", "duration": 20, "Priority": 3 },
+  { "Name": "clean bbq after camp", "duration": 2, "Priority": 7 },
+  { "Name": "fix camp lights", "duration": 2, "Priority": 5 },
+  { "Name": "Plumbing at hall", "duration": 2, "Priority": 7 },
+  { "Name": "Organise Social event", "duration": 10, "Priority": 5 },
+  { "Name": "Transport for schout hike", "duration": 2, "Priority": 6 },
+  { "Name": "restock first aid kits", "duration": 5, "Priority": 6 },
+  { "Name": "Pait hall", "duration": 10, "Priority": 2 }
+]

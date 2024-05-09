@@ -1,0 +1,53 @@
+[
+  {
+    "name": "Youth",
+    "ReportsToName": "UnitLeader",
+    "isUniformed": true
+  },
+  {
+    "name": "UnitLeader",
+    "ReportsToName": "Leader",
+    "isUniformed": true
+  },
+
+  {
+    "name": "GroupRosteredParent",
+    "ReportsToName": "Leader",
+    "isUniformed": true
+  },
+  {
+    "name": "AdultHelper",
+    "ReportsToName": "Leader",
+    "isUniformed": false
+  },
+  {
+    "name": "AssitantLeader",
+    "ReportsToName": "Leader",
+    "isUniformed": true
+  },
+  {
+    "name": "Leader",
+    "ReportsToName": "GroupLeader",
+    "isUniformed": true
+  },
+  {
+    "name": "AssistGroupLeader",
+    "ReportsToName": "GroupLeader",
+    "isUniformed": true
+  },
+  {
+    "name": "Secretary",
+    "ReportsToName": "GroupLeader",
+    "isUniformed": false
+  },
+  {
+    "name": "Treasurer",
+    "ReportsToName": "GroupLeader",
+    "isUniformed": false
+  },
+  {
+    "name": "Quatermaster",
+    "ReportsToName": "GroupLeader",
+    "isUniformed": true
+  }
+]
