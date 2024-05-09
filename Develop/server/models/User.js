@@ -51,10 +51,30 @@ const userSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'Family'
     },
-    //ParentGardian: [User],
-    //role: [Role],
-    //skills : [Skill],
-    //myTasks : [Task],
+    ParentGardian: [
+        {
+          type: Schema.Types.ObjectId,
+          ref: 'User'
+        }
+      ],
+    role: [
+        {
+          type: Schema.Types.ObjectId,
+          ref: 'Role'
+        }
+      ],
+    skills : [
+        {
+          type: Schema.Types.ObjectId,
+          ref: 'Skill'
+        }
+      ],
+    myTasks : [
+        {
+          type: Schema.Types.ObjectId,
+          ref: 'Task'
+        }
+      ],
 
 })
 
