@@ -44,14 +44,14 @@ const userSchema = new Schema({
         required: true,
     },
     taskAvailabity: {
-        type: int,
+        type: Number,
         default: 0,
     },
     Family: {
         type: Schema.Types.ObjectId,
         ref: 'Family'
     },
-    ParentGardian: [User],
+    //ParentGardian: [User],
     //role: [Role],
     //skills : [Skill],
     //myTasks : [Task],
