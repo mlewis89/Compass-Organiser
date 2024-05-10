@@ -65,37 +65,60 @@ db.once("open", async () => {
         userData.section[Math.floor(Math.random() * userData.section.length)],
       dob: randomDOB(),
       taskAvailabity: Math.floor(Math.random() * 10),
-      skills:
-        skills[Math.floor(Math.random() * skills.length)],
-      roles:
-        roles[Math.floor(Math.random() * roles.length)],
+      skills: skills[Math.floor(Math.random() * skills.length)],
+      roles: roles[Math.floor(Math.random() * roles.length)],
     };
     user.email = `${user.firstName}.${user.lastName}@${
-      emailDomains[Math.floor(Math.random() * emailDomains.length)]}`;
+      emailDomains[Math.floor(Math.random() * emailDomains.length)]
+    }`;
 
-      
-    
     userArr.push(user);
   }
   const users = await User.insertMany(userArr);
-  taskData.forEach((task) => { task.responsible = users[Math.floor(Math.random() * users.length)];
-    task.createdBy = users[Math.floor(Math.random() * users.length)]
+  taskData.forEach((task) => {
+    task.responsible = users[Math.floor(Math.random() * users.length)];
+    task.createdBy = users[Math.floor(Math.random() * users.length)];
   });
   const tasks = await Task.insertMany(taskData);
 
- postData.forEach((post) => { post.createdBy = users[Math.floor(Math.random() * users.length)]
+  postData.forEach((post) => {
+    post.createdBy = users[Math.floor(Math.random() * users.length)];
   });
   const posts = await BoardPost.insertMany(postData);
-  
- eventData.forEach((event) => { event.organisor = users[Math.floor(Math.random() * users.length)]
+
+  eventData.forEach((event) => {
+    event.organisor = users[Math.floor(Math.random() * users.length)];
     event.attending = [];
-for(let i = 0; i<Math.floor(Math.random() * users.length ); i++)
-    {event.attending.push(users[Math.floor(Math.random() * users.length)])};
-});
+    let numOfUsers = Math.floor(Math.random() * users.length);
+    for (let i = 0; i < numOfUsers; i++) {
+      event.attending.push(users[Math.floor(Math.random() * users.length)]);
+    }
+  });
 
   const events = await Event.insertMany(eventData);
 
-  console.log('all done!');
-  process.exit(0);
+  const familyData = [];
+  let familyUsers = [...users];
+  
+  //for each user
+  while (familyUsers.length > 0) {
+    //create temp Array of family
+    let familyMembers = [];
+    let NumOfMembers = 1+Math.floor(Math.random() * 5);
+    for (let i = 0; i < NumOfMembers; i++ )//loop between 0-5 times to build family list
+    {
+      let usrIndex = Math.floor(Math.random() * familyUsers.length); //select random user from remaoning list
+      familyMembers.push(familyUsers[usrIndex]); // add chosen user to family array
+      familyUsers.splice(usrIndex, 1); //remove chosen user from array
+    }
+    let family = {
+      users: familyMembers,
+    };
+    familyData.push(family); //add family to dataset
+  }
 
+  const families = await Family.insertMany(familyData);
+
+  console.log("all done!");
+  process.exit(0);
 });
