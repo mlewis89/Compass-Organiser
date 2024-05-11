@@ -1,15 +1,18 @@
 import { NavLink } from "react-router-dom";
-import { Grid, GridRow, Menu, MenuItem } from "semantic-ui-react";
+import { Button, Grid, GridRow, Menu, MenuItem } from "semantic-ui-react";
 import { useState } from "react";
 
 function Nav() {
-  const { activeItem, setActiveItem } = useState("/");
+  const [ activeItem, setActiveItem ] = useState("/");
+  const [ loggedIn ,setloggedIn] = useState({state:false}); ////TEMP
 
   const handleItemClick = (e, { name }) => {
     setActiveItem({ activeItem: name });
   };
 
-  const loggedIn = false;
+  const handleLoginItemClick = () => {
+    setloggedIn(!loggedIn)
+  }
 
   return (
     <Grid>
@@ -24,7 +27,7 @@ function Nav() {
             <>
               <MenuItem
                 as={NavLink}
-                to="/"
+                to="/dashboard"
                 name="Dashboard"
                 active={activeItem === "dashboard"}
                 onClick={handleItemClick}
@@ -50,12 +53,9 @@ function Nav() {
                 active={activeItem === "members"}
                 onClick={handleItemClick}
               />
-              <MenuItem
-                as={NavLink}
-                to="/logout"
-                name="Logout"
-                active={activeItem === "logout"}
-                onClick={handleItemClick}
+              <Button
+                content="Logout"
+                onClick={handleLoginItemClick}
               />
             </>
           ) : (
@@ -81,12 +81,9 @@ function Nav() {
                 active={activeItem === "contact"}
                 onClick={handleItemClick}
               />
-              <MenuItem
-                as={NavLink}
-                to="/login"
-                name="Login In"
-                active={activeItem === "login"}
-                onClick={handleItemClick}
+              <Button
+                content="Log in"
+                onClick={handleLoginItemClick}
               />
             </>
           )}
