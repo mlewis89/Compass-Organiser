@@ -4,9 +4,8 @@ import EventList from '../components/EventList'
 
 const Home = () => {
   return (
-  <Container>
-    <Grid columns={2}>
-    <GridRow>
+ <Grid columns={2}>
+    <GridRow stretched>
       <GridColumn>
         <Segment padded>
           <Label attached='top'>Notice Board</Label>
@@ -21,7 +20,6 @@ const Home = () => {
       </GridColumn>
       </GridRow>
       </Grid>
-    </Container>
 );
 };
 
