@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { Grid, GridColumn, GridRow, Menu, MenuItem } from "semantic-ui-react";
+import { Grid, GridRow, Menu, MenuItem } from "semantic-ui-react";
 import { useState } from "react";
 
 function Nav() {
@@ -9,7 +9,7 @@ function Nav() {
     setActiveItem({ activeItem: name });
   };
 
-  const loggedIn = true;
+  const loggedIn = false;
 
   return (
     <Grid>

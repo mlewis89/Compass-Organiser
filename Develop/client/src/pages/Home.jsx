@@ -1,4 +1,4 @@
-import { Container, Grid, GridRow, GridColumn, Segment, Label} from "semantic-ui-react";
+import { Grid, GridRow, GridColumn, Segment, Label} from "semantic-ui-react";
 import BoardPostList from '../components/BoardPostList';
 import EventList from '../components/EventList'
 

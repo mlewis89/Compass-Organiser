@@ -8,6 +8,9 @@ import Dashboard from './pages/Dashboard';
 import Events from './pages/Events';
 import Tasks from './pages/Tasks';
 import NotFound from './pages/NotFound';
+import Members from './pages/Members'
+import Contact from './pages/Contact.jsx'
+import AboutUs from './pages/AboutUs.jsx'
 
 const router = createBrowserRouter([
   {
@@ -28,6 +31,18 @@ const router = createBrowserRouter([
       {
         path: '/tasks',
         element: <Tasks />
+      },
+      {
+        path: '/members',
+        element: <Members />
+      },
+      {
+        path: '/about',
+        element: <AboutUs />
+      },
+      {
+        path: '/contact',
+        element: <Contact />
       },
     ],
   },
