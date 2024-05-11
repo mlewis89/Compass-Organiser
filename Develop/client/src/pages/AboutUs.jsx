@@ -1,10 +1,13 @@
+import { Segment } from "semantic-ui-react"
+import PlaceholderPost from "../components/placeholder/placeholder-post";
 
 
 const AboutUs = () => {
     return (
-      <div >
+      <Segment>
         About Us
-        </div>  );
+        <PlaceholderPost />
+      </Segment> );
   };
   
   
