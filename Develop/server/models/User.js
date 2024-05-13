@@ -21,6 +21,11 @@ const userSchema = new Schema({
         type: String,
         trim: true,
     },
+
+    scoutName: {
+      type: String,
+      trim: true,
+  },
     status: {
         type: String,
     },
