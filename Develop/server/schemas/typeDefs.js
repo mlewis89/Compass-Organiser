@@ -5,6 +5,7 @@ const typeDefs = `
         firstName: String!
         lastName: String!
         preferredName: String,
+        scoutName: String,
         status: String,
         gender: String,
         dob: String,
@@ -85,11 +86,12 @@ const typeDefs = `
     }
 
     type Query {
-        events: [Event],
         boardPosts: [BoardPost],
-        publicBoardPosts: [BoardPost],
-        publicEvents: [Event],
-        suggestedTasks(UserID:ID!): [Task],
+        events: [Event],
+        singleEvent(eventID :ID!) : Event,
+        userTasks(UserID: ID): [Task],
+        suggestedTasks(UserID:ID): [Task],
+        tasks: [Task],
         members: [User],
         me: User
     }
