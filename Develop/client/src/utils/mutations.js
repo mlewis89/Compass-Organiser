@@ -1,13 +1,17 @@
 import { gql } from '@apollo/client';
 
-export const CREATE_MATCHUP = gql`
-  mutation createMatchup($tech1: String!, $tech2: String!) {
-    createMatchup(tech1: $tech1, tech2: $tech2) {
+export const ADD_USER = gql`
+mutation Mutation($user: addUser!) {
+  addUser(user: $user) {
+    token
+    user {
       _id
-      tech1
-      tech2
+      email
+      firstName
+      lastName
     }
   }
+}
 `;
 
 export const CREATE_VOTE = gql`

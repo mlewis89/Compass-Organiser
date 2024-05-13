@@ -21,6 +21,10 @@ const userSchema = new Schema({
         type: String,
         trim: true,
     },
+    password:{
+      type: String,
+      required: true,
+    },
 
     scoutName: {
       type: String,
@@ -46,7 +50,6 @@ const userSchema = new Schema({
     },
     phone: {
         type: String,
-        required: true,
     },
     taskAvailabity: {
         type: Number,

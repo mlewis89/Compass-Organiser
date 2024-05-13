@@ -11,13 +11,19 @@ const typeDefs = `
         dob: String,
         Section: String,
         email: String!,
-        phone: String!,
+        phone: String,
         taskAvailabity: Int,
         Family: Family,
         ParentGardian: [User],
         role: [Role],
         skills : [Skill],
         myTasks : [Task]    
+    }
+    input addUser {
+        firstName: String!
+        lastName: String!
+        email: String!,
+        password: String!    
     }
 
     type BoardPost{
@@ -85,6 +91,11 @@ const typeDefs = `
         Priority: Int
     }
 
+    type Auth {
+        token: ID!
+        user: User
+    }
+
     type Query {
         boardPosts: [BoardPost],
         events: [Event],
@@ -97,7 +108,7 @@ const typeDefs = `
     }
 
     type Mutation {
-        addUser(firstName: String!): User
+        addUser(user: addUser!): Auth
     
     }
 `;
