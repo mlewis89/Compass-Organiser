@@ -1,31 +1,31 @@
 [
   {
     "title": "Group Camp ",
-    " content": "Please come along to our camp next weekend, see fred for details",
+    "content": "Please come along to our camp next weekend, see fred for details",
     "isPublic": false,
     "Priority": 5
   },
   {
     "title": "Group Fees ",
-    " content": "Group fees due soon, please contact the treasurer for information",
+    "content": "Group fees due soon, please contact the treasurer for information",
     "isPublic": false,
     "Priority": 6
   },
   {
     "title": "Bunning BBQ 25 Aug",
-    " content": "We'll be selling sauasages at Bunning Springvale, on Saturday the 25th August, we hope to see you there supporting us!",
+    "content": "We'll be selling sauasages at Bunning Springvale, on Saturday the 25th August, we hope to see you there supporting us!",
     "isPublic": true,
     "Priority": 6
   },
   {
     "title": "Container Deposit Scheme",
-    " content": "We are now taking donations of Container for the Container deposit scheme, bring your contains to the our hall to help support our group!",
+    "content": "We are now taking donations of Container for the Container deposit scheme, bring your contains to the our hall to help support our group!",
     "isPublic": true,
     "Priority": 5
   },
   {
     "title": "Help Needed - This week - trailer pack",
-    " content": "Looking for a few people to help pack the trailer for this weekend. contact Steve",
+    "content": "Looking for a few people to help pack the trailer for this weekend. contact Steve",
     "isPublic": false,
     "Priority": 10
   }
