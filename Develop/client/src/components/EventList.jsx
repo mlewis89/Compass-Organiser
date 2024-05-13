@@ -17,9 +17,7 @@ const EventList = () => {
   let events;
 
   if (data) {
-    console.log(data);
     events = data.events;
-    console.log(events);
   }
 
   return (
@@ -31,8 +29,8 @@ const EventList = () => {
               <Item key={event._id}>
                 <ItemImage size="tiny" src={event.image} />
                 <ItemContent>
-                  <ItemHeader as="a">{event.title}</ItemHeader>
-                  <ItemDescription>{event.content}</ItemDescription>
+                <ItemHeader as="a">{new Date(parseInt(event.startDate)).toLocaleDateString()} {event.title}</ItemHeader>
+                  <ItemDescription>{event.description}</ItemDescription>
                   <ItemExtra>
                     {` ~ ${
                       event.organisor.scoutName ||
