@@ -85,15 +85,13 @@ const typeDefs = `
     }
 
     type Query {
-        users: [User],
-        tasks: [Task],
-        skills: [Skill],
-        roles: [Role],
-        payments: [Payment],
-        families: [Family],
         events: [Event],
-        boardPost: [BoardPost]
-
+        boardPosts: [BoardPost],
+        publicBoardPosts: [BoardPost],
+        publicEvents: [Event],
+        suggestedTasks(UserID:ID!): [Task],
+        members: [User],
+        me: User
     }
 
     type Mutation {

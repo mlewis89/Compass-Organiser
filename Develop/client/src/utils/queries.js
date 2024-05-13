@@ -1,7 +1,7 @@
 import { gql } from '@apollo/client';
 
-export const QUERY_TECH = gql`
-  query tech {
+export const QUERY_EVENTS = gql`
+  query events {
     tech {
       _id
       name
@@ -20,3 +20,14 @@ export const QUERY_MATCHUPS = gql`
     }
   }
 `;
+
+
+/*
+        events: [Event],
+        boardPosts: [BoardPost],
+        publicBoardPosts: [BoardPost],
+        publicEvents: [Event],
+        suggestedTasks(UserID:ID!): [Tasks],
+        members: [User],
+        me: User
+*/
