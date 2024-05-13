@@ -1,30 +1,51 @@
 import {
-    GridColumn,
-    Grid,
-    Segment,
-  } from "semantic-ui-react";
+  GridColumn,
+  Grid,
+  Item,
+  ItemExtra,
+  ItemDescription,
+  ItemContent,
+  ItemImage,
+  ItemHeader,
+} from "semantic-ui-react";
 import PlaceholderPost from "./placeholder/placeholder-post";
-  
-  const BoardPostList = () => (
+import { useQuery } from "@apollo/client";
+import { QUERY_BLOGPOST } from "../utils/queries";
+
+const BoardPostList = () => {
+  const { data } = useQuery(QUERY_BLOGPOST);
+  let posts;
+
+  if (data) {
+    console.log(data);
+    posts = data.boardPosts;
+    console.log(posts);
+  }
+
+  return (
     <Grid columns={1} stackable>
-      <GridColumn>
-        <Segment raised>
+      {posts ? (
+        <>
+          {posts.map((post) => (
+            <GridColumn key={post._id}>
+              <Item key={post._id}>
+                <ItemImage size="tiny" src={post.image} />
+                <ItemContent>
+                  <ItemHeader as="a">{post.title}</ItemHeader>
+                  <ItemDescription>{post.content}</ItemDescription>
+                  <ItemExtra> ~ {post.createdBy.scoutName || post.createdBy.preferredName || post.createdBy.firstName}</ItemExtra>
+                </ItemContent>
+              </Item>
+            </GridColumn>
+          ))}
+        </>
+      ) : (
+        <GridColumn>
           <PlaceholderPost />
-        </Segment>
-      </GridColumn>
-  
-      <GridColumn>
-        <Segment raised>
-        <PlaceholderPost />
-        </Segment>
-      </GridColumn>
-  
-      <GridColumn>
-        <Segment raised>
-        <PlaceholderPost />
-        </Segment>
-      </GridColumn>
+        </GridColumn>
+      )}
     </Grid>
   );
-  
-  export default BoardPostList;
+};
+
+export default BoardPostList;
