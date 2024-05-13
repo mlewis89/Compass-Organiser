@@ -10,14 +10,13 @@ import {
 } from "semantic-ui-react";
 import PlaceholderPost from "./placeholder/placeholder-post";
 import { useQuery } from "@apollo/client";
-import { QUERY_BLOGPOST } from "../utils/queries";
+import { QUERY_BOARDPOST } from "../utils/queries";
 
 const BoardPostList = () => {
-  const { data } = useQuery(QUERY_BLOGPOST);
+  const { data } = useQuery(QUERY_BOARDPOST);
   let posts;
 
   if (data) {
-    console.log(data);
     posts = data.boardPosts;
     console.log(posts);
   }
