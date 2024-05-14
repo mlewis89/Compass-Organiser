@@ -29,27 +29,32 @@ const AllTasks = () => {
     console.log(tasks);
   }
 
-  return (<Table celled selectable>
-    <TableHeader>
-      <TableRow>
-        {TableHeaderArr.map((header) => (
-          <TableHeaderCell key={header}>{header}</TableHeaderCell>
-        ))}
-      </TableRow>
-    </TableHeader>
-{tasks ? (
-    <TableBody>
-      {tasks.map((task) => (
-        <TableRow key={task._id}>
-            {TableHeaderArr.map((propertyName) => (
-            <TableCell key={task._id + propertyName}>{task["name"]}</TableCell>
-            ))}
+  return (
+    <Table celled selectable>
+      <TableHeader>
+        <TableRow>
+          {TableHeaderArr.map((header) => (
+            <TableHeaderCell key={header}>{header}</TableHeaderCell>
+          ))}
         </TableRow>
-      ))}
-    </TableBody>
-):(<></>)}
-    
-  </Table>)
+      </TableHeader>
+      {tasks ? (
+        <TableBody>
+          {tasks.map((task) => (
+            <TableRow key={task._id}>
+              {TableHeaderArr.map((propertyName) => (
+                <TableCell key={task._id + propertyName}>
+                  {task[propertyName]}
+                </TableCell>
+              ))}
+            </TableRow>
+          ))}
+        </TableBody>
+      ) : (
+        <></>
+      )}
+    </Table>
+  );
 };
 
 export default AllTasks;

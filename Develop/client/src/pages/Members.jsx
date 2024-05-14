@@ -1,144 +1,81 @@
 import {
-  TableRow,
-  TableHeaderCell,
-  TableHeader,
-  TableFooter,
-  TableCell,
-  TableBody,
-  MenuItem,
-  Icon,
-  Label,
-  Menu,
   Table,
+  TableHeader,
+  TableHeaderCell,
+  TableBody,
+  TableRow,
+  TableCell,
 } from "semantic-ui-react";
+import { useQuery } from "@apollo/client";
+import { QUERY_MEMBERS } from "../utils/queries";
 
-const Members = () => (
-  <Table celled>
-    <TableHeader>
-      <TableRow>
-        <TableHeaderCell>Header</TableHeaderCell>
-        <TableHeaderCell>Header</TableHeaderCell>
-        <TableHeaderCell>Header</TableHeaderCell>
-        <TableHeaderCell>Header</TableHeaderCell>
-        <TableHeaderCell>Header</TableHeaderCell>
-        <TableHeaderCell>Header</TableHeaderCell>
-        <TableHeaderCell>Header</TableHeaderCell>
-        <TableHeaderCell>Header</TableHeaderCell>
-        <TableHeaderCell>Header</TableHeaderCell>
-        <TableHeaderCell>Header</TableHeaderCell>
-        <TableHeaderCell>Header</TableHeaderCell>
-        <TableHeaderCell>Header</TableHeaderCell>
-      </TableRow>
-    </TableHeader>
+const Members = () => {
+  const { loading, data } = useQuery(QUERY_MEMBERS);
 
-    <TableBody>
-      <TableRow>
-        <TableCell>
-          <Label ribbon>First</Label>
-        </TableCell>
-        <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-      </TableRow>
-      <TableRow>
-      <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-      </TableRow>
-      <TableRow>
-      <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-      </TableRow>
-      <TableRow>
-      <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-      </TableRow>
-      <TableRow>
-      <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-      </TableRow>
-      <TableRow>
-      <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-        <TableCell>Cell</TableCell>
-      </TableRow>
-    </TableBody>
+  let TableHeaderArr = [
+    "scoutRego",
+    "displayName",
+    "firstName",
+    "lastName",
+    "preferredName",
+    "scoutName",
+    "status",
+    "gender",
+    "dob",
+    "Section",
+    "email",
+    "phone",
+    "taskAvailabity",
+  ];
 
-    <TableFooter>
-      <TableRow>
-        <TableHeaderCell colSpan="12">
-          <Menu floated="right" pagination>
-            <MenuItem as="a" icon>
-              <Icon name="chevron left" />
-            </MenuItem>
-            <MenuItem as="a">1</MenuItem>
-            <MenuItem as="a">2</MenuItem>
-            <MenuItem as="a">3</MenuItem>
-            <MenuItem as="a">4</MenuItem>
-            <MenuItem as="a" icon>
-              <Icon name="chevron right" />
-            </MenuItem>
-          </Menu>
-        </TableHeaderCell>
-      </TableRow>
-    </TableFooter>
-  </Table>
-);
+  if (data) {
+    const dataArr = data.members;
+
+    let cleanArr = dataArr.map((dataObj) => {
+      let cleanObj = {};
+      for (let property in dataObj) {
+        if (
+          typeof dataObj[property] === "number" ||
+          typeof dataObj[property] === "string" ||
+          typeof dataObj[property] === "number" ||
+          typeof dataObj[property] === "boolean"
+        ) {
+          cleanObj[property] = dataObj[property];
+        }
+      }
+      return cleanObj;
+    });
+    console.log(cleanArr);
+
+    return (
+      <Table celled selectable>
+        <TableHeader>
+          <TableRow>
+            {TableHeaderArr.map((header) => (
+              <TableHeaderCell key={header}>{header}</TableHeaderCell>
+            ))}
+          </TableRow>
+        </TableHeader>
+        {!loading ? (
+          <TableBody>
+            {cleanArr.map((item) => (
+              <TableRow key={item._id}>
+                {TableHeaderArr.map((propertyName) => (
+                  <TableCell key={item._id + propertyName}>
+                    {item[propertyName]}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        ) : (
+          <></>
+        )}
+      </Table>
+    );
+  } else {
+    return <></>;
+  }
+};
 
 export default Members;

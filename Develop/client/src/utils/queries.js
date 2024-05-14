@@ -144,22 +144,10 @@ query Tasks {
     name
     priority
     _id
-    createdBy {
-      displayName
-      _id
-    }
     description
     status
     dueDate
     duration
-    requiredSkills {
-      name
-      _id
-    }
-    responsible {
-      displayName
-      _id
-    }
   }
 }
 `;
@@ -169,6 +157,7 @@ query Members {
   members {
     _id
     scoutRego
+    displayName
     firstName
     lastName
     preferredName
@@ -180,98 +169,6 @@ query Members {
     email
     phone
     taskAvailabity
-    Family {
-      _id
-      users {
-        _id
-        scoutRego
-        firstName
-        lastName
-        preferredName
-        scoutName
-        status
-        gender
-        dob
-        Section
-        email
-        phone
-        taskAvailabity
-      }
-    }
-    ParentGardian {
-      _id
-      scoutRego
-      firstName
-      lastName
-      preferredName
-      scoutName
-      status
-      gender
-      dob
-      Section
-      email
-      phone
-      taskAvailabity
-    }
-    role {
-      _id
-      name
-      prequistes
-      RequiredTraining
-      ReportsTo {
-        _id
-        name
-        prequistes
-        RequiredTraining
-        isUniformed
-      }
-      isUniformed
-    }
-    skills {
-      _id
-      name
-    }
-    myTasks {
-      _id
-      Name
-      requiredSkills {
-        _id
-        name
-      }
-      dueDate
-      duration
-      responsible {
-        _id
-        scoutRego
-        firstName
-        lastName
-        preferredName
-        scoutName
-        status
-        gender
-        dob
-        Section
-        email
-        phone
-        taskAvailabity
-      }
-      createdBy {
-        _id
-        scoutRego
-        firstName
-        lastName
-        preferredName
-        scoutName
-        status
-        gender
-        dob
-        Section
-        email
-        phone
-        taskAvailabity
-      }
-      Priority
-    }
   }
 }
 `;
