@@ -2,8 +2,9 @@ const typeDefs = `
     type User {
         _id: ID!
         scoutRego: String,
-        firstName: String!
-        lastName: String!
+        displayName: String!
+        firstName: String
+        lastName: String
         preferredName: String,
         scoutName: String,
         status: String,
