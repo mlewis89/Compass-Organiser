@@ -11,6 +11,7 @@ import NotFound from './pages/NotFound';
 import Members from './pages/Members'
 import Contact from './pages/Contact.jsx'
 import AboutUs from './pages/AboutUs.jsx'
+import TimeSlider from './components/TimeSlider.jsx';
 
 const router = createBrowserRouter([
   {
@@ -43,6 +44,10 @@ const router = createBrowserRouter([
       {
         path: '/contact',
         element: <Contact />
+      },
+      {
+        path: '/temp',
+        element: <TimeSlider />
       },
     ],
   },
