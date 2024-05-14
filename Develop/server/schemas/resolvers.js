@@ -55,6 +55,21 @@ const resolvers = {
 
       return { token: token, user: newUser };
     },
+    
+    login: async (parent, { email, password }) => {
+      const user = await User.findOne({ email });
+      if (!user) {
+        throw AuthenticationError;
+      }
+
+      const CorrectPw = await user.isCorrectPassword(password);
+      if (!CorrectPw) {
+        throw AuthenticationError;
+      }
+      const token = signToken(user);
+      return { token, user };
+    },
+
   },
 };
 
