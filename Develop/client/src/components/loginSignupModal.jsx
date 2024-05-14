@@ -14,8 +14,6 @@ function LoginSignUpModal({ showModal }) {
       aria-labelledby="signup-modal"
       size='small'
       dimmer='blurring'
-      closeOnEscape="true"
-      closeOnDimmerClick="true"
     >
       <Tab
         menu={{ secondary: true, pointing: true }}
