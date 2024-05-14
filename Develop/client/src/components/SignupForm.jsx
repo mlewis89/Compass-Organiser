@@ -1,8 +1,6 @@
 import {
   Button,
   Form,
-  FormInput,
-  Checkbox,
   FormField,
   Input,
 } from "semantic-ui-react";
