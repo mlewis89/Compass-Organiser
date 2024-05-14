@@ -4,7 +4,8 @@ const{Schema} = mongoose;
 
 const taskSchema = new Schema({
     name: {
-        type: String
+        type: String,
+        required:true,
     },
     requiredSkills: [
         {
@@ -12,6 +13,13 @@ const taskSchema = new Schema({
           ref: 'Skill'
         }
       ],
+      description:
+        {
+          type: String,
+        },
+      status: {
+          type: String,
+        },
     dueDate: {
         type: Date,
     },
@@ -33,6 +41,19 @@ const taskSchema = new Schema({
         type: Number,
     },
 })
+
+taskSchema.pre('save', async function (next) {
+  if (this.isNew || this.isModified('dueDate')) {
+   if(!this.dueDate)
+    {
+      var date = new Date(this.valueOf());
+      date.setDate(date.getDate() + 365);
+      this.dueDate = date.getTime();
+    }
+  }
+
+  next();
+});
 
 const Task = mongoose.model('Task', taskSchema);
 

@@ -141,23 +141,25 @@ query SuggestedTasks {
 export const QUERY_TASKS = gql`
 query Tasks {
   tasks {
+    name
+    priority
     _id
-    Name
-    requiredSkills {
+    createdBy {
+      displayName
       _id
-      name
     }
+    description
+    status
     dueDate
     duration
-    responsible {
-      firstName
+    requiredSkills {
+      name
       _id
     }
-    createdBy {
-      preferredName
-      scoutName
+    responsible {
+      displayName
+      _id
     }
-    Priority
   }
 }
 `;

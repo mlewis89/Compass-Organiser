@@ -67,6 +67,7 @@ db.once("open", async () => {
       taskAvailabity: Math.floor(Math.random() * 10),
       skills: skills[Math.floor(Math.random() * skills.length)],
       roles: roles[Math.floor(Math.random() * roles.length)],
+      password: "password",
     };
     user.email = `${user.firstName}.${user.lastName}@${
       emailDomains[Math.floor(Math.random() * emailDomains.length)]

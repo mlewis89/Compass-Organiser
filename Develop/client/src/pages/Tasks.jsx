@@ -1,9 +1,9 @@
 import { Grid, GridColumn, GridRow, Segment, Label } from "semantic-ui-react";
 import MyTasks from "../components/MyTasks";
-import MyStats from "../components/MyStats";
-import AvailableTasks from "../components/AvailableTasks";
+import SuggestedTasks from "../components/SuggestedTasks";
 import TimeSlider from "../components/TimeSlider";
 import MySkills from "../components/MySkils";
+import AllTasks from "../components/AllTasks";
 
 const Tasks = () => {
   return (
@@ -18,7 +18,7 @@ const Tasks = () => {
         <GridColumn>
           <Segment padded>
             <Label attached="top">Suggested Tasks</Label>
-            <AvailableTasks />
+            <SuggestedTasks />
           </Segment>
         </GridColumn>
       </GridRow>
@@ -35,6 +35,15 @@ const Tasks = () => {
             <TimeSlider />
           </Segment>
         </GridColumn>
+      </GridRow>
+      <GridRow stretched columns={1}>
+        <GridColumn>
+          <Segment padded>
+            <Label attached="top">All Tasks</Label>
+            <AllTasks />
+          </Segment>
+        </GridColumn>
+        
       </GridRow>
     </Grid>
   );

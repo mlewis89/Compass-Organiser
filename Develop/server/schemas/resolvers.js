@@ -36,6 +36,13 @@ const resolvers = {
         return await Event.findById(_Id, { isPublic: true })
       }
     },
+    tasks: async (parent, args, { user }) => {
+      if (user) {
+        return await Task.find().populate("responsible").populate("createdBy").populate("requiredSkills");
+      } else {
+        return;
+      }
+    },
     members: async () => {
       return await User.find();
     },

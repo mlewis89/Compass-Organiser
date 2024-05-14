@@ -83,13 +83,15 @@ const typeDefs = `
 
     type Task {
         _id: ID!
-        Name: String,
+        name: String,
         requiredSkills: [Skill],
         dueDate: String,
         duration : Int,
         responsible: [User],
         createdBy: User,
-        Priority: Int
+        priority: Int,
+        description: String,
+        status: String
     }
 
     type Auth {
