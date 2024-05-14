@@ -13,7 +13,7 @@ const { signToken, AuthencationError } = require("../utils/auth");
 
 const resolvers = {
   Query: {
-    boardPosts: async (parent, args, { user }) => {
+    boardPosts: async (parent, args, {user}) => {
       if (user) {
         return await BoardPost.find().populate("createdBy");
       } else {
@@ -25,8 +25,6 @@ const resolvers = {
         return await Event.find().populate("organisor").populate("attending");
       } else {
         return await Event.find({ isPublic: true })
-          .populate("organisor")
-          .populate("attending");
       }
     },
     singleEvent: async (parent, { _Id }, { user }) => {
@@ -36,8 +34,6 @@ const resolvers = {
           .populate("attending");
       } else {
         return await Event.findById(_Id, { isPublic: true })
-          .populate("organisor")
-          .populate("attending");
       }
     },
     members: async () => {

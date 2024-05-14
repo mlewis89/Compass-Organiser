@@ -7,6 +7,7 @@ const path  = require("path");
 //include local definitions
 const { typeDefs, resolvers } = require("./schemas");
 const db = require("./config/connection");
+const { authMiddleware } = require('./utils/auth');
 
 //define Server port
 const PORT = process.env.PORT || 3001;
@@ -23,7 +24,9 @@ const startApolloServer = async () => {
   //Middleware
   app.use(express.urlencoded({ extended: true }));
   app.use(express.json());
-  app.use("/graphql", expressMiddleware(server));
+  app.use("/graphql", expressMiddleware(server, {
+    context: authMiddleware
+  }));
   //if Production build - serve client/dist as static
   if (process.env.NODE_ENV === "production") {
     app.use(express.static(path.join(__dirname, "../client/dist")));
