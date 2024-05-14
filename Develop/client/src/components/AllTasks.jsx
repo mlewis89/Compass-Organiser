@@ -25,8 +25,7 @@ const AllTasks = () => {
   ];
   if (data) {
     tasks = data.tasks;
-    console.log(TableHeaderArr);
-    console.log(tasks);
+
   }
 
   return (

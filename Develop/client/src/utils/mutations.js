@@ -27,3 +27,11 @@ mutation Login($email: String!, $password: String!) {
   }
 }
 `;
+
+export const UPDATE_ME_TIME = gql`
+mutation UpdateUserTime($taskAvailabity: Int!) {
+  updateUserTime(taskAvailabity: $taskAvailabity) {
+    taskAvailabity
+  }
+}
+`;

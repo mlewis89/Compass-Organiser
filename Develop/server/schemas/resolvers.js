@@ -13,7 +13,7 @@ const { signToken, AuthencationError } = require("../utils/auth");
 
 const resolvers = {
   Query: {
-    boardPosts: async (parent, args, {user}) => {
+    boardPosts: async (parent, args, { user }) => {
       if (user) {
         return await BoardPost.find().populate("createdBy");
       } else {
@@ -24,7 +24,7 @@ const resolvers = {
       if (user) {
         return await Event.find().populate("organisor").populate("attending");
       } else {
-        return await Event.find({ isPublic: true })
+        return await Event.find({ isPublic: true });
       }
     },
     singleEvent: async (parent, { _Id }, { user }) => {
@@ -33,18 +33,34 @@ const resolvers = {
           .populate("organisor")
           .populate("attending");
       } else {
-        return await Event.findById(_Id, { isPublic: true })
+        return await Event.findById(_Id, { isPublic: true });
       }
     },
     tasks: async (parent, args, { user }) => {
       if (user) {
-        return await Task.find().populate("responsible").populate("createdBy").populate("requiredSkills");
+        return await Task.find()
+          .populate("responsible")
+          .populate("createdBy")
+          .populate("requiredSkills");
       } else {
         return;
       }
     },
     members: async () => {
       return await User.find();
+    },
+    me: async (parent, args, { user }) => {
+      console.log(user);
+      if (user) {
+        return await User.findById(user._id)
+          .populate("skills")
+          .populate("myTasks")
+          .populate("role")
+          .populate("parentGardian")
+          .populate("family");
+      } else {
+        return;
+      }
     },
   },
   Mutation: {
@@ -58,7 +74,7 @@ const resolvers = {
 
       return { token: token, user: newUser };
     },
-    
+
     login: async (parent, { email, password }) => {
       const user = await User.findOne({ email });
       if (!user) {
@@ -72,7 +88,20 @@ const resolvers = {
       const token = signToken(user);
       return { token, user };
     },
+    updateUser: async (parent, args, context) => {
+      const _id = args.user._id || context.user._id;
 
+      const user = await User.findByIdAndUpdate(_id, { ...args.user });
+
+      return user;
+    },
+    updateUserTime: async (parent, args, context) => {
+      const _id = context.user._id;
+      const user = await User.findByIdAndUpdate(_id, {
+        taskAvailabity: args.taskAvailabity,
+      });
+      return user;
+    },
   },
 };
 

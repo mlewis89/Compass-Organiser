@@ -20,6 +20,8 @@ query boardPosts {
 }
 `;
 
+
+
 export const QUERY_EVENTS = gql`
 query Events {
   events {
@@ -172,6 +174,44 @@ query Members {
   }
 }
 `;
+export const QUERY_ME_TIME = gql`
+query Members {
+  me {
+    _id
+    taskAvailabity
+  }
+}
+`;
+
+export const QUERY_ME_SKILLS = gql`
+query Members {
+  me {
+    skills {
+      name
+    }
+  }
+}
+`;
+
+export const QUERY_ME_TASKS = gql`
+query Members {
+  me {
+    myTasks {
+      _id
+      description
+      dueDate
+      duration
+      name
+      priority
+      requiredSkills {
+        name
+        _id
+      }
+      status
+    }
+  }
+}
+`;
 
 export const QUERY_ME = gql`
 query Me {
@@ -287,13 +327,3 @@ query Me {
 
 
 
-
-/*
-        events: [Event],
-        boardPosts: [BoardPost],
-        publicBoardPosts: [BoardPost],
-        publicEvents: [Event],
-        suggestedTasks(UserID:ID!): [Tasks],
-        members: [User],
-        me: User
-*/

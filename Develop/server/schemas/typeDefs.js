@@ -3,8 +3,8 @@ const typeDefs = `
         _id: ID!
         scoutRego: String,
         displayName: String!
-        firstName: String
-        lastName: String
+        firstName: String,
+        lastName: String,
         preferredName: String,
         scoutName: String,
         status: String,
@@ -20,6 +20,23 @@ const typeDefs = `
         skills : [Skill],
         myTasks : [Task]    
     }
+    input updateUser {
+        _id: ID!
+        scoutRego: String,
+        displayName: String,
+        firstName: String,
+        lastName: String,
+        preferredName: String,
+        scoutName: String,
+        status: String,
+        gender: String,
+        dob: String,
+        Section: String,
+        email: String,
+        phone: String,
+        taskAvailabity: Int
+    }
+
     input addUser {
         firstName: String!
         lastName: String!
@@ -113,6 +130,8 @@ const typeDefs = `
     type Mutation {
         addUser(user: addUser!): Auth
         login(email: String!, password: String!): Auth
+        updateUser(user: updateUser!): User
+        updateUserTime(taskAvailabity: Int!): User
     }
 `;
 
