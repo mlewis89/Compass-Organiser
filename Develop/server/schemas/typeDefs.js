@@ -10,7 +10,7 @@ const typeDefs = `
         status: String,
         gender: String,
         dob: String,
-        Section: String,
+        section: String,
         email: String!,
         phone: String,
         taskAvailabity: Int,
@@ -96,6 +96,7 @@ const typeDefs = `
     type Skill {
         _id: ID!
         name: String!,
+        isActiveForUser: Boolean,
     }
 
     type Task {
@@ -124,7 +125,8 @@ const typeDefs = `
         suggestedTasks(UserID:ID): [Task],
         tasks: [Task],
         members: [User],
-        me: User
+        me: User,
+        pageSkills(userId: ID): [Skill]
     }
 
     type Mutation {
@@ -132,6 +134,7 @@ const typeDefs = `
         login(email: String!, password: String!): Auth
         updateUser(user: updateUser!): User
         updateUserTime(taskAvailabity: Int!): User
+        addRemovedUserSkill(type: String!, skillId: ID,userId: ID): User
     }
 `;
 

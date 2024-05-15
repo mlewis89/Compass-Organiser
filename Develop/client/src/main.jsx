@@ -12,6 +12,7 @@ import Members from './pages/Members'
 import Contact from './pages/Contact.jsx'
 import AboutUs from './pages/AboutUs.jsx'
 import TimeSlider from './components/TimeSlider.jsx';
+import MySkills from './components/MySkils.jsx';
 
 const router = createBrowserRouter([
   {
@@ -47,7 +48,7 @@ const router = createBrowserRouter([
       },
       {
         path: '/temp',
-        element: <TimeSlider />
+        element: <MySkills />
       },
     ],
   },

@@ -35,3 +35,14 @@ mutation UpdateUserTime($taskAvailabity: Int!) {
   }
 }
 `;
+
+export const UPDATE_ME_SKILLS = gql`
+mutation AddRemovedUserSkill($type: String!, $skillId: ID, $userId: ID) {
+  addRemovedUserSkill(type: $type, skillId: $skillId, userId: $userId) {
+    skills {
+      _id
+      name
+    }
+  }
+}
+`;

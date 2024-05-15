@@ -62,6 +62,22 @@ const resolvers = {
         return;
       }
     },
+    pageSkills: async (parent, { userId }, { user }) => {
+      console.log(user)
+      let _id = userId || user._id;
+      let skills = await Skill.find();
+      let userData = await User.findById(_id).populate("skills");
+      for (let i = 0; i < userData.skills.length; i++) {
+        //find skill in main list
+        let index = skills.findIndex((x) => {
+          return x._id.equals(userData.skills[i]._id);
+        });
+        if (index >= 0) {
+          skills[index].isActiveForUser = true; //add bollean value that it relates to the current user
+        }
+      }
+      return skills;
+    },
   },
   Mutation: {
     addUser: async (parent, { user }) => {
@@ -89,18 +105,36 @@ const resolvers = {
       return { token, user };
     },
     updateUser: async (parent, args, context) => {
-      const _id = args.user._id || context.user._id;
+      let _id = args.user._id || context.user._id;
 
-      const user = await User.findByIdAndUpdate(_id, { ...args.user });
+      let user = await User.findByIdAndUpdate(_id, { ...args.user });
 
       return user;
     },
     updateUserTime: async (parent, args, context) => {
-      const _id = context.user._id;
-      const user = await User.findByIdAndUpdate(_id, {
+      let _id = context.user._id;
+      let user = await User.findByIdAndUpdate(_id, {
         taskAvailabity: args.taskAvailabity,
       });
       return user;
+    },
+    addRemovedUserSkill: async (parent, { type, skillId, userId }, context) => {
+      let _id = userId || context.user._id;
+
+      switch (type) {
+        case "ADD": {
+          let user = await User.findByIdAndUpdate(_id, {
+            $addToSet: { skills: skillId },
+          }).populate("skills");
+          return user;
+        }
+        case "REMOVE": {
+          let user = await User.findByIdAndUpdate(_id, {
+            $pull: { skills: skillId },
+          }).populate("skills");
+          return user;
+        }
+      }
     },
   },
 };

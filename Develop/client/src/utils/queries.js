@@ -128,14 +128,14 @@ export const QUERY_SUGGESTED_TASKS = gql`
 query SuggestedTasks {
   suggestedTasks {
     _id
-    Name
+    name
     requiredSkills {
       _id
       name
     }
     dueDate
     duration
-    Priority
+    priority
   }
 }
 `;
@@ -167,7 +167,7 @@ query Members {
     status
     gender
     dob
-    Section
+    section
     email
     phone
     taskAvailabity
@@ -183,12 +183,12 @@ query Members {
 }
 `;
 
-export const QUERY_ME_SKILLS = gql`
-query Members {
-  me {
-    skills {
-      name
-    }
+export const QUERY_USER_SKILLS = gql`
+query PageSkills($userId: ID) {
+  pageSkills(userId: $userId) {
+    _id
+    isActiveForUser
+    name
   }
 }
 `;
