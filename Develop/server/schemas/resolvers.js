@@ -70,7 +70,7 @@ const resolvers = {
       return tasks;
     },
     members: async () => {
-      return await User.find();
+      return await User.find().sort({section:1,displayName:1});
     },
     me: async (parent, args, { user }) => {
       console.log(user);
