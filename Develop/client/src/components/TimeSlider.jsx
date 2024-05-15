@@ -29,7 +29,8 @@ const TimeSlider = () => {
           type="range"
           min="0"
           max="100"
-          name="slider"
+          step="10"
+          name="timeavalable"
           value={TimeAvailable}
           onChange={handleSliderMove}
         />
