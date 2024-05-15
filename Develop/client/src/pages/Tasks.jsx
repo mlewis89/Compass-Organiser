@@ -14,25 +14,18 @@ const Tasks = () => {
             <Label attached="top">My Tasks</Label>
             <MyTasks />
           </Segment>
-        </GridColumn>
-        <GridColumn>
           <Segment padded>
             <Label attached="top">Suggested Tasks</Label>
             <SuggestedTasks />
-          </Segment>
-        </GridColumn>
-      </GridRow>
-      <GridRow stretched>
-        <GridColumn>
-          <Segment padded>
-            
-            <MySkills />
           </Segment>
         </GridColumn>
         <GridColumn>
           <Segment padded>
             <Label attached="top">My Time Availabilty</Label>
             <TimeSlider />
+          </Segment>
+          <Segment padded>
+            <MySkills />
           </Segment>
         </GridColumn>
       </GridRow>
@@ -43,7 +36,6 @@ const Tasks = () => {
             <AllTasks />
           </Segment>
         </GridColumn>
-        
       </GridRow>
     </Grid>
   );
