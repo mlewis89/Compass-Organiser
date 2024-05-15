@@ -166,6 +166,14 @@ const resolvers = {
         }
       }
     },
+    addUserTask: async (parent, { taskId, userId }, { user }) => {
+      let _id = userId || user._id;
+
+      let userData = await User.findByIdAndUpdate(_id, {
+        $addToSet: { myTasks: taskId },
+      }).populate("myTasks").populate("skills");
+      return userData;
+    },
   },
 };
 

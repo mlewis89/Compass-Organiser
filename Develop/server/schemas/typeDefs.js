@@ -135,6 +135,7 @@ const typeDefs = `
         updateUser(user: updateUser!): User
         updateUserTime(taskAvailabity: Int!): User
         addRemovedUserSkill(type: String!, skillId: ID,userId: ID): User
+        addUserTask(taskId: ID!, userId: ID ): User
     }
 `;
 

@@ -22,7 +22,7 @@ const MyTasks = () => {
     "status",
   ];
   if (data) {
-    tasks = data.tasks;
+    tasks = data.me.myTasks;
 
   }
 

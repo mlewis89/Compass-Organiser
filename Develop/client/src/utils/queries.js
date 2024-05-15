@@ -220,10 +220,6 @@ query Members {
       duration
       name
       priority
-      requiredSkills {
-        name
-        _id
-      }
       status
     }
   }

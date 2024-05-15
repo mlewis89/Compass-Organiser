@@ -33,7 +33,7 @@ const SuggestedTasks = () => {
     "status",
   ];
   if (data) {
-    tasks = data.suggestedTasks;
+    tasks = [...data.suggestedTasks];
     console.log(tasks);
   }
 

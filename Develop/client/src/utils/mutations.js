@@ -46,3 +46,24 @@ mutation AddRemovedUserSkill($type: String!, $skillId: ID, $userId: ID) {
   }
 }
 `;
+
+export const ADD_USER_TASK = gql`
+mutation AddUserTask($taskId: ID!, $userId: ID) {
+  addUserTask(taskId: $taskId, userId: $userId) {
+    _id
+    displayName
+    myTasks {
+      _id
+      name
+      createdBy {
+        displayName
+      }
+      description
+      dueDate
+      duration
+      priority
+      status
+    }
+  }
+}
+`;
