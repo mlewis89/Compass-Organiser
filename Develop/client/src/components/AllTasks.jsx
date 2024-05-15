@@ -262,7 +262,7 @@ const AllTasks = () => {
     tasks.map((taskObj) => {
       for (let prop in taskObj) {
         if (typeof taskObj[prop] === "object") {
-          console.log(prop, taskObj[prop]);
+          //console.log(prop, taskObj[prop]);
           let stringVal = "";
           switch (prop) {
             case "requiredSkills": {
@@ -295,7 +295,7 @@ const AllTasks = () => {
               break;
           }
           
-          console.log(stringVal);
+          //console.log(stringVal);
           taskObj[prop] = stringVal;
         }
         /*
@@ -307,29 +307,8 @@ const AllTasks = () => {
       return taskObj;
     });
 
-    let taskArr = [
-      {
-          "_id": "664471c0f8a1e76ed9129bb3",
-          "description": "packtrailer for camp",
-          "dueDate": null,
-          "duration": 2,
-          "name": "pack trailer",
-          "priority": 8,
-          "status": "inProgress",
-          "__typename": "Task"
-      },
-      {
-          "_id": "664471c0f8a1e76ed9129bb4",
-          "description": "build a MERN stack application",
-          "dueDate": null,
-          "duration": 20,
-          "name": "build website",
-          "priority": 3,
-          "status": "inProgress",
-          "__typename": "Task"
-      }];
 
-      taskArr = [...tasks];
+      let taskArr = [...tasks];
 
     return (
       <Table celled selectable>
