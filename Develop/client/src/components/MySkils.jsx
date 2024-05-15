@@ -13,33 +13,35 @@ const MySkills = () => {
     },
   });
   const [addRemoverUserSkill, { error }] = useMutation(UPDATE_ME_SKILLS);
-  const [skills, setSkills] = useState();
-
-  console.log(skills);
+  const [skills, setSkills] = useState([]);
 
   const handleSkillAdd = async (event, data) => {
     let _id = data["data-key"];
     //mutation to add _id to users Skills - returns skill object
     addRemoverUserSkill({ variables: { type: "ADD", skillId: _id } });
 
-    let index = skills.findIndex((x) => x._id.equals(_id));
+    let index = skills.findIndex((x) => x._id == _id);
     if (index >= 0) {
-      var temp = { ...skills[index], isActiveForUser: true };
-      setSkills({ ...temp });
+      var tempObject = { ...skills[index], isActiveForUser: true };
+      let newSkills = [...skills];
+      newSkills[index] = tempObject;
+      setSkills(newSkills);
     }
   };
 
   const handleSkillRemove = async (event, data) => {
     let _id = data["data-key"];
     addRemoverUserSkill({ variables: { type: "REMOVE", skillId: _id } });
-    let index = skills.findIndex((x) => x._id.equals(_id));
+    let index = skills.findIndex((x) => x._id == _id);
     if (index >= 0) {
-      var temp = { ...skills[index], isActiveForUser: false };
-      setSkills({ ...temp });
+      var tempObject = { ...skills[index], isActiveForUser: false };
+      let newSkills = [...skills];
+      newSkills[index] = tempObject;
+      setSkills(newSkills);
     }
   };
 
-  if (loading) {
+  if (!loading) {
     let mySkills = skills.filter((skill) => skill.isActiveForUser);
     let otherSkills = skills.filter((skill) => !skill.isActiveForUser);
 

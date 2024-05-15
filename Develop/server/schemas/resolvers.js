@@ -76,6 +76,7 @@ const resolvers = {
           skills[index].isActiveForUser = true; //add bollean value that it relates to the current user
         }
       }
+      skills.forEach((s)=>{if(!s.isActiveForUser){s.isActiveForUser = false}}) //set default value to false.
       return skills;
     },
   },
