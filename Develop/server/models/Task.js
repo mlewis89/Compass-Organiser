@@ -26,12 +26,12 @@ const taskSchema = new Schema({
     duration : {
         type: Number,
     },
-    responsible: [
+    responsible: 
         {
           type: Schema.Types.ObjectId,
           ref: 'User'
         }
-      ],
+      ,
     createdBy: 
         {
           type: Schema.Types.ObjectId,
