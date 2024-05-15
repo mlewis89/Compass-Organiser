@@ -46,6 +46,27 @@ const resolvers = {
         return;
       }
     },
+    suggestedTasks: async (parent, { userId }, { user }) => {
+      let _id = userId || user._id;
+      let userData = await User.findById(_id)
+        .populate("skills")
+        .populate("myTasks");
+      let userSkills = userData.skills;
+      let userSkillsIDs = userSkills.map((skillobj) => skillobj._id);
+
+      console.log(userSkillsIDs);
+
+      let tasks = await Task.find({
+        requiredSkills: { $in: [...userSkillsIDs] },
+      })
+        .populate("responsible")
+        .populate("createdBy")
+        .populate("requiredSkills")
+        .sort({ dueDate: -1, priority: -1 });
+
+      console.log("tasks", tasks);
+      return tasks;
+    },
     members: async () => {
       return await User.find();
     },
@@ -63,10 +84,12 @@ const resolvers = {
       }
     },
     pageSkills: async (parent, { userId }, { user }) => {
-      console.log(user)
+      console.log(user);
       let _id = userId || user._id;
-      let skills = await Skill.find();
+      let skills = await Skill.find().sort({ name: 1 });
+      console.log(skills);
       let userData = await User.findById(_id).populate("skills");
+      console.log(userData);
       for (let i = 0; i < userData.skills.length; i++) {
         //find skill in main list
         let index = skills.findIndex((x) => {
@@ -76,7 +99,11 @@ const resolvers = {
           skills[index].isActiveForUser = true; //add bollean value that it relates to the current user
         }
       }
-      skills.forEach((s)=>{if(!s.isActiveForUser){s.isActiveForUser = false}}) //set default value to false.
+      skills.forEach((s) => {
+        if (!s.isActiveForUser) {
+          s.isActiveForUser = false;
+        }
+      }); //set default value to false.
       return skills;
     },
   },

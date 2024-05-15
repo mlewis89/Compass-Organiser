@@ -19,12 +19,13 @@ import {
       "priority",
       "dueDate",
       "duration",
-      "requiredSkills",
-      "responsible",
+   //   "requiredSkills",
+   //   "responsible",
       "status",
     ];
     if (data) {
-      tasks = data.tasks;
+      tasks = data.suggestedTasks;
+      console.log(tasks);
   
     }
   

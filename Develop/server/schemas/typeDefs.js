@@ -122,7 +122,7 @@ const typeDefs = `
         events: [Event],
         singleEvent(eventID :ID!) : Event,
         userTasks(UserID: ID): [Task],
-        suggestedTasks(UserID:ID): [Task],
+        suggestedTasks(userId:ID): [Task],
         tasks: [Task],
         members: [User],
         me: User,
