@@ -77,7 +77,8 @@ db.once("open", async () => {
   }
   const users = await User.insertMany(userArr);
   taskData.forEach((task) => {
-    task.requiredSkills = skills[Math.floor(Math.random() * skills.length)]
+    task.requiredSkills = skills.find((element)=> element.name == task.skill)
+    //task.requiredSkills = skills[Math.floor(Math.random() * skills.length)]
     //task.responsible = users[Math.floor(Math.random() * users.length)];
     task.createdBy = users[Math.floor(Math.random() * users.length)];
   });

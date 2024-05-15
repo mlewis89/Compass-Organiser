@@ -1,11 +1,11 @@
 [
-  { "name": "pack trailer", "description":"packtrailer for camp", "status":"inProgress","duration": 2, "priority": 8 },
-  { "name": "build website", "description":"build a MERN stack application", "status":"inProgress","duration": 20, "priority": 3 },
-  { "name": "clean bbq after camp", "description":"deep clean and reseason", "status":"toDo","duration": 2, "priority": 7 },
-  { "name": "fix camp lights", "description":"diagnose and fix", "status":"inProgress","duration": 2, "priority": 5 },
-  { "name": "Plumbing at hall", "description":"new tap in male bathroom", "status":"toDo","duration": 2, "priority": 7 },
-  { "name": "Organise Social event", "description":"choose date", "status":"toDo","duration": 10, "priority": 5 },
-  { "name": "Transport for schout hike","description":"email; parents", "status":"toDo", "duration": 2, "priority": 6 },
-  { "name": "restock first aid kits", "description":"purchase and replace items", "status":"complete","duration": 5, "priority": 6 },
-  { "name": "Pait hall", "description":"inside and outside hall", "status":"inProgress","duration": 10, "priority": 2 }
+  { "name": "pack trailer", "skill":"Towing a trailer", "description":"packtrailer for camp", "status":"inProgress","duration": 2, "priority": 8 },
+  { "name": "build website", "skill":"Web Development", "description":"build a MERN stack application", "status":"inProgress","duration": 20, "priority": 3 },
+  { "name": "clean bbq after camp", "skill":"General Help", "description":"deep clean and reseason", "status":"toDo","duration": 2, "priority": 7 },
+  { "name": "fix camp lights", "skill":"Trades", "description":"diagnose and fix", "status":"inProgress","duration": 2, "priority": 5 },
+  { "name": "Plumbing at hall", "skill":"Trades", "description":"new tap in male bathroom", "status":"toDo","duration": 2, "priority": 7 },
+  { "name": "Organise Social event", "skill":"Admin", "description":"choose date", "status":"toDo","duration": 10, "priority": 5 },
+  { "name": "Transport for schout hike", "skill":"Admin","description":"email; parents", "status":"toDo", "duration": 2, "priority": 6 },
+  { "name": "restock first aid kits", "skill":"Admin", "description":"purchase and replace items", "status":"complete","duration": 5, "priority": 6 },
+  { "name": "Paint hall", "skill":"Trades", "description":"inside and outside hall", "status":"inProgress","duration": 10, "priority": 2 }
 ]

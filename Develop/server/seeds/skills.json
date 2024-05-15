@@ -1,53 +1,47 @@
 [
-    {
-        "name": "Web Development"
-    },
-    {
-        "name": "Power Tools"
-    },
-    {
-        "name": "Towing a trailer"
-    },
-    {
-        "name": "data entry"
-    },
-    {
-        "name": "Admin"
-    },
-    {
-        "name": "Accounting"
-    },
-    {
-        "name": "Communciation"
-    },
-    {
-        "name": "English"
-    },
-    {
-        "name": "General Help"
-    },
-    {
-        "name": "Electrical"
-    },
-    {
-        "name": "Plumbing"
-    },
-    {
-        "name": "3D Modeling/Printing"
-    },
-    {
-        "name": "Wood working"
-    },
-    {
-        "name": "Welding"
-    },
-    {
-        "name": "Graphics Design"
-    },
-    {
-        "name": "Chainsawing"
-    },
-    {
-        "name": "Splitting wood"
-    }
+  {
+    "name": "Web Development"
+  },
+  {
+    "name": "Power Tools"
+  },
+  {
+    "name": "Towing a trailer"
+  },
+  {
+    "name": "Data entry"
+  },
+  {
+    "name": "Admin"
+  },
+  {
+    "name": "Accounting"
+  },
+  {
+    "name": "Communciation"
+  },
+  {
+    "name": "English"
+  },
+  {
+    "name": "General Help"
+  },
+  {
+    "name": "Trades"
+  },
+  {
+    "name": "3D Modeling/Printing"
+  },
+  {
+    "name": "Wood working"
+  },
+  {
+    "name": "Graphics Design"
+  },
+  {
+    "name": "Chainsawing"
+  },
+  {
+    "name": "Splitting wood"
+  }
 ]
