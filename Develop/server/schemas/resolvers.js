@@ -53,6 +53,7 @@ const resolvers = {
         .populate("myTasks");
       let userSkills = userData.skills;
       let userSkillsIDs = userSkills.map((skillobj) => skillobj._id);
+      let numberOfTasks = userData.taskAvailabity;
 
       console.log(userSkillsIDs);
 
@@ -62,7 +63,8 @@ const resolvers = {
         .populate("responsible")
         .populate("createdBy")
         .populate("requiredSkills")
-        .sort({ dueDate: -1, priority: -1 });
+        .sort({ dueDate: -1, priority: -1 })
+        .limit(numberOfTasks);
 
       console.log("tasks", tasks);
       return tasks;

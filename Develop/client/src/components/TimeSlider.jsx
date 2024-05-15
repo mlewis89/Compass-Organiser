@@ -28,8 +28,8 @@ const TimeSlider = () => {
         <input
           type="range"
           min="0"
-          max="100"
-          step="10"
+          max="10"
+          step="1"
           name="timeavalable"
           value={TimeAvailable}
           onChange={handleSliderMove}
