@@ -20,245 +20,212 @@ const AllTasks = () => {
     "dueDate",
     "duration",
     "requiredSkills",
-     "responsible",
+    "responsible",
     "status",
   ];
   if (data) {
     //tasks = [...data.tasks];
     let tasks = [
       {
-          "_id": "664471c0f8a1e76ed9129bb3",
-          "createdBy": {
-              "displayName": "Alieu",
-              "__typename": "User"
+        _id: "66449924403bfae027d87253",
+        createdBy: {
+          displayName: "Rio",
+          __typename: "User",
+        },
+        description: "packtrailer for camp",
+        dueDate: null,
+        duration: 2,
+        name: "pack trailer",
+        priority: 8,
+        requiredSkills: [
+          {
+            name: "Towing a trailer",
+            _id: "66449924403bfae027d87207",
+            __typename: "Skill",
           },
-          "description": "packtrailer for camp",
-          "dueDate": null,
-          "duration": 2,
-          "name": "pack trailer",
-          "priority": 8,
-          "requiredSkills": [
-              {
-                  "name": "Web Development",
-                  "_id": "664471bff8a1e76ed9129b63",
-                  "__typename": "Skill"
-              }
-          ],
-          "responsible": [
-              {
-                  "displayName": "Majid",
-                  "__typename": "User"
-              }
-          ],
-          "status": "inProgress",
-          "__typename": "Task"
+        ],
+        responsible: [],
+        status: "inProgress",
+        __typename: "Task",
       },
       {
-          "_id": "664471c0f8a1e76ed9129bb4",
-          "createdBy": {
-              "displayName": "Theo",
-              "__typename": "User"
+        _id: "66449924403bfae027d87254",
+        createdBy: {
+          displayName: "Johnathan",
+          __typename: "User",
+        },
+        description: "build a MERN stack application",
+        dueDate: null,
+        duration: 20,
+        name: "build website",
+        priority: 3,
+        requiredSkills: [
+          {
+            name: "Web Development",
+            _id: "66449924403bfae027d87205",
+            __typename: "Skill",
           },
-          "description": "build a MERN stack application",
-          "dueDate": null,
-          "duration": 20,
-          "name": "build website",
-          "priority": 3,
-          "requiredSkills": [
-              {
-                  "name": "Web Development",
-                  "_id": "664471bff8a1e76ed9129b63",
-                  "__typename": "Skill"
-              }
-          ],
-          "responsible": [
-          ],
-          "status": "inProgress",
-          "__typename": "Task"
+        ],
+        responsible: [],
+        status: "inProgress",
+        __typename: "Task",
       },
       {
-          "_id": "664471c0f8a1e76ed9129bb5",
-          "createdBy": {
-              "displayName": "Thorben",
-              "__typename": "User"
+        _id: "66449924403bfae027d87255",
+        createdBy: {
+          displayName: "Rio",
+          __typename: "User",
+        },
+        description: "deep clean and reseason",
+        dueDate: null,
+        duration: 2,
+        name: "clean bbq after camp",
+        priority: 7,
+        requiredSkills: [
+          {
+            name: "General Help",
+            _id: "66449924403bfae027d8720d",
+            __typename: "Skill",
           },
-          "description": "deep clean and reseason",
-          "dueDate": null,
-          "duration": 2,
-          "name": "clean bbq after camp",
-          "priority": 7,
-          "requiredSkills": [
-              {
-                  "name": "Power Tools",
-                  "_id": "664471bff8a1e76ed9129b64",
-                  "__typename": "Skill"
-              }
-          ],
-          "responsible": [
-          ],
-          "status": "toDo",
-          "__typename": "Task"
+        ],
+        responsible: [],
+        status: "toDo",
+        __typename: "Task",
       },
       {
-          "_id": "664471c0f8a1e76ed9129bb6",
-          "createdBy": {
-              "displayName": "Hussnain",
-              "__typename": "User"
+        _id: "66449924403bfae027d87256",
+        createdBy: {
+          displayName: "Jeswin",
+          __typename: "User",
+        },
+        description: "diagnose and fix",
+        dueDate: null,
+        duration: 2,
+        name: "fix camp lights",
+        priority: 5,
+        requiredSkills: [
+          {
+            name: "Trades",
+            _id: "66449924403bfae027d8720e",
+            __typename: "Skill",
           },
-          "description": "diagnose and fix",
-          "dueDate": null,
-          "duration": 2,
-          "name": "fix camp lights",
-          "priority": 5,
-          "requiredSkills": [
-              {
-                  "name": "Web Development",
-                  "_id": "664471bff8a1e76ed9129b63",
-                  "__typename": "Skill"
-              }
-          ],
-          "responsible": [
-          ],
-          "status": "inProgress",
-          "__typename": "Task"
+        ],
+        responsible: [],
+        status: "inProgress",
+        __typename: "Task",
       },
       {
-          "_id": "664471c0f8a1e76ed9129bb7",
-          "createdBy": {
-              "displayName": "Zi",
-              "__typename": "User"
+        _id: "66449924403bfae027d87257",
+        createdBy: {
+          displayName: "Keo",
+          __typename: "User",
+        },
+        description: "new tap in male bathroom",
+        dueDate: null,
+        duration: 2,
+        name: "Plumbing at hall",
+        priority: 7,
+        requiredSkills: [
+          {
+            name: "Trades",
+            _id: "66449924403bfae027d8720e",
+            __typename: "Skill",
           },
-          "description": "new tap in male bathroom",
-          "dueDate": null,
-          "duration": 2,
-          "name": "Plumbing at hall",
-          "priority": 7,
-          "requiredSkills": [
-              {
-                  "name": "Web Development",
-                  "_id": "664471bff8a1e76ed9129b63",
-                  "__typename": "Skill"
-              }
-          ],
-          "responsible": [
-              {
-                  "displayName": "Kaylum",
-                  "__typename": "User"
-              }
-          ],
-          "status": "toDo",
-          "__typename": "Task"
+        ],
+        responsible: [],
+        status: "toDo",
+        __typename: "Task",
       },
       {
-          "_id": "664471c0f8a1e76ed9129bb8",
-          "createdBy": {
-              "displayName": "Nyah",
-              "__typename": "User"
+        _id: "66449924403bfae027d87258",
+        createdBy: {
+          displayName: "William",
+          __typename: "User",
+        },
+        description: "choose date",
+        dueDate: null,
+        duration: 10,
+        name: "Organise Social event",
+        priority: 5,
+        requiredSkills: [
+          {
+            name: "Admin",
+            _id: "66449924403bfae027d87209",
+            __typename: "Skill",
           },
-          "description": "choose date",
-          "dueDate": null,
-          "duration": 10,
-          "name": "Organise Social event",
-          "priority": 5,
-          "requiredSkills": [
-              {
-                  "name": "Web Development",
-                  "_id": "664471bff8a1e76ed9129b63",
-                  "__typename": "Skill"
-              }
-          ],
-          "responsible": [
-              {
-                  "displayName": "Pushkar",
-                  "__typename": "User"
-              }
-          ],
-          "status": "toDo",
-          "__typename": "Task"
+        ],
+        responsible: [],
+        status: "toDo",
+        __typename: "Task",
       },
       {
-          "_id": "664471c0f8a1e76ed9129bb9",
-          "createdBy": {
-              "displayName": "Shahmir",
-              "__typename": "User"
+        _id: "66449924403bfae027d87259",
+        createdBy: {
+          displayName: "Rio",
+          __typename: "User",
+        },
+        description: "email; parents",
+        dueDate: null,
+        duration: 2,
+        name: "Transport for schout hike",
+        priority: 6,
+        requiredSkills: [
+          {
+            name: "Admin",
+            _id: "66449924403bfae027d87209",
+            __typename: "Skill",
           },
-          "description": "email; parents",
-          "dueDate": null,
-          "duration": 2,
-          "name": "Transport for schout hike",
-          "priority": 6,
-          "requiredSkills": [
-              {
-                  "name": "Power Tools",
-                  "_id": "664471bff8a1e76ed9129b64",
-                  "__typename": "Skill"
-              }
-          ],
-          "responsible": [
-              {
-                  "displayName": "Aiden-Jack",
-                  "__typename": "User"
-              }
-          ],
-          "status": "toDo",
-          "__typename": "Task"
+        ],
+        responsible: [],
+        status: "toDo",
+        __typename: "Task",
       },
       {
-          "_id": "664471c0f8a1e76ed9129bba",
-          "createdBy": {
-              "displayName": "Lorne",
-              "__typename": "User"
+        _id: "66449924403bfae027d8725a",
+        createdBy: {
+          displayName: "Brayden",
+          __typename: "User",
+        },
+        description: "purchase and replace items",
+        dueDate: null,
+        duration: 5,
+        name: "restock first aid kits",
+        priority: 6,
+        requiredSkills: [
+          {
+            name: "Admin",
+            _id: "66449924403bfae027d87209",
+            __typename: "Skill",
           },
-          "description": "purchase and replace items",
-          "dueDate": null,
-          "duration": 5,
-          "name": "restock first aid kits",
-          "priority": 6,
-          "requiredSkills": [
-              {
-                  "name": "Power Tools",
-                  "_id": "664471bff8a1e76ed9129b64",
-                  "__typename": "Skill"
-              }
-          ],
-          "responsible": [
-              {
-                  "displayName": "Ricco",
-                  "__typename": "User"
-              }
-          ],
-          "status": "complete",
-          "__typename": "Task"
+        ],
+        responsible: [],
+        status: "complete",
+        __typename: "Task",
       },
       {
-          "_id": "664471c0f8a1e76ed9129bbb",
-          "createdBy": {
-              "displayName": "Ricco",
-              "__typename": "User"
+        _id: "66449924403bfae027d8725b",
+        createdBy: {
+          displayName: "Brian",
+          __typename: "User",
+        },
+        description: "inside and outside hall",
+        dueDate: null,
+        duration: 10,
+        name: "Paint hall",
+        priority: 2,
+        requiredSkills: [
+          {
+            name: "Trades",
+            _id: "66449924403bfae027d8720e",
+            __typename: "Skill",
           },
-          "description": "inside and outside hall",
-          "dueDate": null,
-          "duration": 10,
-          "name": "Pait hall",
-          "priority": 2,
-          "requiredSkills": [
-              {
-                  "name": "Web Development",
-                  "_id": "664471bff8a1e76ed9129b63",
-                  "__typename": "Skill"
-              }
-          ],
-          "responsible": [
-              {
-                  "displayName": "Caley",
-                  "__typename": "User"
-              }
-          ],
-          "status": "inProgress",
-          "__typename": "Task"
-      }
-  ]
-    
+        ],
+        responsible: [],
+        status: "inProgress",
+        __typename: "Task",
+      },
+    ];
+
     tasks.map((taskObj) => {
       for (let prop in taskObj) {
         if (typeof taskObj[prop] === "object") {
@@ -273,13 +240,13 @@ const AllTasks = () => {
             }
             case "createdBy": {
               stringVal = taskObj[prop].displayName;
-              delete taskObj["createdBy"]
+              delete taskObj["createdBy"];
               break;
             }
             case "responsible": {
               let tempArr = taskObj[prop].map((user) => user.displayName);
               stringVal = tempArr.toString();
-              delete taskObj["responsible"]
+              delete taskObj["responsible"];
               break;
             }
             case "dueDate": {
@@ -288,13 +255,13 @@ const AllTasks = () => {
               } else {
                 stringVal = "";
               }
-              delete taskObj["dueDate"]
+              delete taskObj["dueDate"];
               break;
             }
             default:
               break;
           }
-          
+
           //console.log(stringVal);
           taskObj[prop] = stringVal;
         }
@@ -307,8 +274,7 @@ const AllTasks = () => {
       return taskObj;
     });
 
-
-      let taskArr = [...tasks];
+    let taskArr = [...tasks];
 
     return (
       <Table celled selectable>
