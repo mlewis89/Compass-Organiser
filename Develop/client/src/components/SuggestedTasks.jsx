@@ -26,11 +26,11 @@ const SuggestedTasks = () => {
     "name",
     "description",
     "priority",
-    "dueDate",
+    //"dueDate",
     "duration",
     //   "requiredSkills",
     //   "responsible",
-    "status",
+    //"status",
   ];
   if (data) {
     tasks = [...data.suggestedTasks];
