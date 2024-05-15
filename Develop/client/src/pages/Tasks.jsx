@@ -25,7 +25,7 @@ const Tasks = () => {
       <GridRow stretched>
         <GridColumn>
           <Segment padded>
-            <Label attached="top">My Skills</Label>
+            
             <MySkills />
           </Segment>
         </GridColumn>

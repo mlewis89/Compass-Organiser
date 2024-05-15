@@ -22,7 +22,7 @@ const Members = () => {
     "status",
     "gender",
     "dob",
-    "Section",
+    "section",
     "email",
     "phone",
     "taskAvailabity",
@@ -48,7 +48,7 @@ const Members = () => {
     console.log(cleanArr);
 
     return (
-      <Table celled selectable>
+      <Table celled selectable striped>
         <TableHeader>
           <TableRow>
             {TableHeaderArr.map((header) => (
