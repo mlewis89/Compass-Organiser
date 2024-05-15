@@ -8,6 +8,7 @@ query boardPosts {
     image
     expiryDate
     createdBy {
+      displayName
       scoutName
       _id
       firstName
@@ -29,6 +30,7 @@ query Events {
     title
     organisor {
       _id
+      displayName
       firstName
       preferredName
       scoutName
@@ -40,6 +42,7 @@ query Events {
     location
     attending {
       _id
+      displayName
       scoutName
       preferredName
       lastName
@@ -64,6 +67,7 @@ query SingleEvent($eventId: ID!) {
       _id
       preferredName
       scoutName
+      displayName
     }
     startDate
     endDate
@@ -72,7 +76,7 @@ query SingleEvent($eventId: ID!) {
     location
     attending {
       _id
-      scoutRego
+      displayName
       firstName
       lastName
       preferredName
@@ -87,7 +91,7 @@ query SingleEvent($eventId: ID!) {
       }
       ParentGardian {
         _id
-        firstName
+        displayName
       }
     }
     plan
@@ -107,7 +111,7 @@ query UserTasks {
     duration
     responsible {
       _id
-      preferredName
+      displayName
     }
     Priority
     requiredSkills {
@@ -115,26 +119,29 @@ query UserTasks {
       name
     }
     createdBy {
-      firstName
-      lastName
-      preferredName
-      scoutName
+      displayName
     }
   }
 }
 `;
 
 export const QUERY_SUGGESTED_TASKS = gql`
-query SuggestedTasks {
-  suggestedTasks {
+query SuggestedTasks($userId: ID) {
+  suggestedTasks(userId: $userId) {
     _id
+    description
+    dueDate
+    duration
     name
     requiredSkills {
       _id
       name
     }
-    dueDate
-    duration
+    responsible {
+      _id
+      displayName
+    }
+    status
     priority
   }
 }
@@ -143,13 +150,23 @@ query SuggestedTasks {
 export const QUERY_TASKS = gql`
 query Tasks {
   tasks {
-    name
-    priority
     _id
+    createdBy {
+      displayName
+    }
     description
-    status
     dueDate
     duration
+    name
+    priority
+    requiredSkills {
+      name
+      _id
+    }
+    responsible {
+      displayName
+    }
+    status
   }
 }
 `;
@@ -217,6 +234,7 @@ export const QUERY_ME = gql`
 query Me {
   me {
     _id
+    displayName
     scoutRego
     firstName
     lastName
