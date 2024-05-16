@@ -104,23 +104,27 @@ query UserTasks {
 `;
 
 export const QUERY_SUGGESTED_TASKS = gql`
-query SuggestedTasks($userId: ID) {
-  suggestedTasks(userId: $userId) {
+query Query($userId: ID, $userSkills: [updateSkill], $numberOfTasks: Int) {
+  suggestedTasks(userId: $userId, userSkills: $userSkills, numberOfTasks: $numberOfTasks) {
     _id
-    description
+    name
     dueDate
     duration
-    name
     requiredSkills {
       _id
       name
     }
     responsible {
+      displayName
+      _id
+    }
+    createdBy {
       _id
       displayName
     }
-    status
     priority
+    description
+    status
   }
 }
 `;

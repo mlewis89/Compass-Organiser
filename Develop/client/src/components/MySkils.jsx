@@ -4,53 +4,61 @@ import { useQuery, useMutation } from "@apollo/client";
 import { QUERY_USER_SKILLS } from "../utils/queries";
 import { ASSIGN_USER_SKILLS, REMOVE_USER_SKILLS } from "../utils/mutations";
 
+import { useCompassContext } from "../utils/CompassContext";
+import { ADD_SKILLS, REMOVE_SKILLS, UPDATE_SKILLS } from "../utils/actions";
+
 const MySkills = () => {
-  const { loading, data } = useQuery(QUERY_USER_SKILLS, {
-    onCompleted: () => {
-      let skillData = [...data.pageSkills];
-      setSkills(skillData);
-    },
-  });
+  const [state, dispatch] = useCompassContext();
+
+  const { loading, data } = useQuery(QUERY_USER_SKILLS);
   const [addUserSkill, { adderror }] = useMutation(ASSIGN_USER_SKILLS);
   const [RemoveUserSkill, { removererror }] = useMutation(REMOVE_USER_SKILLS);
-  const [skills, setSkills] = useState([]);
+  //const [skills, setSkills] = useState([]);
 
   const handleSkillAdd = async (event, data) => {
     let _id = data["data-key"];
     //mutation to add _id to users Skills - returns skill object
     addUserSkill({ variables: { skillId: _id } });
 
-    let index = skills.findIndex((x) => x._id == _id);
+    /*let index = skills.findIndex((x) => x._id == _id);
     if (index >= 0) {
       var tempObject = { ...skills[index], isActiveForUser: true };
       let newSkills = [...skills];
       newSkills[index] = tempObject;
+      
       setSkills(newSkills);
-    }
+    }*/
+    dispatch({ type: ADD_SKILLS, payload: _id });
   };
 
   const handleSkillRemove = async (event, data) => {
     let _id = data["data-key"];
     RemoveUserSkill({ variables: { skillId: _id } });
+    /*
     let index = skills.findIndex((x) => x._id == _id);
     if (index >= 0) {
       var tempObject = { ...skills[index], isActiveForUser: false };
       let newSkills = [...skills];
       newSkills[index] = tempObject;
       setSkills(newSkills);
-    }
+    }*/
+    dispatch({ type: REMOVE_SKILLS, payload: _id });
   };
 
+  console.log(state);
   if (!loading) {
-    let mySkills = skills.filter((skill) => skill.isActiveForUser);
-    let otherSkills = skills.filter((skill) => !skill.isActiveForUser);
+    
+    dispatch({ type: UPDATE_SKILLS, payload: [...data.pageSkills] });
+    
+    let mySkills = state.skills.filter((skill) => skill.isActiveForUser);
+    let otherSkills = state.skills.filter((skill) => !skill.isActiveForUser);
 
     return (
       <Segment padded>
         <Label attached="top">Skills</Label>
         <Segment>
           <Label attached="top">My Skills</Label>
-          {mySkills.map((skill) => (
+          {mySkills.map((skill) => {
             <Button
               icon
               labelPosition="right"
@@ -60,8 +68,8 @@ const MySkills = () => {
             >
               {skill.name}
               <Icon name="delete" />
-            </Button>
-          ))}
+            </Button>;
+          })}
         </Segment>
         <Segment>
           <Label attached="top">Other Skills</Label>

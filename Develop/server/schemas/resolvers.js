@@ -46,16 +46,24 @@ const resolvers = {
         return;
       }
     },
-    suggestedTasks: async (parent, { userId }, { user }) => {
+    suggestedTasks: async (
+      parent,
+      { userId, numberOfTasks, userSkills },
+      { user }
+    ) => {
+      console.log(numberOfTasks,userSkills)
       let _id = userId || user._id;
-      let userData = await User.findById(_id)
-        .populate("skills")
-        .populate("myTasks");
-      let userSkills = userData.skills;
+      if (!userSkills) {
+        let userData = await User.findById(_id)
+          .populate("skills")
+          .populate("myTasks");
+        let userSkills = userData.skills;
+      }
       let userSkillsIDs = userSkills.map((skillobj) => skillobj._id);
-      let numberOfTasks = userData.taskAvailabity;
 
-      console.log(userSkillsIDs);
+      if (!numberOfTasks) {
+        let numberOfTasks = userData.taskAvailabity;
+      }
 
       let tasks = await Task.find({
         requiredSkills: { $in: [...userSkillsIDs] },

@@ -12,9 +12,14 @@ import {
 import { useQuery, useMutation } from "@apollo/client";
 import { QUERY_SUGGESTED_TASKS } from "../utils/queries";
 import { ASSIGN_USER_TASK } from "../utils/mutations";
+import { useCompassContext } from "../utils/CompassContext";
 
 const SuggestedTasks = () => {
-  const { data } = useQuery(QUERY_SUGGESTED_TASKS);
+  const [state, dispatch] = useCompassContext();
+
+  const { data } = useQuery(QUERY_SUGGESTED_TASKS, {
+    variables: {numberOTasks: state.TimeAvailabity, userSkills: state.userSkills}
+  });
   const [assignUserTask, { error }] = useMutation(ASSIGN_USER_TASK);
 
   const handleAddTask = (event, data) => {
@@ -36,7 +41,6 @@ const SuggestedTasks = () => {
   ];
   if (data) {
     tasks = [...data.suggestedTasks];
-    console.log(tasks);
   }
 
   return (
