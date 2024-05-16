@@ -80,25 +80,187 @@ mutation AssignUserTask($taskId: ID!) {
 }
 `;
 export const REMOVE_USER_TASK = gql`
+mutation RemoveUserFromTask($taskId: ID!) {
+  removeUserFromTask(taskId: $taskId) {
+    _id
+    displayName
+    myTasks {
+      _id
+      name
+      status
+      priority
+      duration
+      dueDate
+      description
+    }
+  }
+}
 `;
 
 export const ADD_BOARDPOST = gql`
+mutation AddBoardPost($postData: updateBoardPost!) {
+  addBoardPost(postData: $postData) {
+    Priority
+    _id
+    content
+    expiryDate
+    image
+    isPublic
+    title
+  }
+}
 `;
 export const UPDATE_BOARDPOST = gql`
+mutation UpdateBoardPost($postId: ID!, $postData: updateBoardPost) {
+  updateBoardPost(postId: $postId, postData: $postData) {
+    Priority
+    _id
+    content
+    expiryDate
+    image
+    isPublic
+    title
+  }
+}
 `;
 export const DELETE_BOARDPOST = gql`
+mutation DeleteBoardPost($postId: ID!) {
+  deleteBoardPost(postId: $postId) {
+    Priority
+    _id
+    content
+    expiryDate
+    image
+    isPublic
+    title
+  }
+}
 `;
 
 export const ADD_EVENT = gql`
+mutation AddEvent($eventData: updateEvent!) {
+  addEvent(eventData: $eventData) {
+    _id
+    title
+    organisor {
+      _id
+      displayName
+    }
+    startDate
+    endDate
+    isPublic
+    description
+    location
+    plan
+    riskManagement
+    status
+    cost
+  }
+}
 `;
 export const UPDATE_EVENT = gql`
+mutation UpdateEvent($eventId: ID!, $eventData: updateEvent!) {
+  updateEvent(eventId: $eventId, eventData: $eventData) {
+    _id
+    title
+    organisor {
+      displayName
+      _id
+    }
+    startDate
+    endDate
+    isPublic
+    description
+    location
+    plan
+    riskManagement
+    status
+    cost
+  }
+}
 `;
 export const DELETE_EVENT = gql`
+mutation DeletEvent($eventId: ID!) {
+  deletEvent(eventId: $eventId) {
+    _id
+    title
+    startDate
+    endDate
+    isPublic
+    description
+    location
+    attending {
+      _id
+      displayName
+    }
+    organisor {
+      _id
+      displayName
+    }
+    plan
+    riskManagement
+    status
+    cost
+  }
+}
 `;
 
 export const ADD_TASK = gql`
+mutation AddTask($taskData: updateTask!) {
+  addTask(taskData: $taskData) {
+    _id
+    name
+    requiredSkills {
+      name
+      _id
+    }
+    dueDate
+    duration
+    responsible {
+      _id
+      displayName
+    }
+    priority
+    description
+    status
+  }
+}
 `;
 export const UPDATE_TASK = gql`
+mutation UpdateTask($taskId: ID!, $taskData: updateTask!) {
+  updateTask(taskId: $taskId, taskData: $taskData) {
+    _id
+    name
+    requiredSkills {
+      name
+      _id
+    }
+    dueDate
+    duration
+    responsible {
+      _id
+      displayName
+    }
+    priority
+    description
+    status
+  }
+}
 `;
 export const DELETE_TASK = gql`
+mutation DeleteTask($taskId: ID!) {
+  deleteTask(taskId: $taskId) {
+    _id
+    name
+    dueDate
+    duration
+    responsible {
+      _id
+      displayName
+    }
+    priority
+    description
+    status
+  }
+}
 `;
