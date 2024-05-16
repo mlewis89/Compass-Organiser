@@ -5,6 +5,8 @@ import {
   TableBody,
   TableRow,
   TableCell,
+  Segment,
+  Label
 } from "semantic-ui-react";
 import { useQuery } from "@apollo/client";
 import { QUERY_ME_TASKS } from "../utils/queries";
@@ -27,6 +29,9 @@ const MyTasks = () => {
   }
 
   return (
+    <Segment padded>
+            <Label attached="top">My Tasks</Label>
+            
     <Table celled selectable>
       <TableHeader>
         <TableRow>
@@ -51,6 +56,7 @@ const MyTasks = () => {
         <></>
       )}
     </Table>
+          </Segment>
   );
 };
 

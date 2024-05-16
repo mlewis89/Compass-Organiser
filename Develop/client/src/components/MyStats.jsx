@@ -4,6 +4,7 @@ import {
   StatisticLabel,
   Segment,
   StatisticGroup,
+  Label
 } from "semantic-ui-react";
 import { useQuery } from "@apollo/client";
 import { QUERY_ME_STATS } from "../utils/queries";
@@ -22,6 +23,7 @@ else
 
   return (
     <Segment>
+      <Label attached="top">My Stats</Label>
       <StatisticGroup widths={stats.length}>
         {stats.map((stat)=>(
           <Statistic key={stat.name}>

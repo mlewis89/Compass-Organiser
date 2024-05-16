@@ -7,6 +7,8 @@ import {
   ItemContent,
   ItemImage,
   ItemHeader,
+  Segment,
+  Label
 } from "semantic-ui-react";
 import PlaceholderPost from "./placeholder/placeholder-post";
 import { useQuery } from "@apollo/client";
@@ -22,6 +24,10 @@ const BoardPostList = () => {
   }
 
   return (
+    <Segment padded>
+    <Label attached="top">Notice Board</Label>
+
+
     <Grid columns={1} stackable>
       {posts ? (
         <>
@@ -44,6 +50,7 @@ const BoardPostList = () => {
         </GridColumn>
       )}
     </Grid>
+    </Segment>
   );
 };
 
