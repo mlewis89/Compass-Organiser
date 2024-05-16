@@ -186,46 +186,49 @@ const resolvers = {
         .populate("skills");
       return userData;
     },
-    removeUserFromTask: async (parent, { taskId, userId }, context) => {
-      let _id = userId || context.user._id;
-      return "NO CODE YET";
+    removeUserFromTask: async (parent, { taskId, userId }, { user }) => {
+      let _id = userId || user._id;
+
+      let userData = await User.findByIdAndUpdate(_id, {
+        $pull: { myTasks: taskId },
+      })
+        .populate("myTasks")
+        .populate("skills");
+      return userData;
     },
-    addBoardPost: async (parent, { postData }, context) => {
-      let _id = userId || context.user._id;
-      return "NO CODE YET";
+    addBoardPost: async (parent, { postData }, { user }) => {
+      return await BoardPost.create({ ...postData, createdBy: user._id });
     },
-    updateBoardPost: async (parent, { postId, postData }, context) => {
-      let _id = userId || context.user._id;
-      return "NO CODE YET";
-    },
-    deleteBoardPost: async (parent, { postId }, context) => {
-      let _id = userId || context.user._id;
-      return "NO CODE YET";
-    },
-    addEvent: async (parent, { eventData }, context) => {
-      let _id = userId || context.user._id;
-      return "NO CODE YET";
-    },
-    updateEvent: async (parent, { eventId, eventData }, context) => {
-      let _id = userId || context.user._id;
-      return "NO CODE YET";
-    },
-    deletEvent: async (parent, { eventId }, context) => {
-      let _id = userId || context.user._id;
-      return "NO CODE YET";
-    },
-    addTask: async (parent, { taskData }, context) => {
-      let _id = userId || context.user._id;
-      return "NO CODE YET";
-    },
-    updateTask: async (parent, { taskId, taskData }, context) => {
-      let _id = userId || context.user._id;
-      return "NO CODE YET";
-    },
-    deleteTask: async (parent, { taskId }, context) => {
-      let _id = userId || context.user._id;
-      return "NO CODE YET";
-    },
+  },
+  updateBoardPost: async (parent, { postId, postData }, context) => {
+    let _id = userId || context.user._id;
+    return { text: "NO CODE YET" };
+  },
+  deleteBoardPost: async (parent, { postId }, context) => {
+    let _id = userId || context.user._id;
+    return { text: "NO CODE YET" };
+  },
+  addEvent: async (parent, { eventData }, { user }) => {
+    return await Event.create({ ...eventData, organisor: user._id });
+  },
+  updateEvent: async (parent, { eventId, eventData }, context) => {
+    let _id = userId || context.user._id;
+    return { text: "NO CODE YET" };
+  },
+  deletEvent: async (parent, { eventId }, context) => {
+    let _id = userId || context.user._id;
+    return { text: "NO CODE YET" };
+  },
+  addTask: async (parent, { taskData }, { user }) => {
+    return await Task.create({ ...taskData, createdBy: user._id });
+  },
+  updateTask: async (parent, { taskId, taskData }, context) => {
+    let _id = userId || context.user._id;
+    return { text: "NO CODE YET" };
+  },
+  deleteTask: async (parent, { taskId }, context) => {
+    let _id = userId || context.user._id;
+    return { text: "NO CODE YET" };
   },
 };
 
