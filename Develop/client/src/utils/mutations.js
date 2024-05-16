@@ -36,34 +36,69 @@ mutation UpdateUserTime($taskAvailabity: Int!) {
 }
 `;
 
-export const UPDATE_ME_SKILLS = gql`
-mutation AddRemovedUserSkill($type: String!, $skillId: ID, $userId: ID) {
-  addRemovedUserSkill(type: $type, skillId: $skillId, userId: $userId) {
+export const ASSIGN_USER_SKILLS = gql`
+mutation AssignUserSkill($skillId: ID, $userId: ID) {
+  assignUserSkill(skillId: $skillId, userId: $userId) {
+    displayName
+    _id
     skills {
-      _id
       name
+      _id
     }
   }
 }
 `;
 
-export const ADD_USER_TASK = gql`
-mutation AddUserTask($taskId: ID!, $userId: ID) {
-  addUserTask(taskId: $taskId, userId: $userId) {
+export const REMOVE_USER_SKILLS = gql`
+mutation RemoveUserSkill($skillId: ID, $userId: ID) {
+  removeUserSkill(skillId: $skillId, userId: $userId) {
+    displayName
+    _id
+    skills {
+      name
+      _id
+    }
+  }
+}
+`;
+
+export const ASSIGN_USER_TASK = gql`
+mutation AssignUserTask($taskId: ID!) {
+  assignUserTask(taskId: $taskId) {
     _id
     displayName
     myTasks {
       _id
-      name
-      createdBy {
-        displayName
-      }
       description
       dueDate
       duration
+      name
       priority
       status
     }
   }
 }
+`;
+export const REMOVE_USER_TASK = gql`
+`;
+
+export const ADD_BOARDPOST = gql`
+`;
+export const UPDATE_BOARDPOST = gql`
+`;
+export const DELETE_BOARDPOST = gql`
+`;
+
+export const ADD_EVENT = gql`
+`;
+export const UPDATE_EVENT = gql`
+`;
+export const DELETE_EVENT = gql`
+`;
+
+export const ADD_TASK = gql`
+`;
+export const UPDATE_TASK = gql`
+`;
+export const DELETE_TASK = gql`
 `;
