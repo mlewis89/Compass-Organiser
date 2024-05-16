@@ -5,6 +5,8 @@ import {
   TableBody,
   TableRow,
   TableCell,
+  Segment,
+  Label,
 } from "semantic-ui-react";
 import { useQuery } from "@apollo/client";
 import { QUERY_TASKS } from "../utils/queries";
@@ -83,30 +85,33 @@ const AllTasks = () => {
     let taskArr = [...cleanUpData(tasks)];
 
     return (
-      <Table celled selectable>
-        <TableHeader>
-          <TableRow>
-            {TableHeaderArr.map((header) => (
-              <TableHeaderCell key={header}>{header}</TableHeaderCell>
-            ))}
-          </TableRow>
-        </TableHeader>
-        {taskArr ? (
-          <TableBody>
-            {taskArr.map((task) => (
-              <TableRow key={task._id}>
-                {TableHeaderArr.map((propertyName) => (
-                  <TableCell key={task._id + propertyName}>
-                    {task[propertyName]}
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))}
-          </TableBody>
-        ) : (
-          <></>
-        )}
-      </Table>
+      <Segment padded>
+        <Label attached="top">All Tasks</Label>
+        <Table celled selectable>
+          <TableHeader>
+            <TableRow>
+              {TableHeaderArr.map((header) => (
+                <TableHeaderCell key={header}>{header}</TableHeaderCell>
+              ))}
+            </TableRow>
+          </TableHeader>
+          {taskArr ? (
+            <TableBody>
+              {taskArr.map((task) => (
+                <TableRow key={task._id}>
+                  {TableHeaderArr.map((propertyName) => (
+                    <TableCell key={task._id + propertyName}>
+                      {task[propertyName]}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))}
+            </TableBody>
+          ) : (
+            <></>
+          )}
+        </Table>
+      </Segment>
     );
   } else {
     return <p>Loading</p>;

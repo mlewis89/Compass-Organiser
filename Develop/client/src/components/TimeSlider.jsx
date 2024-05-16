@@ -1,12 +1,12 @@
-import { Segment } from "semantic-ui-react";
+import { Segment, Label } from "semantic-ui-react";
 import { useState } from "react";
 import { QUERY_ME_TIME } from "../utils/queries";
 import { UPDATE_ME_TIME } from "../utils/mutations";
 import { useQuery, useMutation } from "@apollo/client";
 
 const TimeSlider = () => {
-  const { loading, data } = useQuery(QUERY_ME_TIME,{
-    onCompleted: data => setTimeAvailable(data.me.taskAvailabity)
+  const { loading, data } = useQuery(QUERY_ME_TIME, {
+    onCompleted: (data) => setTimeAvailable(data.me.taskAvailabity),
   });
 
   const [TimeAvailable, setTimeAvailable] = useState();
@@ -24,7 +24,9 @@ const TimeSlider = () => {
     return <></>;
   } else {
     return (
-      <Segment>
+      <Segment padded>
+        <Label attached="top">My Time Availabilty</Label>
+
         <input
           type="range"
           min="0"
@@ -33,6 +35,7 @@ const TimeSlider = () => {
           name="timeavalable"
           value={TimeAvailable}
           onChange={handleSliderMove}
+          className="timeSlider"
         />
         {TimeAvailable}
       </Segment>

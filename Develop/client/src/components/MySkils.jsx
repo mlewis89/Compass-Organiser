@@ -46,7 +46,8 @@ const MySkills = () => {
     let otherSkills = skills.filter((skill) => !skill.isActiveForUser);
 
     return (
-      <>
+      <Segment padded>
+        <Label attached="top">Skills</Label>
         <Segment>
           <Label attached="top">My Skills</Label>
           {mySkills.map((skill) => (
@@ -77,7 +78,7 @@ const MySkills = () => {
             </Button>
           ))}
         </Segment>
-      </>
+      </Segment>
     );
   } else {
     return <p>Loading</p>;

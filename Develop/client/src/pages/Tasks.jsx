@@ -10,31 +10,17 @@ const Tasks = () => {
     <Grid columns={2}>
       <GridRow stretched>
         <GridColumn>
-          <Segment padded>
-            <Label attached="top">My Tasks</Label>
-            <MyTasks />
-          </Segment>
-          <Segment padded>
-            <Label attached="top">Suggested Tasks</Label>
-            <SuggestedTasks />
-          </Segment>
+          <MyTasks />
+          <SuggestedTasks />
         </GridColumn>
         <GridColumn>
-          <Segment padded>
-            <Label attached="top">My Time Availabilty</Label>
-            <TimeSlider />
-          </Segment>
-          <Segment padded>
-            <MySkills />
-          </Segment>
+          <TimeSlider />
+          <MySkills />
         </GridColumn>
       </GridRow>
       <GridRow stretched columns={1}>
         <GridColumn>
-          <Segment padded>
-            <Label attached="top">All Tasks</Label>
-            <AllTasks />
-          </Segment>
+          <AllTasks />
         </GridColumn>
       </GridRow>
     </Grid>
