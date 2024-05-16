@@ -41,6 +41,8 @@ const MySkills = () => {
     }
   };
 
+  console.log(skills);
+
   if (!loading) {
     let mySkills = skills.filter((skill) => skill.isActiveForUser);
     let otherSkills = skills.filter((skill) => !skill.isActiveForUser);
