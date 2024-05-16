@@ -24,6 +24,11 @@ class AuthService {
     }
 
     getToken(){
+        let token = localStorage.getItem('id_token')
+        if (this.isTokenExpired(token))
+            {this.logout()
+                return;
+            }
         return localStorage.getItem('id_token');
     }
 

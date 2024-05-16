@@ -5,26 +5,35 @@ import {
   Segment,
   StatisticGroup,
 } from "semantic-ui-react";
+import { useQuery } from "@apollo/client";
+import { QUERY_ME_STATS } from "../utils/queries";
 
 const MyStats = () => {
+const {loading, data} = useQuery(QUERY_ME_STATS);
+
+if(loading)
+  {
+    return <p>Loading...</p>
+  }
+else
+{
+  console.log(data);
+  let stats = data.myStats;
+
   return (
     <Segment>
-      <StatisticGroup>
-        <Statistic>
-          <StatisticValue>50</StatisticValue>
-          <StatisticLabel>members</StatisticLabel>
+      <StatisticGroup widths={stats.length}>
+        {stats.map((stat)=>(
+          <Statistic key={stat.name}>
+          <StatisticValue>{stat.value}</StatisticValue>
+          <StatisticLabel>{stat.name}</StatisticLabel>
         </Statistic>
-        <Statistic>
-          <StatisticValue>50</StatisticValue>
-          <StatisticLabel>Tasks</StatisticLabel>
-        </Statistic>
-        <Statistic>
-          <StatisticValue>50</StatisticValue>
-          <StatisticLabel>Events</StatisticLabel>
-        </Statistic>
+
+        ))}
       </StatisticGroup>
     </Segment>
   );
+}
 };
 
 export default MyStats;

@@ -70,7 +70,7 @@ const resolvers = {
       return tasks;
     },
     members: async () => {
-      return await User.find().sort({section:1,displayName:1});
+      return await User.find().sort({ section: 1, displayName: 1 });
     },
     me: async (parent, args, { user }) => {
       console.log(user);
@@ -107,6 +107,18 @@ const resolvers = {
         }
       }); //set default value to false.
       return skills;
+    },
+    myStats: async (parent, { userId }, { user }) => {
+      let _id = userId || user._id;
+      let stats = [
+        { name: "Joeys", value: await User.count({ section: "JOEYS" }) },
+        { name: "Cubs", value: await User.count({ section: "CUBS" }) },
+        { name: "Scouts", value: await User.count({ section: "SCOUTS" }) },
+        { name: "Venturers", value: await User.count({ section: "VENT" }) },
+        { name: "Rovers", value: await User.count({ section: "ROVER" }) },
+      ];
+      console.log(stats); //set default value to false.
+      return stats;
     },
   },
   Mutation: {
@@ -171,7 +183,9 @@ const resolvers = {
 
       let userData = await User.findByIdAndUpdate(_id, {
         $addToSet: { myTasks: taskId },
-      }).populate("myTasks").populate("skills");
+      })
+        .populate("myTasks")
+        .populate("skills");
       return userData;
     },
   },

@@ -105,7 +105,7 @@ const typeDefs = `
         requiredSkills: [Skill],
         dueDate: String,
         duration : Int,
-        responsible: [User],
+        responsible: User,
         createdBy: User,
         priority: Int,
         description: String,
@@ -113,8 +113,13 @@ const typeDefs = `
     }
 
     type Auth {
-        token: ID!
+        token: ID!,
         user: User
+    }
+
+    type Stat {
+        name: String,
+        value: String
     }
 
     type Query {
@@ -127,6 +132,7 @@ const typeDefs = `
         members: [User],
         me: User,
         pageSkills(userId: ID): [Skill]
+        myStats(userId: ID): [Stat]
     }
 
     type Mutation {

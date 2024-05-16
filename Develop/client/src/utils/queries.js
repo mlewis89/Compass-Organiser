@@ -226,6 +226,15 @@ query Members {
 }
 `;
 
+export const QUERY_ME_STATS = gql`
+query MyStats($userId: ID) {
+  myStats(userId: $userId) {
+    value
+    name
+  }
+}
+`;
+
 export const QUERY_ME = gql`
 query Me {
   me {
