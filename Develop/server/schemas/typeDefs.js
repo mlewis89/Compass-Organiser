@@ -18,8 +18,9 @@ const typeDefs = `
         parentGardian: [User],
         role: [Role],
         skills : [Skill],
-        myTasks : [Task]    
+        myTasks : [Task],    
     }
+    
     input updateUser {
         _id: ID!
         scoutRego: String,
@@ -38,14 +39,14 @@ const typeDefs = `
     }
 
     input addUser {
-        firstName: String!
-        lastName: String!
+        firstName: String!,
+        lastName: String!,
         email: String!,
         password: String!    
     }
 
     type BoardPost{
-        _id: ID!
+        _id: ID!,
         title: String,
         content: String,
         image: String,
@@ -53,6 +54,14 @@ const typeDefs = `
         expiryDate:  String,
         createdBy: User,
         Priority: Int,
+    }
+    input updateBoardPost{
+        title: String,
+        content: String,
+        image: String,
+        isPublic: Boolean,
+        expiryDate:  String,
+        Priority: Int
     }
 
     type Event {
@@ -65,6 +74,20 @@ const typeDefs = `
         description: String,
         location: String,
         attending: [User],
+        plan: String,
+        riskManagement: String,
+        status: String,
+        cost: Float
+    }
+    input updateEvent {
+        title: String!,
+        organisor: updateUser,
+        startDate:  String,
+        endDate: String,
+        isPublic: Boolean,
+        description: String,
+        location: String,
+        attending: [updateUser],
         plan: String,
         riskManagement: String,
         status: String,
@@ -98,6 +121,10 @@ const typeDefs = `
         name: String!,
         isActiveForUser: Boolean,
     }
+    input updateSkill {
+        _id: ID!
+        name: String,
+    }
 
     type Task {
         _id: ID!
@@ -107,6 +134,19 @@ const typeDefs = `
         duration : Int,
         responsible: User,
         createdBy: User,
+        priority: Int,
+        description: String,
+        status: String
+    }
+
+    input updateTask {
+        _id: ID
+        name: String,
+        requiredSkills: [updateSkill],
+        dueDate: String,
+        duration : Int,
+        responsible: updateUser,
+        createdBy: updateUser,
         priority: Int,
         description: String,
         status: String
@@ -140,8 +180,22 @@ const typeDefs = `
         login(email: String!, password: String!): Auth
         updateUser(user: updateUser!): User
         updateUserTime(taskAvailabity: Int!): User
-        addRemovedUserSkill(type: String!, skillId: ID,userId: ID): User
-        addUserTask(taskId: ID!, userId: ID ): User
+        addUserSkill(skillId: ID,userId: ID): User
+        RemoveUserSkill( skillId: ID,userId: ID): User
+        assignUserTask(taskId: ID!, userId: ID ): User
+        removeUserFromTask(taskId: ID!, userId: ID ): User
+
+        addBoardPost(postData: updateBoardPost!): BoardPost
+        updateBoardPost(postId: ID!, postData: updateBoardPost):BoardPost
+        deleteBoardPost(postId:ID!): BoardPost
+
+        addEvent(eventData: updateEvent!):Event
+        updateEvent(eventId: ID!, eventData: updateEvent!) :Event
+        deletEvent(eventId: ID!): Event
+        
+        addTask(taskData: updateTask!): Task
+        updateTask(taskId: ID!, taskData: updateTask!): Task
+        deleteTask(taskId: ID!): Task
     }
 `;
 

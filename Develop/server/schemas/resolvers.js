@@ -160,25 +160,23 @@ const resolvers = {
       });
       return user;
     },
-    addRemovedUserSkill: async (parent, { type, skillId, userId }, context) => {
+    addUserSkill: async (parent, { skillId, userId }, context) => {
       let _id = userId || context.user._id;
 
-      switch (type) {
-        case "ADD": {
-          let user = await User.findByIdAndUpdate(_id, {
-            $addToSet: { skills: skillId },
-          }).populate("skills");
-          return user;
-        }
-        case "REMOVE": {
-          let user = await User.findByIdAndUpdate(_id, {
-            $pull: { skills: skillId },
-          }).populate("skills");
-          return user;
-        }
-      }
+      let user = await User.findByIdAndUpdate(_id, {
+        $pull: { skills: skillId },
+      }).populate("skills");
+      return user;
     },
-    addUserTask: async (parent, { taskId, userId }, { user }) => {
+    RemoveUserSkill: async (parent, { skillId, userId }, context) => {
+      let _id = userId || context.user._id;
+
+      let user = await User.findByIdAndUpdate(_id, {
+        $pull: { skills: skillId },
+      }).populate("skills");
+      return user;
+    },
+    assignUserTask: async (parent, { taskId, userId }, { user }) => {
       let _id = userId || user._id;
 
       let userData = await User.findByIdAndUpdate(_id, {
@@ -187,6 +185,46 @@ const resolvers = {
         .populate("myTasks")
         .populate("skills");
       return userData;
+    },
+    removeUserFromTask: async (parent, { taskId, userId }, context) => {
+      let _id = userId || context.user._id;
+      return "NO CODE YET";
+    },
+    addBoardPost: async (parent, { postData }, context) => {
+      let _id = userId || context.user._id;
+      return "NO CODE YET";
+    },
+    updateBoardPost: async (parent, { postId, postData }, context) => {
+      let _id = userId || context.user._id;
+      return "NO CODE YET";
+    },
+    deleteBoardPost: async (parent, { postId }, context) => {
+      let _id = userId || context.user._id;
+      return "NO CODE YET";
+    },
+    addEvent: async (parent, { eventData }, context) => {
+      let _id = userId || context.user._id;
+      return "NO CODE YET";
+    },
+    updateEvent: async (parent, { eventId, eventData }, context) => {
+      let _id = userId || context.user._id;
+      return "NO CODE YET";
+    },
+    deletEvent: async (parent, { eventId }, context) => {
+      let _id = userId || context.user._id;
+      return "NO CODE YET";
+    },
+    addTask: async (parent, { taskData }, context) => {
+      let _id = userId || context.user._id;
+      return "NO CODE YET";
+    },
+    updateTask: async (parent, { taskId, taskData }, context) => {
+      let _id = userId || context.user._id;
+      return "NO CODE YET";
+    },
+    deleteTask: async (parent, { taskId }, context) => {
+      let _id = userId || context.user._id;
+      return "NO CODE YET";
     },
   },
 };
