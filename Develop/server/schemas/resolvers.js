@@ -14,6 +14,8 @@ const { signToken, AuthencationError } = require("../utils/auth");
 const resolvers = {
   Query: {
     boardPosts: async (parent, args, { user }) => {
+      
+      console.log('query-boardPosts');
       if (user) {
         return await BoardPost.find().populate("createdBy");
       } else {
@@ -21,6 +23,8 @@ const resolvers = {
       }
     },
     events: async (parent, args, { user }) => {
+      
+      console.log('query-events');
       if (user) {
         return await Event.find().populate("organisor").populate("attending");
       } else {
@@ -28,6 +32,8 @@ const resolvers = {
       }
     },
     singleEvent: async (parent, { eventId }, { user }) => {
+      
+      console.log('query-singleEvent');
       if (user) {
         return await Event.findById(eventId)
           .populate("organisor")
@@ -37,6 +43,8 @@ const resolvers = {
       }
     },
     tasks: async (parent, args, { user }) => {
+      
+      console.log('query-tasks');
       if (user) {
         return await Task.find()
           .populate("responsible")
@@ -51,6 +59,8 @@ const resolvers = {
       { userId, numberOfTasks, userSkills },
       { user }
     ) => {
+      
+      console.log('query-suggestedTasks');
       console.log(numberOfTasks,userSkills)
       let _id = userId || user._id;
       if (!userSkills) {
@@ -78,10 +88,11 @@ const resolvers = {
       return tasks;
     },
     members: async () => {
+      console.log('query-memebers');
       return await User.find().sort({ section: 1, displayName: 1 });
     },
     me: async (parent, args, { user }) => {
-      console.log(user);
+      console.log('query-me');
       if (user) {
         return await User.findById(user._id)
           .populate("skills")
@@ -94,12 +105,10 @@ const resolvers = {
       }
     },
     pageSkills: async (parent, { userId }, { user }) => {
-      console.log(user);
+      console.log('query-pageSkills');
       let _id = userId || user._id;
       let skills = await Skill.find().sort({ name: 1 });
-      console.log(skills);
       let userData = await User.findById(_id).populate("skills");
-      console.log(userData);
       for (let i = 0; i < userData.skills.length; i++) {
         //find skill in main list
         let index = skills.findIndex((x) => {
@@ -117,6 +126,7 @@ const resolvers = {
       return skills;
     },
     myStats: async (parent, { userId }, { user }) => {
+      console.log('query-myStats');
       let _id = userId || user._id;
       let stats = [
         { name: "Joeys", value: await User.count({ section: "JOEYS" }) },
@@ -131,6 +141,7 @@ const resolvers = {
   },
   Mutation: {
     addUser: async (parent, { user }) => {
+      console.log('mutation-addUser');
       const newUser = await User.create(user);
 
       if (!newUser) {
@@ -142,6 +153,7 @@ const resolvers = {
     },
 
     login: async (parent, { email, password }) => {
+      console.log('mutation-login');
       const user = await User.findOne({ email });
       if (!user) {
         throw AuthenticationError;
@@ -155,6 +167,7 @@ const resolvers = {
       return { token, user };
     },
     updateUser: async (parent, args, { user }) => {
+      console.log('mutation-updateUser');
       if (user) {
         let _id = args.user._id || user._id;
 
@@ -162,12 +175,14 @@ const resolvers = {
       }
     },
     updateUserTime: async (parent, args, { user }) => {
+      console.log('mutation-updateUserTime');
       let _id = user._id;
       return await User.findByIdAndUpdate(_id, {
         taskAvailabity: args.taskAvailabity,
       });
     },
     assignUserSkill: async (parent, { skillId, userId }, { user }) => {
+      console.log('mutation-assignUserSkill');
       if (user) {
         let _id = userId || user._id;
 
