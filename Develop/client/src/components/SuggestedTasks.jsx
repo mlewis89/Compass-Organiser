@@ -11,7 +11,7 @@ import {
 } from "semantic-ui-react";
 import { useQuery, useMutation } from "@apollo/client";
 import { QUERY_SUGGESTED_TASKS } from "../utils/queries";
-import {ASSIGN_USER_TASK } from "../utils/mutations";
+import { ASSIGN_USER_TASK } from "../utils/mutations";
 
 const SuggestedTasks = () => {
   const { data } = useQuery(QUERY_SUGGESTED_TASKS);

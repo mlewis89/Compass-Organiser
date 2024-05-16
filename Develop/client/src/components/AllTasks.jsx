@@ -66,7 +66,6 @@ const AllTasks = () => {
   };
 
   const { data } = useQuery(QUERY_TASKS);
-  let tasks;
 
   let TableHeaderArr = [
     "name",

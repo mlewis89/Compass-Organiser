@@ -1,6 +1,4 @@
 import {
-  GridColumn,
-  Grid,
   Item,
   ItemExtra,
   ItemDescription,
@@ -10,9 +8,6 @@ import {
   Segment,
   Label,
   TableRow,
-  TableHeaderCell,
-  TableHeader,
-  TableCell,
   TableBody,
   Table,
 } from "semantic-ui-react";
@@ -21,7 +16,7 @@ import { QUERY_EVENTS } from "../utils/queries";
 import PlaceholderEvent from "./placeholder/placeholder-event";
 
 import { useCompassContext } from "../utils/CompassContext";
-import {UPDATE_ACTIVE_EVENT} from '../utils/actions';
+import { UPDATE_ACTIVE_EVENT } from "../utils/actions";
 
 const EventList = () => {
   const [state, dispatch] = useCompassContext();
@@ -29,11 +24,8 @@ const EventList = () => {
   const { data } = useQuery(QUERY_EVENTS);
   let events;
 
-
-const handleSelectRow = (event)=>{
-  console.log(event.currentTarget)
-    let _id = event.currentTarget.getAttribute('data-key');
-    console.log(_id)
+  const handleSelectRow = (event) => {
+    let _id = event.currentTarget.getAttribute("data-key");
     dispatch({ type: UPDATE_ACTIVE_EVENT, payload: _id });
   };
 
@@ -47,34 +39,37 @@ const handleSelectRow = (event)=>{
 
       {events ? (
         <Table selectable>
-          <TableBody >
-          {events.map((event) => (
-            <TableRow onClick={handleSelectRow} data-key={event._id} key={event._id} active={state.activeEventId == event._id}>
-              <Item key={event._id}>
-                <ItemImage size="tiny" src={event.image} />
-                <ItemContent>
-                  <ItemHeader>
-                    {new Date(parseInt(event.startDate)).toLocaleDateString()}{" "}
-                    {event.title}
-                  </ItemHeader>
-                  <ItemDescription>{event.description}</ItemDescription>
-                  <ItemExtra>
-                    {` ~ ${
-                      event.organisor.scoutName ||
-                      event.organisor.preferredName ||
-                      event.organisor.firstName
-                    }`}
-                  </ItemExtra>
-                </ItemContent>
-              </Item>
-            </TableRow>
-          ))}
+          <TableBody>
+            {events.map((event) => (
+              <TableRow
+                onClick={handleSelectRow}
+                data-key={event._id}
+                key={event._id}
+                active={state.activeEventId == event._id}
+              >
+                <Item key={event._id}>
+                  <ItemImage size="tiny" src={event.image} />
+                  <ItemContent>
+                    <ItemHeader>
+                      {new Date(parseInt(event.startDate)).toLocaleDateString()}{" "}
+                      {event.title}
+                    </ItemHeader>
+                    <ItemDescription>{event.description}</ItemDescription>
+                    <ItemExtra>
+                      {` ~ ${
+                        event.organisor.scoutName ||
+                        event.organisor.preferredName ||
+                        event.organisor.firstName
+                      }`}
+                    </ItemExtra>
+                  </ItemContent>
+                </Item>
+              </TableRow>
+            ))}
           </TableBody>
         </Table>
       ) : (
-        <GridColumn>
-          <PlaceholderEvent />
-        </GridColumn>
+        <PlaceholderEvent />
       )}
     </Segment>
   );

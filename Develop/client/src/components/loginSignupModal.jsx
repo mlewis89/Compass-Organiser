@@ -7,13 +7,13 @@ import SignUpForm from "./SignupForm";
 function LoginSignUpModal({ showModal }) {
   return (
     <Modal
-    centered={false}
+      centered={false}
       onClose={() => {}}
       onOpen={() => {}}
       open={showModal}
       aria-labelledby="signup-modal"
-      size='small'
-      dimmer='blurring'
+      size="small"
+      dimmer="blurring"
     >
       <Tab
         menu={{ secondary: true, pointing: true }}

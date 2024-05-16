@@ -1,9 +1,4 @@
-import {
-  Button,
-  Form,
-  FormField,
-  Input,
-} from "semantic-ui-react";
+import { Button, Form, FormField, Input } from "semantic-ui-react";
 import { useState } from "react";
 import { useMutation } from "@apollo/client";
 import { LOGIN } from "../utils/mutations";
@@ -23,17 +18,17 @@ const LoginForm = () => {
 
   const [login, { error }] = useMutation(LOGIN);
 
-  const handleOnBlur = (event)=>{
+  const handleOnBlur = (event) => {
     const { name, value } = event.target;
-    return validateInput({name, value})
-  }
-  const validateInput = (name,value) => {
+    return validateInput({ name, value });
+  };
+  const validateInput = (name, value) => {
     var invalidData = false;
     switch (name) {
       case "email":
         if (!value) {
           setFormErrors({ ...FormErrors, [name]: true });
-          
+
           invalidData = true;
         } else {
           setFormErrors({ ...FormErrors, [name]: false });
@@ -42,14 +37,14 @@ const LoginForm = () => {
       case "password":
         if (!value) {
           setFormErrors({ ...FormErrors, [name]: true });
-          
+
           invalidData = true;
         } else {
           setFormErrors({ ...FormErrors, [name]: false });
         }
         break;
     }
-    console.log(FormErrors)
+    console.log(FormErrors);
     return invalidData;
   };
 
@@ -62,7 +57,7 @@ const LoginForm = () => {
   const validateForm = () => {
     var validData = true;
     for (let i in userFormData) {
-      if (!validateInput(i,userFormData.i)) {
+      if (!validateInput(i, userFormData.i)) {
         validData = false;
       }
     }
@@ -73,8 +68,8 @@ const LoginForm = () => {
     event.preventDefault();
     if (validateForm()) {
       try {
-        const { data } = await login({ 
-          variables: {...userFormData}  
+        const { data } = await login({
+          variables: { ...userFormData },
         });
         if (error) {
           throw new Error("something went wrong!");

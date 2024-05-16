@@ -4,38 +4,33 @@ import {
   StatisticLabel,
   Segment,
   StatisticGroup,
-  Label
+  Label,
 } from "semantic-ui-react";
 import { useQuery } from "@apollo/client";
 import { QUERY_ME_STATS } from "../utils/queries";
 
 const MyStats = () => {
-const {loading, data} = useQuery(QUERY_ME_STATS);
+  const { loading, data } = useQuery(QUERY_ME_STATS);
 
-if(loading)
-  {
-    return <p>Loading...</p>
+  if (loading) {
+    return <p>Loading...</p>;
+  } else {
+    let stats = data.myStats;
+
+    return (
+      <Segment>
+        <Label attached="top">My Stats</Label>
+        <StatisticGroup widths={stats.length}>
+          {stats.map((stat) => (
+            <Statistic key={stat.name}>
+              <StatisticValue>{stat.value}</StatisticValue>
+              <StatisticLabel>{stat.name}</StatisticLabel>
+            </Statistic>
+          ))}
+        </StatisticGroup>
+      </Segment>
+    );
   }
-else
-{
-  console.log(data);
-  let stats = data.myStats;
-
-  return (
-    <Segment>
-      <Label attached="top">My Stats</Label>
-      <StatisticGroup widths={stats.length}>
-        {stats.map((stat)=>(
-          <Statistic key={stat.name}>
-          <StatisticValue>{stat.value}</StatisticValue>
-          <StatisticLabel>{stat.name}</StatisticLabel>
-        </Statistic>
-
-        ))}
-      </StatisticGroup>
-    </Segment>
-  );
-}
 };
 
 export default MyStats;

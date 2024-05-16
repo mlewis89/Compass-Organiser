@@ -8,7 +8,6 @@ const MySkills = () => {
   const { loading, data } = useQuery(QUERY_USER_SKILLS, {
     onCompleted: () => {
       let skillData = [...data.pageSkills];
-      //console.log(skillData);
       setSkills(skillData);
     },
   });

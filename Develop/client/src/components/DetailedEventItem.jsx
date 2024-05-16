@@ -1,16 +1,9 @@
 import {
-  Item,
-  ItemExtra,
-  ItemDescription,
-  ItemContent,
-  ItemImage,
-  ItemHeader,
   Segment,
   Label,
   GridRow,
   GridColumn,
   Grid,
-  Image,
   Button,
   Header,
   Icon,
@@ -40,9 +33,7 @@ const DetailedEventItem = () => {
           <>
             <Grid key={event._id} celled="internally">
               <GridRow>
-                <GridColumn width={10
-
-                }>
+                <GridColumn width={10}>
                   <Header>{event.title}</Header>
 
                   <p>Organisor: {event.organisor.displayName}</p>
