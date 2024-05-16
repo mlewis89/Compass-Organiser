@@ -12,7 +12,7 @@ import { useQuery } from "@apollo/client";
 import { QUERY_ME_TASKS } from "../utils/queries";
 
 const MyTasks = () => {
-  const { data } = useQuery(QUERY_ME_TASKS);
+  const { loading , data } = useQuery(QUERY_ME_TASKS);
   let tasks;
 
   let TableHeaderArr = [
@@ -23,8 +23,10 @@ const MyTasks = () => {
     "duration",
     "status",
   ];
-  if (data) {
+  if (!loading) {
+    console.log(data.me)
     tasks = data.me.myTasks;
+    console.log(tasks)
   }
 
   return (
