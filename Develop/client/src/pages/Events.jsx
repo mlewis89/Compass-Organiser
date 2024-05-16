@@ -6,16 +6,16 @@ import DetailedEventItem from '../components/DetailedEventItem'
 const Events= () => {  
   return (
     <Grid >
-      <GridRow stretched>
-        <GridColumn>
+      <GridRow stretched >
+      <GridColumn width={5}>
           <EventList  />
         </GridColumn>
-      </GridRow>
-      <GridRow stretched>
-        <GridColumn >
+      <GridColumn width={11}>
           <DetailedEventItem />
         </GridColumn>
+        
       </GridRow>
+
     </Grid>
   );
 };

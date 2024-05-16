@@ -1,16 +1,20 @@
-import { createContext, useContext } from "react";
+import { createContext, useContext, useReducer } from "react";
+import reducer from "./reducers";
 
-export const CompassContext = createContext(); //create context
-export const useCompass = () => useContext(CompassContext); //creat hook for easy access
+const CompassContext = createContext(); //create context
+export const useCompassContext = () => useContext(CompassContext); //creat hook for easy access
 
-export default function CompassProvider(props) {
-    const initialState = {
-        currentEventId = ''
-    };
-    return (
-        <CompassContext.Provider value={initialState}>
-            {/* Render children passed from props */}
-            {children}
-        </CompassContext.Provider>);
+export const CompassProvider = ({ children }) => {
+//    const activeEventId = "664543dc5bbfb57230c84c17"
+    const activeEventId = ""
 
+
+  const [state, dispatch] = useReducer(reducer, { activeEventId });
+
+  return (
+    <CompassContext.Provider value={[state, dispatch]}>
+      {/* Render children passed from props */}
+      {children}
+    </CompassContext.Provider>
+  );
 };

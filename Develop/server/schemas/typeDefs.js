@@ -125,8 +125,8 @@ const typeDefs = `
     type Query {
         boardPosts: [BoardPost],
         events: [Event],
-        singleEvent(eventID :ID!) : Event,
-        userTasks(UserID: ID): [Task],
+        singleEvent(eventId :ID!) : Event,
+        userTasks(userId: ID): [Task],
         suggestedTasks(userId:ID): [Task],
         tasks: [Task],
         members: [User],

@@ -27,13 +27,13 @@ const resolvers = {
         return await Event.find({ isPublic: true });
       }
     },
-    singleEvent: async (parent, { _Id }, { user }) => {
+    singleEvent: async (parent, { eventId }, { user }) => {
       if (user) {
-        return await Event.findById(_id)
+        return await Event.findById(eventId)
           .populate("organisor")
           .populate("attending");
       } else {
-        return await Event.findById(_Id, { isPublic: true });
+        return await Event.findById(eventId, { isPublic: true });
       }
     },
     tasks: async (parent, args, { user }) => {

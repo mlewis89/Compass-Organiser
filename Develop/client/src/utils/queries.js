@@ -58,46 +58,24 @@ query Events {
 
 export const QUERY_SINGLE_EVENT = gql`
 query SingleEvent($eventId: ID!) {
-  singleEvent(eventID: $eventId) {
+  singleEvent(eventId: $eventId) {
     _id
-    title
-    organisor {
-      firstName
-      lastName
-      _id
-      preferredName
-      scoutName
+    attending {
       displayName
     }
-    startDate
+    cost
+    description
     endDate
     isPublic
-    description
     location
-    attending {
-      _id
+    organisor {
       displayName
-      firstName
-      lastName
-      preferredName
-      scoutName
-      status
-      gender
-      section
-      email
-      phone
-      family {
-        _id
-      }
-      parentGardian {
-        _id
-        displayName
-      }
     }
     plan
     riskManagement
+    startDate
     status
-    cost
+    title
   }
 }
 `;
