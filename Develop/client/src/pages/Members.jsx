@@ -5,6 +5,8 @@ import {
   TableBody,
   TableRow,
   TableCell,
+  Segment,
+  Label
 } from "semantic-ui-react";
 import { useQuery } from "@apollo/client";
 import { QUERY_MEMBERS } from "../utils/queries";
@@ -48,7 +50,9 @@ const Members = () => {
     console.log(cleanArr);
 
     return (
-      <Table celled selectable striped>
+      <Segment padded>
+            <Label attached="top">Members</Label>
+            <Table celled selectable striped>
         <TableHeader>
           <TableRow>
             {TableHeaderArr.map((header) => (
@@ -72,6 +76,7 @@ const Members = () => {
           <></>
         )}
       </Table>
+      </Segment>
     );
   } else {
     return <></>;

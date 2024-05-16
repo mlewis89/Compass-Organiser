@@ -83,13 +83,13 @@ query SingleEvent($eventId: ID!) {
       scoutName
       status
       gender
-      Section
+      section
       email
       phone
-      Family {
+      family {
         _id
       }
-      ParentGardian {
+      parentGardian {
         _id
         displayName
       }

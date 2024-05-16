@@ -7,16 +7,10 @@ const Home = () => {
  <Grid columns={2}>
     <GridRow stretched>
       <GridColumn>
-        <Segment padded>
-          <Label attached='top'>Notice Board</Label>
-          <BoardPostList />
-        </Segment>
+        <BoardPostList />
       </GridColumn>
       <GridColumn>
-        <Segment padded>
-          <Label attached='top'>Upcoming Events</Label>
-          <EventList />
-        </Segment>
+        <EventList />
       </GridColumn>
       </GridRow>
       </Grid>

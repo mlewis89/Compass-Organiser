@@ -14,8 +14,8 @@ const typeDefs = `
         email: String!,
         phone: String,
         taskAvailabity: Int,
-        Family: Family,
-        ParentGardian: [User],
+        family: Family,
+        parentGardian: [User],
         role: [Role],
         skills : [Skill],
         myTasks : [Task]    
@@ -31,7 +31,7 @@ const typeDefs = `
         status: String,
         gender: String,
         dob: String,
-        Section: String,
+        section: String,
         email: String,
         phone: String,
         taskAvailabity: Int
@@ -79,18 +79,18 @@ const typeDefs = `
     type Payment {
         _id: ID!
         reckonId: String,
-        FamilyId: Family,
-        Items: [String],
+        familyId: Family,
+        items: [String],
         total: Int,
-        Status: String,
+        status: String,
     }
 
     type Role {
         _id: ID!
         name: String,
         prequistes: String,
-        RequiredTraining: String,
-        ReportsTo : Role,
+        requiredTraining: String,
+        reportsTo : Role,
         isUniformed : Boolean,
     }
     type Skill {

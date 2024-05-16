@@ -14,13 +14,15 @@ import { useQuery } from "@apollo/client";
 import { QUERY_EVENTS } from "../utils/queries";
 import PlaceholderEvent from "./placeholder/placeholder-event";
 
-const EventList = () => {
+const EventList = ({setCurrentEventId}) => {
   const { data } = useQuery(QUERY_EVENTS);
   let events;
 
   if (data) {
     events = data.events;
   }
+
+  setCurrentEventId("664543dc5bbfb57230c84c17")
 
   return (
     <Segment padded>
