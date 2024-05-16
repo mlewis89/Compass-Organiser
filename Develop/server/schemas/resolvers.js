@@ -160,7 +160,7 @@ const resolvers = {
       });
       return user;
     },
-    addUserSkill: async (parent, { skillId, userId }, context) => {
+    assignUserSkill: async (parent, { skillId, userId }, context) => {
       let _id = userId || context.user._id;
 
       let user = await User.findByIdAndUpdate(_id, {
@@ -168,7 +168,7 @@ const resolvers = {
       }).populate("skills");
       return user;
     },
-    RemoveUserSkill: async (parent, { skillId, userId }, context) => {
+    removeUserSkill: async (parent, { skillId, userId }, context) => {
       let _id = userId || context.user._id;
 
       let user = await User.findByIdAndUpdate(_id, {

@@ -11,15 +11,15 @@ import {
 } from "semantic-ui-react";
 import { useQuery, useMutation } from "@apollo/client";
 import { QUERY_SUGGESTED_TASKS } from "../utils/queries";
-import { ADD_USER_TASK } from "../utils/mutations";
+import {ASSIGN_USER_TASK } from "../utils/mutations";
 
 const SuggestedTasks = () => {
   const { data } = useQuery(QUERY_SUGGESTED_TASKS);
-  const [addUserTask, { error }] = useMutation(ADD_USER_TASK);
+  const [assignUserTask, { error }] = useMutation(ASSIGN_USER_TASK);
 
   const handleAddTask = (event, data) => {
     let _id = data["data-key"];
-    addUserTask({ variables: { taskId: _id } });
+    assignUserTask({ variables: { taskId: _id } });
   };
 
   let tasks;

@@ -2,7 +2,7 @@ import { Segment, Label, Icon, Button } from "semantic-ui-react";
 import { useState } from "react";
 import { useQuery, useMutation } from "@apollo/client";
 import { QUERY_USER_SKILLS } from "../utils/queries";
-import { UPDATE_ME_SKILLS } from "../utils/mutations";
+import { ASSIGN_USER_SKILLS, REMOVE_USER_SKILLS } from "../utils/mutations";
 
 const MySkills = () => {
   const { loading, data } = useQuery(QUERY_USER_SKILLS, {
@@ -12,13 +12,14 @@ const MySkills = () => {
       setSkills(skillData);
     },
   });
-  const [addRemoverUserSkill, { error }] = useMutation(UPDATE_ME_SKILLS);
+  const [addUserSkill, { adderror }] = useMutation(ASSIGN_USER_SKILLS);
+  const [RemoveUserSkill, { removererror }] = useMutation(REMOVE_USER_SKILLS);
   const [skills, setSkills] = useState([]);
 
   const handleSkillAdd = async (event, data) => {
     let _id = data["data-key"];
     //mutation to add _id to users Skills - returns skill object
-    addRemoverUserSkill({ variables: { type: "ADD", skillId: _id } });
+    addUserSkill({ variables: { skillId: _id } });
 
     let index = skills.findIndex((x) => x._id == _id);
     if (index >= 0) {
@@ -31,7 +32,7 @@ const MySkills = () => {
 
   const handleSkillRemove = async (event, data) => {
     let _id = data["data-key"];
-    addRemoverUserSkill({ variables: { type: "REMOVE", skillId: _id } });
+    RemoveUserSkill({ variables: { skillId: _id } });
     let index = skills.findIndex((x) => x._id == _id);
     if (index >= 0) {
       var tempObject = { ...skills[index], isActiveForUser: false };

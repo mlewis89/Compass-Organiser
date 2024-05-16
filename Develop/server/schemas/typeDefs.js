@@ -180,8 +180,8 @@ const typeDefs = `
         login(email: String!, password: String!): Auth
         updateUser(user: updateUser!): User
         updateUserTime(taskAvailabity: Int!): User
-        addUserSkill(skillId: ID,userId: ID): User
-        RemoveUserSkill( skillId: ID,userId: ID): User
+        assignUserSkill(skillId: ID,userId: ID): User
+        removeUserSkill( skillId: ID,userId: ID): User
         assignUserTask(taskId: ID!, userId: ID ): User
         removeUserFromTask(taskId: ID!, userId: ID ): User
 
