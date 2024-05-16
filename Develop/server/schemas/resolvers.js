@@ -171,10 +171,10 @@ const resolvers = {
       if (user) {
         let _id = userId || user._id;
 
-        let user = await User.findByIdAndUpdate(_id, {
-          $pull: { skills: skillId },
+        let userData = await User.findByIdAndUpdate(_id, {
+          $addToSet: { skills: skillId },
         }).populate("skills");
-        return user;
+        return userData;
       }
     },
     removeUserSkill: async (parent, { skillId, userId }, { user }) => {
