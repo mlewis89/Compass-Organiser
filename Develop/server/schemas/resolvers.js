@@ -201,34 +201,28 @@ const resolvers = {
     },
   },
   updateBoardPost: async (parent, { postId, postData }, context) => {
-    let _id = userId || context.user._id;
-    return { text: "NO CODE YET" };
+    return await BoardPost.findByIdAndUpdate(postId, {...postData});
   },
   deleteBoardPost: async (parent, { postId }, context) => {
-    let _id = userId || context.user._id;
-    return { text: "NO CODE YET" };
+    return await BoardPost.findByIdAndDelete(postId);
   },
   addEvent: async (parent, { eventData }, { user }) => {
     return await Event.create({ ...eventData, organisor: user._id });
   },
   updateEvent: async (parent, { eventId, eventData }, context) => {
-    let _id = userId || context.user._id;
-    return { text: "NO CODE YET" };
+    return await Event.findByIdAndUpdate(eventId, {...eventData});
   },
   deletEvent: async (parent, { eventId }, context) => {
-    let _id = userId || context.user._id;
-    return { text: "NO CODE YET" };
+    return await Event.findByIdAndDelete(eventId,{...eventData});
   },
   addTask: async (parent, { taskData }, { user }) => {
     return await Task.create({ ...taskData, createdBy: user._id });
   },
   updateTask: async (parent, { taskId, taskData }, context) => {
-    let _id = userId || context.user._id;
-    return { text: "NO CODE YET" };
+    return await Task.findByIdAndUpdate(taskId,{...taskData});
   },
   deleteTask: async (parent, { taskId }, context) => {
-    let _id = userId || context.user._id;
-    return { text: "NO CODE YET" };
+    return await Task.findByIdAndDelete(taskId);
   },
 };
 
