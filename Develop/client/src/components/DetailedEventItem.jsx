@@ -7,6 +7,8 @@ import {
     ItemContent,
     ItemImage,
     ItemHeader,
+    Segment,
+    Label
   } from "semantic-ui-react";
   import { useQuery } from "@apollo/client";
   import { QUERY_SINGLE_EVENT } from "../utils/queries";
@@ -24,6 +26,9 @@ import {
       }
   
     return (
+      <Segment padded>
+            <Label attached="top">Event Details</Label>
+            
       <Grid columns={1} stackable>
         {event ? (
           <>
@@ -52,6 +57,7 @@ import {
           </GridColumn>
         )}
       </Grid>
+      </Segment>
     );
   };
   

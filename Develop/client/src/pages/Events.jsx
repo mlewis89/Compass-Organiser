@@ -9,18 +9,12 @@ const Events= () => {
     <Grid >
       <GridRow stretched>
         <GridColumn>
-          <Segment padded>
-            <Label attached="top">Upcoming Events</Label>
-            <EventList  />
-          </Segment>
+          <EventList  />
         </GridColumn>
       </GridRow>
       <GridRow stretched>
         <GridColumn >
-          <Segment padded>
-            <Label attached="top">Event Details</Label>
-            <DetailedEventItem id='_ID'/>
-          </Segment>
+          <DetailedEventItem id='_ID'/>
         </GridColumn>
       </GridRow>
     </Grid>
