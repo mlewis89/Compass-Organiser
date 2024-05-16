@@ -1,22 +1,19 @@
-import { Grid, GridColumn, GridRow, Segment, Label } from "semantic-ui-react";
+import { Grid, GridColumn, GridRow } from "semantic-ui-react";
 import EventList from '../components/EventList'
 import DetailedEventItem from '../components/DetailedEventItem'
-import { useState } from "react";
 
-const Events= () => {
 
-const [currentEventId, setCurrentEventId] = useState();
-  
+const Events= () => {  
   return (
     <Grid >
       <GridRow stretched>
         <GridColumn>
-          <EventList  setCurrentEventId={setCurrentEventId}/>
+          <EventList  />
         </GridColumn>
       </GridRow>
       <GridRow stretched>
         <GridColumn >
-          <DetailedEventItem id={currentEventId}/>
+          <DetailedEventItem />
         </GridColumn>
       </GridRow>
     </Grid>
