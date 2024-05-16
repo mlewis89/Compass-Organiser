@@ -146,83 +146,105 @@ const resolvers = {
       const token = signToken(user);
       return { token, user };
     },
-    updateUser: async (parent, args, context) => {
-      let _id = args.user._id || context.user._id;
+    updateUser: async (parent, args, { user }) => {
+      if (user) {
+        let _id = args.user._id || user._id;
 
-      let user = await User.findByIdAndUpdate(_id, { ...args.user });
-
-      return user;
+        return await User.findByIdAndUpdate(_id, { ...args.user });
+      }
     },
-    updateUserTime: async (parent, args, context) => {
-      let _id = context.user._id;
-      let user = await User.findByIdAndUpdate(_id, {
+    updateUserTime: async (parent, args, { user }) => {
+      let _id = user._id;
+      return await User.findByIdAndUpdate(_id, {
         taskAvailabity: args.taskAvailabity,
       });
-      return user;
     },
-    assignUserSkill: async (parent, { skillId, userId }, context) => {
-      let _id = userId || context.user._id;
+    assignUserSkill: async (parent, { skillId, userId }, { user }) => {
+      if (user) {
+        let _id = userId || user._id;
 
-      let user = await User.findByIdAndUpdate(_id, {
-        $pull: { skills: skillId },
-      }).populate("skills");
-      return user;
+        let user = await User.findByIdAndUpdate(_id, {
+          $pull: { skills: skillId },
+        }).populate("skills");
+        return user;
+      }
     },
-    removeUserSkill: async (parent, { skillId, userId }, context) => {
-      let _id = userId || context.user._id;
+    removeUserSkill: async (parent, { skillId, userId }, { user }) => {
+      if (user) {
+        let _id = userId || user._id;
 
-      let user = await User.findByIdAndUpdate(_id, {
-        $pull: { skills: skillId },
-      }).populate("skills");
-      return user;
+        return await User.findByIdAndUpdate(_id, {
+          $pull: { skills: skillId },
+        }).populate("skills");
+      }
     },
     assignUserTask: async (parent, { taskId, userId }, { user }) => {
-      let _id = userId || user._id;
+      if (user) {
+        let _id = userId || user._id;
 
-      let userData = await User.findByIdAndUpdate(_id, {
-        $addToSet: { myTasks: taskId },
-      })
-        .populate("myTasks")
-        .populate("skills");
-      return userData;
+        return await User.findByIdAndUpdate(_id, {
+          $addToSet: { myTasks: taskId },
+        })
+          .populate("myTasks")
+          .populate("skills");
+      }
     },
     removeUserFromTask: async (parent, { taskId, userId }, { user }) => {
-      let _id = userId || user._id;
+      if (user) {
+        let _id = userId || user._id;
 
-      let userData = await User.findByIdAndUpdate(_id, {
-        $pull: { myTasks: taskId },
-      })
-        .populate("myTasks")
-        .populate("skills");
-      return userData;
+        return await User.findByIdAndUpdate(_id, {
+          $pull: { myTasks: taskId },
+        })
+          .populate("myTasks")
+          .populate("skills");
+      }
     },
     addBoardPost: async (parent, { postData }, { user }) => {
-      return await BoardPost.create({ ...postData, createdBy: user._id });
+      if (user) {
+        return await BoardPost.create({ ...postData, createdBy: user._id });
+      }
     },
-  },
-  updateBoardPost: async (parent, { postId, postData }, context) => {
-    return await BoardPost.findByIdAndUpdate(postId, {...postData});
-  },
-  deleteBoardPost: async (parent, { postId }, context) => {
-    return await BoardPost.findByIdAndDelete(postId);
-  },
-  addEvent: async (parent, { eventData }, { user }) => {
-    return await Event.create({ ...eventData, organisor: user._id });
-  },
-  updateEvent: async (parent, { eventId, eventData }, context) => {
-    return await Event.findByIdAndUpdate(eventId, {...eventData});
-  },
-  deletEvent: async (parent, { eventId }, context) => {
-    return await Event.findByIdAndDelete(eventId,{...eventData});
-  },
-  addTask: async (parent, { taskData }, { user }) => {
-    return await Task.create({ ...taskData, createdBy: user._id });
-  },
-  updateTask: async (parent, { taskId, taskData }, context) => {
-    return await Task.findByIdAndUpdate(taskId,{...taskData});
-  },
-  deleteTask: async (parent, { taskId }, context) => {
-    return await Task.findByIdAndDelete(taskId);
+    updateBoardPost: async (parent, { postId, postData }, { user }) => {
+      if (user) {
+        return await BoardPost.findByIdAndUpdate(postId, { ...postData });
+      }
+    },
+    deleteBoardPost: async (parent, { postId }, { user }) => {
+      if (user) {
+        return await BoardPost.findByIdAndDelete(postId);
+      }
+    },
+    addEvent: async (parent, { eventData }, { user }) => {
+      if (user) {
+        return await Event.create({ ...eventData, organisor: user._id });
+      }
+    },
+    updateEvent: async (parent, { eventId, eventData }, { user }) => {
+      if (user) {
+        return await Event.findByIdAndUpdate(eventId, { ...eventData });
+      }
+    },
+    deletEvent: async (parent, { eventId }, { user }) => {
+      if (user) {
+        return await Event.findByIdAndDelete(eventId, { ...eventData });
+      }
+    },
+    addTask: async (parent, { taskData }, { user }) => {
+      if (user) {
+        return await Task.create({ ...taskData, createdBy: user._id });
+      }
+    },
+    updateTask: async (parent, { taskId, taskData }, { user }) => {
+      if (user) {
+        return await Task.findByIdAndUpdate(taskId, { ...taskData });
+      }
+    },
+    deleteTask: async (parent, { taskId }, { user }) => {
+      if (user) {
+        return await Task.findByIdAndDelete(taskId);
+      }
+    },
   },
 };
 
