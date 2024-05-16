@@ -1,12 +1,17 @@
+import { Outlet } from "react-router-dom";
+import {
+  ApolloClient,
+  ApolloProvider,
+  InMemoryCache,
+  createHttpLink,
+} from "@apollo/client";
+import { setContext } from "@apollo/client/link/context";
+import { CompassProvider } from "./utils/CompassContext";
 
-import { Outlet } from 'react-router-dom';
-import { ApolloClient, ApolloProvider, InMemoryCache , createHttpLink} from '@apollo/client';
-import { setContext } from '@apollo/client/link/context';
-
-import './App.css';
-import Nav from './components/Nav'
-import { Container } from 'semantic-ui-react';
-import AuthService from './utils/auth'
+import "./App.css";
+import Nav from "./components/Nav";
+import { Container } from "semantic-ui-react";
+import AuthService from "./utils/auth";
 
 // Construct request middleware that will attach the JWT token to every request as an `authorization` header
 const authLink = setContext((_, { headers }) => {
@@ -16,14 +21,14 @@ const authLink = setContext((_, { headers }) => {
   return {
     headers: {
       ...headers,
-      authorization: token ? `Bearer ${token}` : '',
+      authorization: token ? `Bearer ${token}` : "",
     },
   };
 });
 
 const httpLink = createHttpLink({
-  uri: '/graphql',
-})
+  uri: "/graphql",
+});
 
 const client = new ApolloClient({
   link: authLink.concat(httpLink),
@@ -33,12 +38,14 @@ const client = new ApolloClient({
 function App() {
   return (
     <ApolloProvider client={client}>
-      <div className="min-100-vh bg-primary">
-      <Container >
-        <Nav />
-        <Outlet />
-      </Container>
-      </div>
+      <CompassProvider>
+        <div className="min-100-vh bg-primary">
+          <Container>
+            <Nav />
+            <Outlet />
+          </Container>
+        </div>
+      </CompassProvider>
     </ApolloProvider>
   );
 }
