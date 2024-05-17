@@ -13,15 +13,13 @@ import { useQuery, useMutation } from "@apollo/client";
 import { QUERY_SUGGESTED_TASKS } from "../utils/queries";
 import { ASSIGN_USER_TASK } from "../utils/mutations";
 import { useCompassContext } from "../utils/CompassContext";
+import { UPDATE_RERENDER_MYTASKS} from '../utils/actions'
 
 const SuggestedTasks = () => {
   const [state, dispatch] = useCompassContext();
 
   let mySkills = state.skills.filter((skill) => skill.isActiveForUser);
   let querySkills  = mySkills.map((s)=>{return {_id: s._id, name: s.name};})
-  console.log(querySkills);
-
-  console.log(state.TimeAvailable)
 
   const { data } = useQuery(QUERY_SUGGESTED_TASKS, {
     variables: {numberOfTasks: state.TimeAvailable, userSkills: [...querySkills]}
@@ -31,6 +29,9 @@ const SuggestedTasks = () => {
   const handleAddTask = (event, data) => {
     let _id = data["data-key"];
     assignUserTask({ variables: { taskId: _id } });
+    //trigger reRender of MyTASKS
+    dispatch({ type: UPDATE_RERENDER_MYTASKS, payload: true});
+
   };
 
   let tasks;
