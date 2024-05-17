@@ -124,6 +124,7 @@ const typeDefs = `
     input updateSkill {
         _id: ID!
         name: String,
+        isActiveForUser: Boolean,
     }
 
     type Task {

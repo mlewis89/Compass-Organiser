@@ -7,7 +7,7 @@ export const useCompassContext = () => useContext(CompassContext); //creat hook 
 export const CompassProvider = ({ children }) => {
 //    const activeEventId = "664543dc5bbfb57230c84c17"
     const activeEventId = "";
-    let skills;
+    let skills =[];
     let TimeAvailable = "";
 
 

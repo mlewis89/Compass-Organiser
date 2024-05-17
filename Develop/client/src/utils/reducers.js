@@ -15,7 +15,7 @@ export default function reducer(state, action) {
     case UPDATE_ACTIVE_EVENT:
       return { ...state, activeEventId: action.payload };
     case UPDATE_TIME_AVAILABLE:
-      return { ...state, TimeAvailable: action.payload };
+      return { ...state, TimeAvailable: parseInt(action.payload) };
     case ADD_SKILLS: {
       let skills = [...state.skills];
       let index = skills.findIndex((x) => x._id == action.payload);

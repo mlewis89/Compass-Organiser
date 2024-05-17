@@ -17,8 +17,14 @@ import { useCompassContext } from "../utils/CompassContext";
 const SuggestedTasks = () => {
   const [state, dispatch] = useCompassContext();
 
+  let mySkills = state.skills.filter((skill) => skill.isActiveForUser);
+  let querySkills  = mySkills.map((s)=>{return {_id: s._id, name: s.name};})
+  console.log(querySkills);
+
+  console.log(state.TimeAvailable)
+
   const { data } = useQuery(QUERY_SUGGESTED_TASKS, {
-    variables: {numberOTasks: state.TimeAvailabity, userSkills: state.userSkills}
+    variables: {numberOfTasks: state.TimeAvailable, userSkills: [...querySkills]}
   });
   const [assignUserTask, { error }] = useMutation(ASSIGN_USER_TASK);
 
@@ -39,7 +45,7 @@ const SuggestedTasks = () => {
     //   "responsible",
     //"status",
   ];
-  if (data) {
+  if (data && data.suggestedTasks) {
     tasks = [...data.suggestedTasks];
   }
 

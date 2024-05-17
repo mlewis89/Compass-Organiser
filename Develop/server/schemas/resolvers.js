@@ -63,10 +63,13 @@ const resolvers = {
       console.log('query-suggestedTasks');
       console.log(numberOfTasks,userSkills)
       let _id = userId || user._id;
-      if (!userSkills) {
-        let userData = await User.findById(_id)
+      let userData;
+      if (!userSkills || !numberOfTasks) {
+        userData = await User.findById(_id)
           .populate("skills")
           .populate("myTasks");
+      }
+      if (!userSkills) {
         let userSkills = userData.skills;
       }
       let userSkillsIDs = userSkills.map((skillobj) => skillobj._id);
@@ -74,7 +77,8 @@ const resolvers = {
       if (!numberOfTasks) {
         let numberOfTasks = userData.taskAvailabity;
       }
-
+      if(numberOfTasks>0)
+        {
       let tasks = await Task.find({
         requiredSkills: { $in: [...userSkillsIDs] },
       })
@@ -83,9 +87,9 @@ const resolvers = {
         .populate("requiredSkills")
         .sort({ dueDate: -1, priority: -1 })
         .limit(numberOfTasks);
-
-      console.log("tasks", tasks);
       return tasks;
+    }
+    return;
     },
     members: async () => {
       console.log('query-memebers');

@@ -1,12 +1,10 @@
 import {
   Segment,
   Label,
-  Header,
   Grid,
   GridRow,
   GridColumn,
 } from "semantic-ui-react";
-import { useState } from "react";
 import { QUERY_ME_TIME } from "../utils/queries";
 import { UPDATE_ME_TIME } from "../utils/mutations";
 import { useQuery, useMutation } from "@apollo/client";
@@ -34,7 +32,6 @@ const TimeSlider = () => {
       variables: { taskAvailabity: parseInt(event.target.value) },
     });
   };
-  console.log(state.TimeAvailable);
   if (loading && !state.TimeAvailable) {
     return <></>;
   } else {
@@ -50,7 +47,7 @@ const TimeSlider = () => {
                 max="10"
                 step="1"
                 name="timeavalable"
-                //value={state.TimeAvailable}
+                value={state.TimeAvailable}
                 onChange={handleSliderMove}
                 className="timeSlider"
               />
