@@ -10,10 +10,22 @@ import {
 } from "semantic-ui-react";
 import { useQuery } from "@apollo/client";
 import { QUERY_ME_TASKS } from "../utils/queries";
+import { useCompassContext } from "../utils/CompassContext";
+import { UPDATE_RERENDER_MYTASKS } from "../utils/actions";
 
 const MyTasks = () => {
-  const { data } = useQuery(QUERY_ME_TASKS);
+  
+  const [state, dispatch] = useCompassContext();
+  const reRender = state.reRenderMyTasks;
+console.log(reRender);
+  const { loading , data, refetch } = useQuery(QUERY_ME_TASKS,{variables:{reRender}});
   let tasks;
+
+  if(reRender)
+    {
+      refetch();
+      dispatch({ type: UPDATE_RERENDER_MYTASKS, payload: false});
+    }
 
   let TableHeaderArr = [
     "name",
@@ -23,8 +35,10 @@ const MyTasks = () => {
     "duration",
     "status",
   ];
-  if (data) {
+  if (!loading) {
+    console.log(data.me)
     tasks = data.me.myTasks;
+    console.log(tasks)
   }
 
   return (

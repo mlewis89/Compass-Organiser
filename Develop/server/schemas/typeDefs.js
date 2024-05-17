@@ -124,6 +124,7 @@ const typeDefs = `
     input updateSkill {
         _id: ID!
         name: String,
+        isActiveForUser: Boolean,
     }
 
     type Task {
@@ -167,7 +168,7 @@ const typeDefs = `
         events: [Event],
         singleEvent(eventId :ID!) : Event,
         userTasks(userId: ID): [Task],
-        suggestedTasks(userId:ID): [Task],
+        suggestedTasks(numberOfTasks: Int, userSkills:[updateSkill], userId:ID): [Task],
         tasks: [Task],
         members: [User],
         me: User,
