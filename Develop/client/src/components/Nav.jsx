@@ -5,6 +5,7 @@ import Auth from "../utils/auth";
 import LoginSignUpModal from "./loginSignupModal";
 
 function Nav() {
+
   const [activeItem, setActiveItem] = useState("/");
   // set modal display state
   const [showModal, setShowModal] = useState(false);
@@ -53,7 +54,7 @@ function Nav() {
                   active={activeItem === "members"}
                   onClick={handleItemClick}
                 />
-                <Button content="Logout" onClick={Auth.logout} />
+                <MenuItem content="Log out" onClick={Auth.logout} />
               </>
             ) : (
               <>
@@ -78,13 +79,13 @@ function Nav() {
                   active={activeItem === "contact"}
                   onClick={handleItemClick}
                 />
-                <Button content="Log in" onClick={() => setShowModal(true)} />
+                <MenuItem content="Log in" onClick={() => setShowModal(true)} />
               </>
             )}
           </Menu>
         </GridRow>
       </Grid>
-      <LoginSignUpModal showModal={showModal}/>
+      <LoginSignUpModal showModal={showModal} setShowModal={setShowModal}/>
     </>
   );
 }

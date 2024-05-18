@@ -9,7 +9,7 @@ import { useMutation } from "@apollo/client";
 import { ADD_USER } from "../utils/mutations";
 import Auth from "../utils/auth";
 
-const SignUpForm = () => {
+const SignUpForm = ({ setShowModal }) => {
   const [userFormData, setUserFormData] = useState({
     firstName: "",
     lastName: "",
@@ -183,7 +183,7 @@ const SignUpForm = () => {
           value={userFormData.agree}
         />
         <Button type="submit">Sign Up</Button>
-        <Button type="close">Close</Button>
+        <Button type="close" onClick={()=>setShowModal(false)}>Close</Button>
       </Form>
     </>
   );

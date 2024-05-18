@@ -4,7 +4,7 @@ import { useMutation } from "@apollo/client";
 import { LOGIN } from "../utils/mutations";
 import Auth from "../utils/auth";
 
-const LoginForm = () => {
+const LoginForm = ({ setShowModal }) => {
   const [userFormData, setUserFormData] = useState({
     email: "",
     password: "",
@@ -44,7 +44,6 @@ const LoginForm = () => {
         }
         break;
     }
-    console.log(FormErrors);
     return invalidData;
   };
 
@@ -112,7 +111,8 @@ const LoginForm = () => {
           onBlur={handleOnBlur}
         />
         <Button type="submit">Login</Button>
-        <Button type="close">Close</Button>
+        <Button type="close" onClick={()=>setShowModal(false)}>Close</Button>
+        
       </Form>
     </>
   );

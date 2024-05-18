@@ -4,11 +4,11 @@ import { TabPane, Tab } from "semantic-ui-react";
 import LoginForm from "./LoginForm";
 import SignUpForm from "./SignupForm";
 
-function LoginSignUpModal({ showModal }) {
+function LoginSignUpModal({ showModal, setShowModal }) {
   return (
     <Modal
       centered={false}
-      onClose={() => {}}
+      onClose={() => {setShowModal(false)}}
       onOpen={() => {}}
       open={showModal}
       aria-labelledby="signup-modal"
@@ -22,7 +22,7 @@ function LoginSignUpModal({ showModal }) {
             menuItem: "Login",
             render: () => (
               <TabPane attached={false}>
-                <LoginForm />
+                <LoginForm setShowModal={setShowModal}/>
               </TabPane>
             ),
           },
@@ -30,12 +30,13 @@ function LoginSignUpModal({ showModal }) {
             menuItem: "Sign up",
             render: () => (
               <TabPane attached={false}>
-                <SignUpForm />
+                <SignUpForm setShowModal={setShowModal}/>
               </TabPane>
             ),
           },
         ]}
       />
+
     </Modal>
   );
 }
