@@ -22,7 +22,6 @@ const DetailedEventItem = () => {
   let event;
 
   if (data) {
-    console.log(data);
     event = data.singleEvent;
 
     return (

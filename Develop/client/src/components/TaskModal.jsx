@@ -142,7 +142,6 @@ function TaskModal({ activeTask, showTaskModal, setShowTaskModal }) {
     }
   };
 
-  console.log(taskData);
 
   return (
     <Modal

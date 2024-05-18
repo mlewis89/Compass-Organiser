@@ -47,7 +47,6 @@ const Members = () => {
       }
       return cleanObj;
     });
-    console.log(cleanArr);
 
     return (
       <Segment padded>
