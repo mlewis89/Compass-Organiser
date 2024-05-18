@@ -20,7 +20,6 @@ const BoardPostList = () => {
 
   if (data) {
     posts = data.boardPosts;
-    console.log(posts);
   }
 
   return (
