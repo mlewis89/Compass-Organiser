@@ -7,13 +7,13 @@ import AllTasks from "../components/allTasks";
 
 const Tasks = () => {
   return (
-    <Grid columns={2}>
+    <Grid doubling stackable>
       <GridRow stretched>
-        <GridColumn>
+        <GridColumn width={10}>
           <MyTasks />
           <SuggestedTasks />
         </GridColumn>
-        <GridColumn>
+        <GridColumn width={6}>
           <TimeSlider />
           <MySkills />
         </GridColumn>

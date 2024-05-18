@@ -118,7 +118,7 @@ const typeDefs = `
     }
     type Skill {
         _id: ID!
-        name: String!,
+        name: String,
         isActiveForUser: Boolean,
     }
     input updateSkill {
@@ -132,7 +132,7 @@ const typeDefs = `
         name: String,
         requiredSkills: [Skill],
         dueDate: String,
-        duration : Int,
+        duration : Float,
         responsible: User,
         createdBy: User,
         priority: Int,
@@ -145,7 +145,7 @@ const typeDefs = `
         name: String,
         requiredSkills: [updateSkill],
         dueDate: String,
-        duration : Int,
+        duration : Float,
         responsible: updateUser,
         createdBy: updateUser,
         priority: Int,
@@ -170,6 +170,7 @@ const typeDefs = `
         userTasks(userId: ID): [Task],
         suggestedTasks(numberOfTasks: Int, userSkills:[updateSkill], userId:ID): [Task],
         tasks: [Task],
+        singleTask(taskId: ID!): Task,
         members: [User],
         me: User,
         pageSkills(userId: ID): [Skill]

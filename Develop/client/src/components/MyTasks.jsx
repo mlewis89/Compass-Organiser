@@ -7,17 +7,21 @@ import {
   TableCell,
   Segment,
   Label,
+  Button,
 } from "semantic-ui-react";
 import { useQuery } from "@apollo/client";
 import { QUERY_ME_TASKS } from "../utils/queries";
 import { useCompassContext } from "../utils/CompassContext";
 import { UPDATE_RERENDER_MYTASKS } from "../utils/actions";
+import TaskModal from'./TaskModal';
+import { useState } from "react";
 
 const MyTasks = () => {
   
   const [state, dispatch] = useCompassContext();
+  const [activeTask, setActiveTask] = useState(null);
+  const [showTaskModal, setShowTaskModal] = useState(null);
   const reRender = state.reRenderMyTasks;
-console.log(reRender);
   const { loading , data, refetch } = useQuery(QUERY_ME_TASKS,{variables:{reRender}});
   let tasks;
 
@@ -36,12 +40,11 @@ console.log(reRender);
     "status",
   ];
   if (!loading) {
-    console.log(data.me)
     tasks = data.me.myTasks;
-    console.log(tasks)
   }
 
   return (
+    <>
     <Segment padded>
       <Label attached="top">My Tasks</Label>
 
@@ -62,6 +65,9 @@ console.log(reRender);
                     {task[propertyName]}
                   </TableCell>
                 ))}
+                <TableCell>
+                  <Button onClick={()=>{setShowTaskModal(true); setActiveTask(task._id)}}>Open Task</Button>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -70,6 +76,10 @@ console.log(reRender);
         )}
       </Table>
     </Segment>
+    
+    <TaskModal activeTask={activeTask} showTaskModal={showTaskModal} setShowTaskModal={setShowTaskModal}/>
+    </>
+    
   );
 };
 

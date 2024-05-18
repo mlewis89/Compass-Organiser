@@ -103,6 +103,33 @@ query UserTasks {
 }
 `;
 
+export const QUERY_SINGLE_TASK = gql`
+query SingleTask($taskId: ID!) {
+  singleTask(taskId: $taskId) {
+    _id
+    name
+    requiredSkills {
+      _id
+      name
+      isActiveForUser
+    }
+    dueDate
+    duration
+    responsible {
+      _id
+      displayName
+    }
+    createdBy {
+      _id
+      displayName
+    }
+    priority
+    description
+    status
+  }
+}
+`;
+
 export const QUERY_SUGGESTED_TASKS = gql`
 query Query($userId: ID, $userSkills: [updateSkill], $numberOfTasks: Int) {
   suggestedTasks(userId: $userId, userSkills: $userSkills, numberOfTasks: $numberOfTasks) {
