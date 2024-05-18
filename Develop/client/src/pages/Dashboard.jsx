@@ -6,7 +6,7 @@ import MyStats from "../components/MyStats";
 
 const Dashboard = () => {
   return (
-    <Grid>
+    <Grid stackable doubling>
       <GridRow stretched columns={2}>
         <GridColumn>
             <BoardPostList />

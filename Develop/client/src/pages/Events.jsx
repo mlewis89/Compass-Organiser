@@ -5,7 +5,7 @@ import DetailedEventItem from '../components/DetailedEventItem'
 
 const Events= () => {  
   return (
-    <Grid >
+    <Grid stackable>
       <GridRow stretched >
       <GridColumn width={5}>
           <EventList  />
