@@ -10,10 +10,11 @@ export const CompassProvider = ({ children }) => {
     const skills =[];
     const TimeAvailable = "";
     const reRenderMyTasks = false;
+    const myTasks= [];
     
 
 
-  const [state, dispatch] = useReducer(reducer, { activeEventId, skills , TimeAvailable, reRenderMyTasks});
+  const [state, dispatch] = useReducer(reducer, { activeEventId, skills , TimeAvailable, reRenderMyTasks, myTasks});
 
   return (
     <CompassContext.Provider value={[state, dispatch]}>

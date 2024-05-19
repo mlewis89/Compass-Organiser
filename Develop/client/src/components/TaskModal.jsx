@@ -21,9 +21,13 @@ import {
 } from "../utils/mutations";
 import { useState } from "react";
 
+import { useCompassContext } from "../utils/CompassContext";
+
 const emptyUser = { displayName: "" };
 
 function TaskModal({ activeTask, showTaskModal, setShowTaskModal }) {
+const [state, dispatch] = useCompassContext();
+
   const [taskData, setTaskData] = useState({
     name: "",
     description: "",
@@ -39,8 +43,6 @@ function TaskModal({ activeTask, showTaskModal, setShowTaskModal }) {
   const [deleteCheckOpen, setDeleteCheckOpen] = useState(false);
 
   const [FormErrors, setFormErrors] = useState({
-    email: false,
-    password: false,
   });
 
   /*
@@ -147,6 +149,8 @@ function TaskModal({ activeTask, showTaskModal, setShowTaskModal }) {
     <Modal
       centered={false}
       onOpen={() => {}}
+      onClose={()=>{
+        dispatch({ type: UPDATE_RERENDER_MYTASKS, payload: true});}}
       open={showTaskModal}
       aria-labelledby="task-modal"
       size="large"

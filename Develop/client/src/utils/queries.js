@@ -222,7 +222,7 @@ query PageSkills($userId: ID) {
 export const QUERY_ME_TASKS = gql`
 query Members {
   me {
-    myTasks {
+    tasks {
       _id
       description
       dueDate
@@ -312,7 +312,7 @@ query Me {
       _id
       name
     }
-    myTasks {
+    tasks {
       _id
       Name
       requiredSkills {

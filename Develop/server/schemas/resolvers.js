@@ -62,7 +62,7 @@ const resolvers = {
       if (!userSkills || !numberOfTasks) {
         userData = await User.findById(_id)
           .populate("skills")
-          .populate("myTasks");
+          .populate("tasks");
       }
       if (!userSkills) {
         let userSkills = userData.skills;
@@ -94,7 +94,7 @@ const resolvers = {
       if (user) {
         return await User.findById(user._id)
           .populate("skills")
-          .populate("myTasks")
+          .populate("tasks")
           .populate("role")
           .populate("parentGardian")
           .populate("family");
@@ -209,10 +209,10 @@ const resolvers = {
       if (user) {
         let _id = userId || user._id;
 
-        return await User.findByIdAndUpdate(_id, {
-          $addToSet: { myTasks: taskId },
+        return await Task.findByIdAndUpdate(taskId, {
+          $addToSet: { responsible: userId },
         })
-          .populate("myTasks")
+          .populate("tasks")
           .populate("skills");
       }
     },
@@ -220,10 +220,10 @@ const resolvers = {
       if (user) {
         let _id = userId || user._id;
 
-        return await User.findByIdAndUpdate(_id, {
-          $pull: { myTasks: taskId },
+        return await Task.findByIdAndUpdate(taskId, {
+          $pull: { responsible: userId },
         })
-          .populate("myTasks")
+          .populate("tasks")
           .populate("skills");
       }
     },

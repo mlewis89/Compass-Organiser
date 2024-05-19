@@ -18,7 +18,7 @@ const typeDefs = `
         parentGardian: [User],
         role: [Role],
         skills : [Skill],
-        myTasks : [Task],    
+        tasks : [Task],    
     }
     
     input updateUser {

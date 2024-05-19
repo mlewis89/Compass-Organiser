@@ -77,7 +77,7 @@ const userSchema = new Schema({
           ref: 'Skill'
         }
       ],
-    myTasks : [
+    tasks : [
         {
           type: Schema.Types.ObjectId,
           ref: 'Task'

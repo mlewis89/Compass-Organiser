@@ -64,6 +64,7 @@ db.once("open", async () => {
       section:
         userData.section[Math.floor(Math.random() * userData.section.length)],
       dob: randomDOB(),
+      tasks: [],
       taskAvailabity: Math.floor(Math.random() * 10),
       skills: skills[Math.floor(Math.random() * skills.length)],
       roles: roles[Math.floor(Math.random() * roles.length)],
@@ -79,7 +80,8 @@ db.once("open", async () => {
   taskData.forEach((task) => {
     task.requiredSkills = skills.find((element)=> element.name == task.skill)
     //task.requiredSkills = skills[Math.floor(Math.random() * skills.length)]
-    //task.responsible = users[Math.floor(Math.random() * users.length)];
+    //task.responsible = users[Math.floor(Math.random() * users.length)];    
+    task.responsible = null;
     task.createdBy = users[Math.floor(Math.random() * users.length)];
   });
   const tasks = await Task.insertMany(taskData);

@@ -5,7 +5,8 @@ import {
   ADD_SKILLS,
   REMOVE_SKILLS,
   UPDATE_SKILLS,
-  UPDATE_RERENDER_MYTASKS
+  UPDATE_RERENDER_MYTASKS,
+  UPDATE_MY_TASKS
 } from "./actions";
 
 // Create a function that will handle combining two objects. Accepts state and an action as an argument.
@@ -44,7 +45,10 @@ export default function reducer(state, action) {
       return { ...state, skills: action.payload };
     }
     case  UPDATE_RERENDER_MYTASKS:{
-      return {...state,  reRenderMyTasks: action.payload}
+      return {...state,  reRenderMyTasks: action.payload};
+    }
+    case UPDATE_MY_TASKS: {
+      return {...state, myTasks: action.payload};
     }
     default:
       return state;

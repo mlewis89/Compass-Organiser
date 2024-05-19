@@ -12,7 +12,7 @@ import {
 import { useQuery } from "@apollo/client";
 import { QUERY_ME_TASKS } from "../utils/queries";
 import { useCompassContext } from "../utils/CompassContext";
-import { UPDATE_RERENDER_MYTASKS } from "../utils/actions";
+import { UPDATE_RERENDER_MYTASKS, UPDATE_MY_TASKS } from "../utils/actions";
 import TaskModal from'./TaskModal';
 import { useState } from "react";
 
@@ -21,11 +21,12 @@ const MyTasks = () => {
   const [state, dispatch] = useCompassContext();
   const [activeTask, setActiveTask] = useState(null);
   const [showTaskModal, setShowTaskModal] = useState(null);
-  const reRender = state.reRenderMyTasks;
-  const { loading , data, refetch } = useQuery(QUERY_ME_TASKS,{variables:{reRender}});
+  let reRender = state.reRenderMyTasks;
+  const { loading , data, refetch } = useQuery(QUERY_ME_TASKS,{variables:{reRender},onCompleted:()=>{
+    dispatch({ type: UPDATE_MY_TASKS, payload: data.me.myTasks});}});
   let tasks;
 
-  if(reRender)
+  if(state.reRenderMyTasks)
     {
       refetch();
       dispatch({ type: UPDATE_RERENDER_MYTASKS, payload: false});
@@ -40,7 +41,7 @@ const MyTasks = () => {
     "status",
   ];
   if (!loading) {
-    tasks = data.me.myTasks;
+    tasks = state.myTasks;
   }
 
   return (
