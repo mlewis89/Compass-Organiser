@@ -11,77 +11,71 @@ import {
 import { useQuery } from "@apollo/client";
 import { QUERY_TASKS } from "../utils/queries";
 
-import sampleTaskData from "./AllTask_SampleData.json";
-
 const AllTasks = () => {
-  const cleanUpData = (d) => {
-    let cleanData = d.map((taskObj) => {
-      for (let prop in taskObj) {
-        if (typeof taskObj[prop] === "object") {
-          //console.log(prop, taskObj[prop]);
-          let stringVal = "";
-          switch (prop) {
-            case "requiredSkills": {
-              let tempArr = taskObj[prop].map((skill) => skill.name);
-              stringVal = tempArr.toString();
-              delete taskObj["requiredSkills"];
-              break;
-            }
-            case "createdBy": {
-              stringVal = taskObj[prop].displayName;
-              delete taskObj["createdBy"];
-              break;
-            }
-            case "responsible": {
-              let tempArr = taskObj[prop].map((user) => user.displayName);
-              stringVal = tempArr.toString();
-              delete taskObj["responsible"];
-              break;
-            }
-            case "dueDate": {
-              if (taskObj[prop]) {
-                stringVal = new Date(taskObj[prop]).toLocaleDateString();
-              } else {
-                stringVal = "";
-              }
-              delete taskObj["dueDate"];
-              break;
-            }
-            default:
-              break;
+ 
+const { data } = useQuery(QUERY_TASKS);
+
+let TableHeaderArr = [
+  "name",
+  "description",
+  "priority",
+  "dueDate",
+  "duration",
+  "requiredSkills",
+  "responsible",
+  "status",
+];
+
+const cleanUpData = (d) => {
+  let cleanData = d.map((taskObj) => {
+    let newObj = {}
+    for (let prop in taskObj) {
+      let newVal;
+      switch (prop) {
+          case "requiredSkills": {
+            let tempArr = taskObj[prop].map((skill) => skill.name);
+            newVal = tempArr.toString();
+            break;
           }
+          case "createdBy" || "responsible": {
+            newVal = taskObj[prop]?.displayName;
+            break;
+          }
+          case "dueDate": {
+            if (taskObj[prop]) {
+              newVal = new Date(taskObj[prop]).toLocaleDateString();
+            } else {
+              newVal = "";
+            }
+            break;
+          }
+          default:
+            newVal = taskObj[prop];
 
-          //console.log(stringVal);
-          taskObj[prop] = stringVal;
+            break;
         }
-        /*
-          console.log(taskObj[prop]);
-          taskObj[prop] = JSON.stringify(taskObj[prop]);
-          console.log(taskObj[prop]);
-        }*/
-      }
-      return taskObj;
-    });
-    return cleanData;
-  };
 
-  const { data } = useQuery(QUERY_TASKS);
+        //console.log(stringVal);
+        newObj[prop] = newVal;
+      
+      /*
+        console.log(taskObj[prop]);
+        taskObj[prop] = JSON.stringify(taskObj[prop]);
+        console.log(taskObj[prop]);
+      }*/
+    }
+    return newObj;
+  });
+  return cleanData;
+};
 
-  let TableHeaderArr = [
-    "name",
-    "description",
-    "priority",
-    "dueDate",
-    "duration",
-    "requiredSkills",
-    "responsible",
-    "status",
-  ];
-  if (data) {
-    //tasks = [...data.tasks];
-    let tasks = sampleTaskData;
+if (data) {
+    let tasks = [...data.tasks];
+    //let tasks = sampleTaskData;
+    console.log(tasks)
 
     let taskArr = [...cleanUpData(tasks)];
+    console.log(taskArr)
 
     return (
       <Segment padded>
