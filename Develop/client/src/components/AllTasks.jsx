@@ -10,10 +10,13 @@ import {
 } from "semantic-ui-react";
 import { useQuery } from "@apollo/client";
 import { QUERY_TASKS } from "../utils/queries";
+import { useCompassContext } from "../utils/CompassContext";
 
 const AllTasks = () => {
+
+  const [state, dispatch] = useCompassContext();
  
-const { data } = useQuery(QUERY_TASKS);
+//const { data } = useQuery(QUERY_TASKS);
 
 let TableHeaderArr = [
   "name",
@@ -37,8 +40,12 @@ const cleanUpData = (d) => {
             newVal = tempArr.toString();
             break;
           }
-          case "createdBy" || "responsible": {
+          case "createdBy": {
             newVal = taskObj[prop]?.displayName;
+            break;
+          }
+          case "responsible": {
+             newVal = taskObj[prop]?.displayName;
             break;
           }
           case "dueDate": {
@@ -69,13 +76,14 @@ const cleanUpData = (d) => {
   return cleanData;
 };
 
-if (data) {
-    let tasks = [...data.tasks];
+if (state.allTasks) {
+    let tasks = [...state.allTasks];
+
     //let tasks = sampleTaskData;
-    console.log(tasks)
+
 
     let taskArr = [...cleanUpData(tasks)];
-    console.log(taskArr)
+
 
     return (
       <Segment padded>

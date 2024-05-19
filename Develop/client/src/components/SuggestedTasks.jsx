@@ -13,7 +13,8 @@ import { useQuery, useMutation } from "@apollo/client";
 import { QUERY_SUGGESTED_TASKS } from "../utils/queries";
 import { ASSIGN_USER_TASK } from "../utils/mutations";
 import { useCompassContext } from "../utils/CompassContext";
-import { UPDATE_RERENDER_MYTASKS} from '../utils/actions'
+import { UPDATE_RERENDER_MYTASKS, ASSIGN_USER_TO_TASK, REMOVE_SUGGESTED_TASK, ADD_TO_MY_TASK} from '../utils/actions'
+import AuthService from "../utils/auth";
 
 const SuggestedTasks = () => {
   const [state, dispatch] = useCompassContext();
@@ -30,8 +31,9 @@ const SuggestedTasks = () => {
     let _id = data["data-key"];
     assignUserTask({ variables: { taskId: _id } });
     //trigger reRender of MyTASKS
-    dispatch({ type: UPDATE_RERENDER_MYTASKS, payload: true});
-
+    dispatch({ type: ASSIGN_USER_TO_TASK, payload: {taskId:_id, userData: AuthService.getProfile().data}});
+    dispatch({ type: REMOVE_SUGGESTED_TASK, payload: _id});
+    dispatch({ type: ADD_TO_MY_TASK, payload: _id});
   };
 
   let tasks;

@@ -5,7 +5,9 @@ import {
   ADD_SKILLS,
   REMOVE_SKILLS,
   UPDATE_SKILLS,
-  UPDATE_RERENDER_MYTASKS
+  UPDATE_RERENDER_MYTASKS,
+  UPDATE_ALL_TASKS,
+  ASSIGN_USER_TO_TASK, REMOVE_SUGGESTED_TASK, ADD_TO_MY_TASK
 } from "./actions";
 
 // Create a function that will handle combining two objects. Accepts state and an action as an argument.
@@ -43,9 +45,37 @@ export default function reducer(state, action) {
     case UPDATE_SKILLS: {
       return { ...state, skills: action.payload };
     }
-    case  UPDATE_RERENDER_MYTASKS:{
-      return {...state,  reRenderMyTasks: action.payload}
+    case UPDATE_RERENDER_MYTASKS: {
+      return { ...state, reRenderMyTasks: action.payload }
     }
+    case UPDATE_ALL_TASKS:
+      {
+        return { ...state, allTasks: action.payload }
+      }
+    case ASSIGN_USER_TO_TASK:
+      {
+
+        let newallTasks = [...state.allTasks];
+        let index = newallTasks.findIndex((x) => x._id === action.payload.taskId);
+        if (index >= 0)
+        {
+          console.log(newallTasks[index]);
+          newallTasks[index] = {...newallTasks[index], responsible: {...action.payload.userData}};
+          return { ...state /*, allTasks: [...newAllTasks]*/ };
+        }else
+        { return { ...state }; }
+      }
+    case REMOVE_SUGGESTED_TASK:
+      {
+        let tempArr = [...state.suggestedTasks]
+        let index = tempArr.findIndex(x => x._id === action.payload);
+        tempArr.splice(index, 1);
+        return { ...state, suggestedTasks: [...tempArr] };
+      }
+    case ADD_TO_MY_TASK:
+      {
+        return { ...state, myTasks: [...state.myTasks, action.payload] };
+      }
     default:
       return state;
   }
