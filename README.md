@@ -55,10 +55,12 @@ Then i can update the details and add attendees and request payment
 ## Technologies
 Node.js, Express, React, MongoDb, Mongoose ODM, GraphQl, Semantic UI
 
-## Project planning
+## Project documents
 [project planning document](./assets/projectproposal.pdf)
 
 [database model diagrams](./assets/compass%20organisor%20ERD.pdf)
+
+[project presentation slides](./assets/Compass-Organisor%20-%20project%20presentation.pdf)
 
 
 ## Installation
