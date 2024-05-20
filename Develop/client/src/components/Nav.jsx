@@ -1,8 +1,10 @@
 import { NavLink } from "react-router-dom";
-import { Button, Grid, GridRow, Menu, MenuItem } from "semantic-ui-react";
+import { GridColumn, Grid, GridRow, Image, Menu, MenuItem, Segment } from "semantic-ui-react";
 import { useState } from "react";
 import Auth from "../utils/auth";
 import LoginSignUpModal from "./loginSignupModal";
+import headerImage from '../assets/header.png';
+import pathImage from '../assets/path.png';
 
 function Nav() {
 
@@ -15,14 +17,19 @@ function Nav() {
   };
 
   return (
-    <>
-      <Grid>
+      <Segment>
+      <Grid columns={3} stackable>
         <GridRow>
-          <h1>
-            <NavLink to="/">Scout Compass</NavLink>
-          </h1>
-        </GridRow>
-        <GridRow>
+          <GridColumn width={5} verticalAlign="middle">
+          <Image
+          src={headerImage} 
+          size='medium' 
+          alt='Compass Organisor' />
+          </GridColumn>
+          <GridColumn width={4}  only='tablet computer'>
+          <Image src={pathImage} />
+          </GridColumn>
+        <GridColumn width={7} verticalAlign="bottom">
           <Menu stackable>
             {Auth.loggedIn() ? (
               <>
@@ -83,10 +90,11 @@ function Nav() {
               </>
             )}
           </Menu>
+          </GridColumn>
         </GridRow>
       </Grid>
       <LoginSignUpModal showModal={showModal} setShowModal={setShowModal}/>
-    </>
+      </Segment>
   );
 }
 

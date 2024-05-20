@@ -7,11 +7,19 @@ import {
 } from "@apollo/client";
 import { setContext } from "@apollo/client/link/context";
 import { CompassProvider } from "./utils/CompassContext";
+import backgoundImage from './assets/contour-white-on-blue.png'
 
 import "./App.css";
 import Nav from "./components/Nav";
-import { Container } from "semantic-ui-react";
+import { Container, Image } from "semantic-ui-react";
 import AuthService from "./utils/auth";
+
+
+var backgroundStyle = {
+  width: "100%",
+  height: "400px",
+  backgroundImage: "url(" + { backgoundImage } + ")"
+};
 
 // Construct request middleware that will attach the JWT token to every request as an `authorization` header
 const authLink = setContext((_, { headers }) => {
@@ -38,7 +46,7 @@ const client = new ApolloClient({
 function App() {
   return (
     <ApolloProvider client={client}>
-      <CompassProvider>
+      <CompassProvider style={backgroundStyle}>
         <div className="min-100-vh bg-primary">
           <Container>
             <Nav />
