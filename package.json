@@ -1,0 +1,19 @@
+{
+  "name": "scout-compass",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server/server.js",
+  "scripts": {
+    "start": "cd Develop && npm run start",
+    "develop": "cd Develop && npm run develop",
+    "install": "cd Develop && npm install",
+    "seed": "cd Develop && npm run seed",
+    "build": "cd Develop && npm run build"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^5.1.0"
+  }
+}
