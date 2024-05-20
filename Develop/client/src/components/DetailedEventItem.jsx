@@ -22,8 +22,8 @@ const DetailedEventItem = () => {
   let event;
 
   if (data) {
-    event = {...data.singleEvent};
-    console.log(event.startDate)
+    event = { ...data.singleEvent };
+    console.log(event.startDate);
     event.startDate = new Date(parseInt(event.startDate));
     event.endDate = new Date(parseInt(event.endDate));
 
@@ -33,9 +33,9 @@ const DetailedEventItem = () => {
 
         {event ? (
           <>
-            <Grid key={event._id} celled="internally">
+            <Grid key={event._id} celled="internally" stackable>
               <GridRow>
-                <GridColumn width={10}>
+                <GridColumn>
                   <Header>{event.title}</Header>
 
                   <p>Organisor: {event.organisor.displayName}</p>
@@ -43,15 +43,29 @@ const DetailedEventItem = () => {
 
                   <p>Location: {event.location}</p>
                   <p>{event.description}</p>
-                  <p>Start: {`${event.startDate.toLocaleDateString()} ${event.startDate.toLocaleTimeString()}`}</p>
-                  <p>End: {`${event.endDate.toLocaleDateString()} ${event.endDate.toLocaleTimeString()}`}</p>
+                  <p>
+                    Start:{" "}
+                    {`${event.startDate.toLocaleDateString()} ${event.startDate.toLocaleTimeString()}`}
+                  </p>
+                  <p>
+                    End:{" "}
+                    {`${event.endDate.toLocaleDateString()} ${event.endDate.toLocaleTimeString()}`}
+                  </p>
                   <p>Cost: {event.cost}</p>
-                  <p>Visiblity: {event.isPublic ? (<>Public</>) :(<>Private</>)}</p>
-                </GridColumn>
-                <GridColumn width={4}>
+                  <p>
+                    Visiblity: {event.isPublic ? <>Public</> : <>Private</>}
+                  </p>
+
                   <h4> Attending</h4>
                   {event.attending.map((usr) => (
-                    <p key={usr._id}>{usr.displayName}</p>
+                    <Button
+                      icon
+                      labelPosition="right"
+                      key={usr._id}
+                      data-key={usr._id}
+                    >
+                      {usr.displayName}
+                    </Button>
                   ))}
                 </GridColumn>
               </GridRow>
