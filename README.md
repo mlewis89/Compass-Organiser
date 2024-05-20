@@ -84,6 +84,9 @@ https://github.com/mlewis89/Compass-Organiser
 https://compass-org-ad344bf9f240.herokuapp.com/
 
 ## Screenshots of Completed Challenge
+
+![Snapshot of the completed application](./assets/Capture5.PNG)
+![Snapshot of the completed application](./assets/Capture6.PNG)
 ![Snapshot of the completed application](./assets/Capture1.PNG)
 ![Snapshot of the completed application](./assets/Capture2.PNG)
 ![Snapshot of the completed application](./assets/Capture3.PNG)
