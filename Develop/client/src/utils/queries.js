@@ -31,27 +31,13 @@ query Events {
     organisor {
       _id
       displayName
-      firstName
-      preferredName
-      scoutName
     }
     startDate
     endDate
     isPublic
     description
     location
-    attending {
-      _id
-      displayName
-      scoutName
-      preferredName
-      lastName
-      firstName
-    }
-    plan
-    riskManagement
     status
-    cost
   }
 }
 `;

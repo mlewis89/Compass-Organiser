@@ -26,7 +26,7 @@ const resolvers = {
       if (user) {
         return await Event.find().populate("organisor").populate("attending");
       } else {
-        return await Event.find({ isPublic: true });
+        return await Event.find({ isPublic: true }).populate("organisor");
       }
     },
     singleEvent: async (parent, { eventId }, { user }) => {
