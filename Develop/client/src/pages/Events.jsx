@@ -7,10 +7,10 @@ const Events= () => {
   return (
     <Grid stackable>
       <GridRow stretched >
-      <GridColumn width={5}>
+      <GridColumn width={6}>
           <EventList  />
         </GridColumn>
-      <GridColumn width={11}>
+      <GridColumn width={10}>
           <DetailedEventItem />
         </GridColumn>
         
