@@ -22,7 +22,10 @@ const DetailedEventItem = () => {
   let event;
 
   if (data) {
-    event = data.singleEvent;
+    event = {...data.singleEvent};
+    console.log(event.startDate)
+    event.startDate = new Date(parseInt(event.startDate));
+    event.endDate = new Date(parseInt(event.endDate));
 
     return (
       <Segment padded>
@@ -40,10 +43,10 @@ const DetailedEventItem = () => {
 
                   <p>Location: {event.location}</p>
                   <p>{event.description}</p>
-                  <p>Start: {event.startDate}</p>
-                  <p>End: {event.endDate}</p>
+                  <p>Start: {`${event.startDate.toLocaleDateString()} ${event.startDate.toLocaleTimeString()}`}</p>
+                  <p>End: {`${event.endDate.toLocaleDateString()} ${event.endDate.toLocaleTimeString()}`}</p>
                   <p>Cost: {event.cost}</p>
-                  <p>Public: {event.isPublic}</p>
+                  <p>Visiblity: {event.isPublic ? (<>Public</>) :(<>Private</>)}</p>
                 </GridColumn>
                 <GridColumn width={4}>
                   <h4> Attending</h4>

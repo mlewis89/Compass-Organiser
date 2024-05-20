@@ -53,14 +53,11 @@ const EventList = () => {
                     <ItemHeader>
                       {new Date(parseInt(event.startDate)).toLocaleDateString()}{" "}
                       {event.title}
+                      {!event.isPublic ? (<> - PRIVATE EVENT</>) :(<></>)}
                     </ItemHeader>
                     <ItemDescription>{event.description}</ItemDescription>
                     <ItemExtra>
-                      {` ~ ${
-                        event.organisor.scoutName ||
-                        event.organisor.preferredName ||
-                        event.organisor.firstName
-                      }`}
+                      {` ~ ${event.organisor.displayName}`}
                     </ItemExtra>
                   </ItemContent>
                 </Item>
