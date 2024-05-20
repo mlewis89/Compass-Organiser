@@ -3,7 +3,7 @@ import MyTasks from "../components/MyTasks";
 import SuggestedTasks from "../components/SuggestedTasks";
 import TimeSlider from "../components/TimeSlider";
 import MySkills from "../components/MySkils";
-import AllTasks from "../components/allTasks";
+import AllTasks from "../components/AllTasks";
 
 const Tasks = () => {
   return (
