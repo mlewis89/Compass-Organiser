@@ -37,11 +37,7 @@ const BoardPostList = () => {
                     <ItemHeader as="a">{post.title}</ItemHeader>
                     <ItemDescription>{post.content}</ItemDescription>
                     <ItemExtra>
-                      {" "}
-                      ~{" "}
-                      {post.createdBy.scoutName ||
-                        post.createdBy.preferredName ||
-                        post.createdBy.firstName}
+                      {` ~ ${post.createdBy.displayName}`}
                     </ItemExtra>
                   </ItemContent>
                 </Item>
