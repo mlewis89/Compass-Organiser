@@ -80,7 +80,6 @@ const SignUpForm = ({ setShowModal }) => {
         }
         break;
     }
-    console.log(FormErrors)
     return invalidData;
   };
 
