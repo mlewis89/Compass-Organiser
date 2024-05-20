@@ -8,10 +8,10 @@ const Dashboard = () => {
   return (
     <Grid stackable doubling>
       <GridRow stretched columns={2}>
-        <GridColumn>
+        <GridColumn width={7}>
             <BoardPostList />
         </GridColumn>
-        <GridColumn>
+        <GridColumn width={9}>
           <EventList />
             <MyTasks />
         </GridColumn>
