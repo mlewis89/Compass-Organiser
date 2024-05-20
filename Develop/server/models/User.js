@@ -53,7 +53,7 @@ const userSchema = new Schema({
     },
     taskAvailabity: {
         type: Number,
-        default: 0,
+        default: 5,
     },
     family: {
         type: Schema.Types.ObjectId,
