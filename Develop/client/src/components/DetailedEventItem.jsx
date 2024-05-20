@@ -14,6 +14,7 @@ import PlaceholderEvent from "./placeholder/placeholder-event";
 import { useCompassContext } from "../utils/CompassContext";
 
 const DetailedEventItem = () => {
+  //pull in context data
   const [state, dispatch] = useCompassContext();
 
   const { data } = useQuery(QUERY_SINGLE_EVENT, {
@@ -24,6 +25,7 @@ const DetailedEventItem = () => {
   if (data) {
     event = { ...data.singleEvent };
     console.log(event.startDate);
+    //convert dates from epoch strings
     event.startDate = new Date(parseInt(event.startDate));
     event.endDate = new Date(parseInt(event.endDate));
 

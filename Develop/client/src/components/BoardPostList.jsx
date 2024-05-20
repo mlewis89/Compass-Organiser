@@ -15,13 +15,15 @@ import { useQuery } from "@apollo/client";
 import { QUERY_BOARDPOST } from "../utils/queries";
 
 const BoardPostList = () => {
+  //query database for post data
   const { data } = useQuery(QUERY_BOARDPOST);
   let posts;
 
   if (data) {
+    //once data is received save to local variable
     posts = data.boardPosts;
   }
-
+//render page data
   return (
     <Segment padded>
       <Label attached="top">Notice Board</Label>

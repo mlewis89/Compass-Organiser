@@ -31,6 +31,7 @@ const MySkills = () => {
   };
 
   if (state.skills) {
+    //split skills into two lists
     let mySkills = state.skills.filter((skill) => skill.isActiveForUser);
     let otherSkills = state.skills.filter((skill) => !skill.isActiveForUser);
 

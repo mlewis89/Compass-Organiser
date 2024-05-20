@@ -15,6 +15,7 @@ const AllTasks = () => {
  
 const { data } = useQuery(QUERY_TASKS);
 
+//list of headers of table
 let TableHeaderArr = [
   "name",
   "description",
@@ -26,6 +27,7 @@ let TableHeaderArr = [
   "status",
 ];
 
+//function to ensure data is in text form and ready for a html table
 const cleanUpData = (d) => {
   let cleanData = d.map((taskObj) => {
     let newObj = {}
@@ -54,15 +56,7 @@ const cleanUpData = (d) => {
 
             break;
         }
-
-        //console.log(stringVal);
         newObj[prop] = newVal;
-      
-      /*
-        console.log(taskObj[prop]);
-        taskObj[prop] = JSON.stringify(taskObj[prop]);
-        console.log(taskObj[prop]);
-      }*/
     }
     return newObj;
   });
@@ -71,12 +65,11 @@ const cleanUpData = (d) => {
 
 if (data) {
     let tasks = [...data.tasks];
-    //let tasks = sampleTaskData;
     console.log(tasks)
 
     let taskArr = [...cleanUpData(tasks)];
     console.log(taskArr)
-
+//render task data
     return (
       <Segment padded>
         <Label attached="top">All Tasks</Label>
