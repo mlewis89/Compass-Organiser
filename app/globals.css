@@ -1,0 +1,11 @@
+.min-100-vh {
+  min-height: 100vh;
+}
+
+.bg-primary {
+  background-color: #374c7a !important;
+}
+
+.timeSlider {
+  width: 100%;
+}

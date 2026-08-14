@@ -1,115 +1,80 @@
+# Compass Organiser
 
+Scout group organiser for notice-board posts, events, skill-matched tasks, and members. Hosted as a Next.js App Router app on Vercel Hobby, with Neon Postgres and a Group/Membership schema ready for Clerk later.
 
-# Bootcamp Project #3 - Full Stack Application: Compass Organisor
-[![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+**Live:** [https://compass-organiser.vercel.app](https://compass-organiser.vercel.app)
 
+## Stack
 
-## Description
+- Next.js App Router (TypeScript)
+- Apollo GraphQL at `/api/graphql`
+- Neon Postgres + Drizzle ORM
+- JWT login for Phase 1 (Clerk is the planned Phase 2 identity layer)
 
-The purpose of this application is to help manage a scout group or similar organisation. Scout groups have a range of processes, from planning weekly programs to larger activities to building maintenance.
+## Local setup
 
-Currently, there are existing systems that assist in managing scout groups, but these are often fragmented or leave significant gaps as they are not specifically tailored to our needs. This situation often forces each group to create their own system, often spreadsheets for days, leading to inefficiencies and inconsistencies. This project aims to address this issue by providing a comprehensive solution for one scout group.
+1. Install dependencies: `npm install`
+2. Link the Vercel project: `vercel link`
+3. Provision Neon: `vercel integration add neon` (finish any browser claim step)
+4. Set secrets (names only here):
 
-One significant point that I hope to address is the delegation of tasks within a volunteer organisation. Task allocation could benefit from having a shared to-do list that is allocated based on two primary weights: required skills and available time. So that people can help out when they have time and spread the load.
-Often, tasks are left undelegated and remain the chore of the ‘manager’ because the top is too busy to find someone with the available time and required skills
-
-
-## Table of Contents
-    
-- [User Story](#user-story)
-- [Acceptance Criteria](#acceptance-criteria)
-- [Installation](#installation)
-- [Testing](#testing)
-- [Usage](#usage)
-- [Screenshots/Video](<#screenshots--video-of-completed-challenge>)
-- [License](#license)
-- [Credits](#credits)
-- [Questions / How to Contribute](#questions--how-to-contribute)
-
-## User Story
-
-```
-AS A  group leader of a scout group, I WANT A system that allows me to oversee and manage the tasks or running a scout group SO THAT I can ensure my group is moving forward instead of being tied to old fragmented systems
+```bash
+vercel env add JWT_SECRET development preview production
+vercel env add JWT_EXPIRY development preview production
+vercel env add DEFAULT_GROUP_SLUG development preview production
 ```
 
-## Acceptance Criteria
+Use a long random value for `JWT_SECRET`, `7d` for `JWT_EXPIRY`, and `default` for `DEFAULT_GROUP_SLUG`.
 
-```
-When I open the website
-Then i am presented with a website of the scout group
-When i click login
-Then i am prompted to login of sign to the site.
-When i first log in.
-Then i am presented with a dashboard of the information relating to my role within the group, a group notice board, a list of upcoming events and the tasks available for my skill set.
-When i view the member lists,
-Then  i see the members that i am responsible for. Ie youth members or committee team members etc. 
-When i add a task 
-Then it is added to the database, and appears on my dashboard. And the dashboard of the suitable people
-When i add an event, 
-then it is added to the database and displayed on my dashboard
-When i open an event
-Then i can update the details and add attendees and request payment
+5. Pull env: `vercel env pull .env.local --yes`
+6. Push schema and seed (never run seed as a Vercel build hook):
 
+```bash
+npm run db:push
+npm run db:seed
 ```
 
-## Technologies
-Node.js, Express, React, MongoDb, Mongoose ODM, GraphQl, Semantic UI
+7. Start the app: `npm run dev`
 
-## Project documents
-[project planning document](./assets/projectproposal.pdf)
+Default seed login: `alex.leader@example.com` / `password`
 
-[database model diagrams](./assets/compass%20organisor%20ERD.pdf)
+## Environment variables
 
-[project presentation slides](./assets/Compass-Organisor%20-%20project%20presentation.pdf)
+| Name | Purpose |
+|------|---------|
+| `DATABASE_URL` | Neon connection string (Marketplace-provisioned) |
+| `JWT_SECRET` | Signs Phase 1 session tokens |
+| `JWT_EXPIRY` | Token lifetime, e.g. `7d` |
+| `DEFAULT_GROUP_SLUG` | Active group until a group switcher exists |
 
+Copy [`.env.example`](.env.example) for the list. Do not commit `.env.local`.
 
-## Installation
+Preview deployments currently share the same Neon database as development unless you add a Neon branch later.
 
-then from the terminal inside the 'develop' directory, run the following command to install the necessary dependancies.
-       
-    npm install
-    npm run start
+## Scripts
 
+- `npm run dev` — Next.js dev server
+- `npm run build` / `npm run typecheck`
+- `npm run db:push` — apply Drizzle schema (`dotenv-cli` loads `.env.local`)
+- `npm run db:seed` — seed the default group (CLI only)
 
-## Testing
+## Auth Phase 2 (not implemented yet)
 
-No self tests exist for this application.
+Clerk will replace JWT identity. The schema is already shaped for that:
 
-## Usage
-    
-Open the terminal in the 'develop' Folder and enter the following command.
+- `users.externalAuthId` — store the Clerk user id; leave `passwordHash` null
+- `users.email` unique — upsert on first Clerk session
+- `groups` + `memberships` + `membership_roles` — scout groups and roles stay in Neon
+- `lib/auth/jwt.ts` `requireUser()` and `lib/tenancy.ts` `requireMembership()` — swap the identity source, keep the same checks
+- Cookie `compass_group` is reserved for a later group switcher
 
-    npm run start
+Do **not** use Clerk Organizations as the source of truth for scout roles (UnitLeader, Treasurer, etc.).
 
-Then open the application in the browser
+Install later with `vercel integration add clerk`, then `@clerk/nextjs` v7, `ClerkProvider`, and `proxy.ts` + `clerkMiddleware`.
 
+## Hobby notes
 
-## GitHub repository
-https://github.com/mlewis89/Compass-Organiser
-
-## Heroku Hosting
-https://compass-org-ad344bf9f240.herokuapp.com/
-
-## Screenshots of Completed Challenge
-
-![Snapshot of the completed application](./assets/Capture5.PNG)
-![Snapshot of the completed application](./assets/Capture6.PNG)
-![Snapshot of the completed application](./assets/Capture1.PNG)
-![Snapshot of the completed application](./assets/Capture2.PNG)
-![Snapshot of the completed application](./assets/Capture3.PNG)
-![Snapshot of the completed application](./assets/Capture4.PNG)
-
-
-## License
-This project is licensed under the MIT.
-    
-## Questions / How to Contribute
-    
-If you have any questions about the repo, open an issue. You can veiw my other work on git hub [mlewis89](https://github.com/mlewis89/)
-
-## Credits
-
-Monash University Full Stack Coding bootcamp
-
-
----
+- Fluid Compute / Node.js runtime (no Edge — Drizzle and JWT need Node)
+- No crons, Blob, or image transformation pipeline
+- Semantic UI assets are static files, not `next/image`
+- Seed is a local CLI command only
