@@ -17,11 +17,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <ClerkProvider
-          signInUrl="/sign-in"
-          signUpUrl="/sign-up"
-          afterSignOutUrl="/"
-        >
+        <ClerkProvider afterSignOutUrl="/">
           <Providers>{children}</Providers>
         </ClerkProvider>
       </body>

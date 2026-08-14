@@ -1,14 +1,10 @@
-import type { Metadata } from "next";
-import ClerkSignUp from "@/components/ClerkSignUp";
+import { auth } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = {
-  title: "Sign up · Compass Organiser",
-};
-
-export default function SignUpPage() {
-  return (
-    <div className="ui padded segment clerk-auth-panel">
-      <ClerkSignUp />
-    </div>
-  );
+export default async function SignUpPage() {
+  const { userId, redirectToSignUp } = await auth();
+  if (userId) {
+    redirect("/dashboard");
+  }
+  return redirectToSignUp({ returnBackUrl: "/dashboard" });
 }
