@@ -184,6 +184,19 @@ export const typeDefs = `#graphql
     status: String
   }
 
+  type Permissions {
+    roles: [String]
+    canManageTasks: Boolean
+    canManageEvents: Boolean
+    canManagePosts: Boolean
+    canManageMembers: Boolean
+  }
+
+  input addMemberInput {
+    email: String!
+    roleIds: [ID]
+  }
+
   type Query {
     publicGroup(slug: String!): Group
     boardPosts(groupSlug: String): [BoardPost]
@@ -194,9 +207,12 @@ export const typeDefs = `#graphql
     tasks: [Task]
     singleTask(taskId: ID!): Task
     members: [User]
+    singleMember(userId: ID!): User
     me: User
     pageSkills(userId: ID): [Skill]
     myStats(userId: ID): [Stat]
+    roles: [Role]
+    myPermissions: Permissions
   }
 
   type Mutation {
@@ -214,8 +230,19 @@ export const typeDefs = `#graphql
     addEvent(eventData: updateEvent!): Event
     updateEvent(eventId: ID!, eventData: updateEvent!): Event
     deletEvent(eventId: ID!): Event
+    deleteEvent(eventId: ID!): Event
+    joinEvent(eventId: ID!): Event
+    leaveEvent(eventId: ID!): Event
+    setEventAttendee(eventId: ID!, userId: ID!, attending: Boolean!): Event
     addTask(taskData: updateTask!): Task
     updateTask(taskId: ID!, taskData: updateTask!): Task
     deleteTask(taskId: ID!): Task
+    setTaskStatus(taskId: ID!, status: String!): Task
+    addMember(member: addMemberInput!): User
+    setMemberStatus(userId: ID!, status: String!): User
+    removeMember(userId: ID!): User
+    updateMember(userId: ID!, user: updateUser!): User
+    assignMemberRole(userId: ID!, roleId: ID!): User
+    removeMemberRole(userId: ID!, roleId: ID!): User
   }
 `;

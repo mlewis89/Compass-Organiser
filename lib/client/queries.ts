@@ -217,3 +217,50 @@ export const QUERY_ME_STATS = gql`
     }
   }
 `;
+
+export const QUERY_MY_PERMISSIONS = gql`
+  query MyPermissions {
+    myPermissions {
+      roles
+      canManageTasks
+      canManageEvents
+      canManagePosts
+      canManageMembers
+    }
+  }
+`;
+
+export const QUERY_ROLES = gql`
+  query Roles {
+    roles {
+      _id
+      name
+      isUniformed
+    }
+  }
+`;
+
+export const QUERY_SINGLE_MEMBER = gql`
+  query SingleMember($userId: ID!) {
+    singleMember(userId: $userId) {
+      _id
+      scoutRego
+      displayName
+      firstName
+      lastName
+      preferredName
+      scoutName
+      status
+      gender
+      dob
+      section
+      email
+      phone
+      taskAvailabity
+      role {
+        _id
+        name
+      }
+    }
+  }
+`;

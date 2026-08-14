@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@apollo/client";
+import { useMutation, useQuery } from "@apollo/client";
 import { useEffect, useState } from "react";
 import {
   Button,
@@ -14,6 +14,7 @@ import {
   TableRow,
 } from "semantic-ui-react";
 import { QUERY_ME_TASKS } from "@/lib/client/queries";
+import { SET_TASK_STATUS } from "@/lib/client/mutations";
 import { useCompassContext } from "@/lib/client/CompassContext";
 import { UPDATE_RERENDER_MYTASKS } from "@/lib/client/actions";
 import type { Task } from "@/lib/client/types";
@@ -26,6 +27,7 @@ export default function MyTasks() {
   const [activeTask, setActiveTask] = useState<string | null>(null);
   const [showTaskModal, setShowTaskModal] = useState(false);
   const { data, refetch } = useQuery<{ me: { myTasks: Task[] } }>(QUERY_ME_TASKS);
+  const [setTaskStatus] = useMutation(SET_TASK_STATUS);
 
   useEffect(() => {
     if (state.reRenderMyTasks) {
@@ -58,14 +60,28 @@ export default function MyTasks() {
                   </TableCell>
                 ))}
                 <TableCell>
-                  <Button
-                    onClick={() => {
-                      setActiveTask(task._id);
-                      setShowTaskModal(true);
-                    }}
-                  >
-                    Open Task
-                  </Button>
+                  <Button.Group size="tiny">
+                    <Button
+                      onClick={() => {
+                        setActiveTask(task._id);
+                        setShowTaskModal(true);
+                      }}
+                    >
+                      Open Task
+                    </Button>
+                    {task.status !== "complete" ? (
+                      <Button
+                        positive
+                        onClick={() =>
+                          void setTaskStatus({
+                            variables: { taskId: task._id, status: "complete" },
+                          }).then(() => refetch())
+                        }
+                      >
+                        Complete
+                      </Button>
+                    ) : null}
+                  </Button.Group>
                 </TableCell>
               </TableRow>
             ))}
@@ -77,6 +93,7 @@ export default function MyTasks() {
           activeTask={activeTask}
           showTaskModal={showTaskModal}
           setShowTaskModal={setShowTaskModal}
+          onSaved={() => void refetch()}
         />
       ) : null}
     </>

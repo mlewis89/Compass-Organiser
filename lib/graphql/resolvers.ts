@@ -1,5 +1,6 @@
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
+import { GraphQLError } from "graphql";
 import { getDb } from "@/lib/db";
 import {
   AuthenticationError,
@@ -12,6 +13,14 @@ import {
   hasActiveMembership,
   requireMembership,
 } from "@/lib/tenancy";
+import {
+  GROUP_ADMIN_ROLES,
+  LEADER_ROLES,
+  getMemberRoles,
+  hasAnyRole,
+  requireOwnerOrRole,
+  requireRole,
+} from "@/lib/authz";
 import {
   boardPosts,
   eventAttendees,
@@ -257,6 +266,31 @@ async function hydrateUser(user: UserRow, groupId: string | null) {
   };
 }
 
+async function mapRole(role: typeof roles.$inferSelect) {
+  const db = getDb();
+  const reportsTo = role.reportsToRoleId
+    ? (
+        await db.select().from(roles).where(eq(roles.id, role.reportsToRoleId)).limit(1)
+      )[0]
+    : null;
+  const mappedReportsTo = reportsTo
+    ? {
+        ...reportsTo,
+        _id: reportsTo.id,
+        prequistes: reportsTo.prerequisites,
+        RequiredTraining: reportsTo.requiredTraining,
+      }
+    : null;
+  return {
+    ...role,
+    _id: role.id,
+    prequistes: role.prerequisites,
+    RequiredTraining: role.requiredTraining,
+    reportsTo: mappedReportsTo,
+    ReportsTo: mappedReportsTo,
+  };
+}
+
 function requireGroup(groupId: string | null) {
   if (!groupId) {
     throw GroupNotConfiguredError;
@@ -276,6 +310,29 @@ async function scopedGroupId(
     return group.id;
   }
   return context.groupId;
+}
+
+async function deleteEventImpl(
+  { eventId }: { eventId: string },
+  context: GraphQLContext,
+) {
+  const user = requireUser(context.user);
+  const groupId = requireGroup(context.groupId);
+  const db = getDb();
+  const [existingEvent] = await db
+    .select()
+    .from(events)
+    .where(and(eq(events.id, eventId), eq(events.groupId, groupId)))
+    .limit(1);
+  if (!existingEvent) {
+    return null;
+  }
+  await requireOwnerOrRole(user, groupId, [existingEvent.organiserUserId], LEADER_ROLES);
+  const [removed] = await db
+    .delete(events)
+    .where(and(eq(events.id, eventId), eq(events.groupId, groupId)))
+    .returning();
+  return removed ? mapEvent(removed) : null;
 }
 
 async function canSeePrivateContent(
@@ -596,6 +653,39 @@ export const resolvers = {
         .limit(1);
       return row ? mapTask(row) : null;
     },
+    singleMember: async (
+      _parent: unknown,
+      { userId }: { userId: string },
+      context: GraphQLContext,
+    ) => {
+      requireUser(context.user);
+      const groupId = requireGroup(context.groupId);
+      const db = getDb();
+      const [row] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+      return row ? hydrateUser(row, groupId) : null;
+    },
+    roles: async (_parent: unknown, _args: unknown, context: GraphQLContext) => {
+      requireUser(context.user);
+      const db = getDb();
+      const rows = await db.select().from(roles).orderBy(roles.name);
+      return Promise.all(rows.map(mapRole));
+    },
+    myPermissions: async (
+      _parent: unknown,
+      _args: unknown,
+      context: GraphQLContext,
+    ) => {
+      const user = requireUser(context.user);
+      const groupId = requireGroup(context.groupId);
+      const userRoles = await getMemberRoles(user._id, groupId, user.email);
+      return {
+        roles: userRoles,
+        canManageTasks: hasAnyRole(userRoles, LEADER_ROLES),
+        canManageEvents: hasAnyRole(userRoles, LEADER_ROLES),
+        canManagePosts: hasAnyRole(userRoles, LEADER_ROLES),
+        canManageMembers: hasAnyRole(userRoles, GROUP_ADMIN_ROLES),
+      };
+    },
   },
   Mutation: {
     addUser: async (
@@ -669,6 +759,9 @@ export const resolvers = {
     ) => {
       const current = requireUser(context.user);
       const targetId = user._id || current._id;
+      if (targetId !== current._id) {
+        await requireRole(current, context.groupId, GROUP_ADMIN_ROLES);
+      }
       const db = getDb();
       const [updated] = await db
         .update(users)
@@ -715,6 +808,9 @@ export const resolvers = {
         return null;
       }
       const targetId = userId || user._id;
+      if (targetId !== user._id) {
+        await requireRole(user, context.groupId, GROUP_ADMIN_ROLES);
+      }
       const db = getDb();
       await db
         .insert(userSkills)
@@ -733,6 +829,9 @@ export const resolvers = {
         return null;
       }
       const targetId = userId || user._id;
+      if (targetId !== user._id) {
+        await requireRole(user, context.groupId, GROUP_ADMIN_ROLES);
+      }
       const db = getDb();
       await db
         .delete(userSkills)
@@ -747,6 +846,9 @@ export const resolvers = {
     ) => {
       const user = requireUser(context.user);
       const targetId = userId || user._id;
+      if (targetId !== user._id) {
+        await requireRole(user, context.groupId, LEADER_ROLES);
+      }
       const db = getDb();
       await db
         .insert(userTasks)
@@ -762,6 +864,9 @@ export const resolvers = {
     ) => {
       const user = requireUser(context.user);
       const targetId = userId || user._id;
+      if (targetId !== user._id) {
+        await requireRole(user, context.groupId, LEADER_ROLES);
+      }
       const db = getDb();
       await db
         .delete(userTasks)
@@ -776,7 +881,7 @@ export const resolvers = {
     ) => {
       const user = requireUser(context.user);
       const groupId = requireGroup(context.groupId);
-      await requireMembership(user, groupId);
+      await requireRole(user, groupId, LEADER_ROLES);
       const db = getDb();
       const [created] = await db
         .insert(boardPosts)
@@ -800,8 +905,21 @@ export const resolvers = {
     ) => {
       const user = requireUser(context.user);
       const groupId = requireGroup(context.groupId);
-      await requireMembership(user, groupId);
       const db = getDb();
+      const [existingPost] = await db
+        .select()
+        .from(boardPosts)
+        .where(and(eq(boardPosts.id, postId), eq(boardPosts.groupId, groupId)))
+        .limit(1);
+      if (!existingPost) {
+        return null;
+      }
+      await requireOwnerOrRole(
+        user,
+        groupId,
+        [existingPost.createdByUserId],
+        LEADER_ROLES,
+      );
       const [updated] = await db
         .update(boardPosts)
         .set({
@@ -824,8 +942,21 @@ export const resolvers = {
     ) => {
       const user = requireUser(context.user);
       const groupId = requireGroup(context.groupId);
-      await requireMembership(user, groupId);
       const db = getDb();
+      const [existingPost] = await db
+        .select()
+        .from(boardPosts)
+        .where(and(eq(boardPosts.id, postId), eq(boardPosts.groupId, groupId)))
+        .limit(1);
+      if (!existingPost) {
+        return null;
+      }
+      await requireOwnerOrRole(
+        user,
+        groupId,
+        [existingPost.createdByUserId],
+        LEADER_ROLES,
+      );
       const [removed] = await db
         .delete(boardPosts)
         .where(and(eq(boardPosts.id, postId), eq(boardPosts.groupId, groupId)))
@@ -839,7 +970,7 @@ export const resolvers = {
     ) => {
       const user = requireUser(context.user);
       const groupId = requireGroup(context.groupId);
-      await requireMembership(user, groupId);
+      await requireRole(user, groupId, LEADER_ROLES);
       const db = getDb();
       const [created] = await db
         .insert(events)
@@ -867,8 +998,21 @@ export const resolvers = {
     ) => {
       const user = requireUser(context.user);
       const groupId = requireGroup(context.groupId);
-      await requireMembership(user, groupId);
       const db = getDb();
+      const [existingEvent] = await db
+        .select()
+        .from(events)
+        .where(and(eq(events.id, eventId), eq(events.groupId, groupId)))
+        .limit(1);
+      if (!existingEvent) {
+        return null;
+      }
+      await requireOwnerOrRole(
+        user,
+        groupId,
+        [existingEvent.organiserUserId],
+        LEADER_ROLES,
+      );
       const [updated] = await db
         .update(events)
         .set({
@@ -890,6 +1034,16 @@ export const resolvers = {
     },
     deletEvent: async (
       _parent: unknown,
+      args: { eventId: string },
+      context: GraphQLContext,
+    ) => deleteEventImpl(args, context),
+    deleteEvent: async (
+      _parent: unknown,
+      args: { eventId: string },
+      context: GraphQLContext,
+    ) => deleteEventImpl(args, context),
+    joinEvent: async (
+      _parent: unknown,
       { eventId }: { eventId: string },
       context: GraphQLContext,
     ) => {
@@ -897,11 +1051,77 @@ export const resolvers = {
       const groupId = requireGroup(context.groupId);
       await requireMembership(user, groupId);
       const db = getDb();
-      const [removed] = await db
-        .delete(events)
+      const [event] = await db
+        .select()
+        .from(events)
         .where(and(eq(events.id, eventId), eq(events.groupId, groupId)))
-        .returning();
-      return removed ? mapEvent(removed) : null;
+        .limit(1);
+      if (!event) {
+        return null;
+      }
+      await db
+        .insert(eventAttendees)
+        .values({ eventId, userId: user._id })
+        .onConflictDoNothing();
+      return mapEvent(event);
+    },
+    leaveEvent: async (
+      _parent: unknown,
+      { eventId }: { eventId: string },
+      context: GraphQLContext,
+    ) => {
+      const user = requireUser(context.user);
+      const groupId = requireGroup(context.groupId);
+      const db = getDb();
+      const [event] = await db
+        .select()
+        .from(events)
+        .where(and(eq(events.id, eventId), eq(events.groupId, groupId)))
+        .limit(1);
+      if (!event) {
+        return null;
+      }
+      await db
+        .delete(eventAttendees)
+        .where(
+          and(eq(eventAttendees.eventId, eventId), eq(eventAttendees.userId, user._id)),
+        );
+      return mapEvent(event);
+    },
+    setEventAttendee: async (
+      _parent: unknown,
+      {
+        eventId,
+        userId,
+        attending,
+      }: { eventId: string; userId: string; attending: boolean },
+      context: GraphQLContext,
+    ) => {
+      const user = requireUser(context.user);
+      const groupId = requireGroup(context.groupId);
+      const db = getDb();
+      const [event] = await db
+        .select()
+        .from(events)
+        .where(and(eq(events.id, eventId), eq(events.groupId, groupId)))
+        .limit(1);
+      if (!event) {
+        return null;
+      }
+      await requireOwnerOrRole(user, groupId, [event.organiserUserId], LEADER_ROLES);
+      if (attending) {
+        await db
+          .insert(eventAttendees)
+          .values({ eventId, userId })
+          .onConflictDoNothing();
+      } else {
+        await db
+          .delete(eventAttendees)
+          .where(
+            and(eq(eventAttendees.eventId, eventId), eq(eventAttendees.userId, userId)),
+          );
+      }
+      return mapEvent(event);
     },
     addTask: async (
       _parent: unknown,
@@ -910,7 +1130,7 @@ export const resolvers = {
     ) => {
       const user = requireUser(context.user);
       const groupId = requireGroup(context.groupId);
-      await requireMembership(user, groupId);
+      await requireRole(user, groupId, LEADER_ROLES);
       const db = getDb();
       const [created] = await db
         .insert(tasks)
@@ -944,8 +1164,21 @@ export const resolvers = {
     ) => {
       const user = requireUser(context.user);
       const groupId = requireGroup(context.groupId);
-      await requireMembership(user, groupId);
       const db = getDb();
+      const [existingTask] = await db
+        .select()
+        .from(tasks)
+        .where(and(eq(tasks.id, taskId), eq(tasks.groupId, groupId)))
+        .limit(1);
+      if (!existingTask) {
+        return null;
+      }
+      await requireOwnerOrRole(
+        user,
+        groupId,
+        [existingTask.createdByUserId, existingTask.responsibleUserId],
+        LEADER_ROLES,
+      );
       const [updated] = await db
         .update(tasks)
         .set({
@@ -960,6 +1193,49 @@ export const resolvers = {
         })
         .where(and(eq(tasks.id, taskId), eq(tasks.groupId, groupId)))
         .returning();
+      if (!updated) {
+        return null;
+      }
+      if (taskData.requiredSkills) {
+        const skillIds = taskData.requiredSkills
+          .map((skill) => skill._id)
+          .filter((id): id is string => Boolean(id));
+        await db.delete(taskSkills).where(eq(taskSkills.taskId, taskId));
+        if (skillIds.length > 0) {
+          await db
+            .insert(taskSkills)
+            .values(skillIds.map((skillId) => ({ taskId, skillId })));
+        }
+      }
+      return mapTask(updated);
+    },
+    setTaskStatus: async (
+      _parent: unknown,
+      { taskId, status }: { taskId: string; status: string },
+      context: GraphQLContext,
+    ) => {
+      const user = requireUser(context.user);
+      const groupId = requireGroup(context.groupId);
+      const db = getDb();
+      const [existingTask] = await db
+        .select()
+        .from(tasks)
+        .where(and(eq(tasks.id, taskId), eq(tasks.groupId, groupId)))
+        .limit(1);
+      if (!existingTask) {
+        return null;
+      }
+      await requireOwnerOrRole(
+        user,
+        groupId,
+        [existingTask.createdByUserId, existingTask.responsibleUserId],
+        LEADER_ROLES,
+      );
+      const [updated] = await db
+        .update(tasks)
+        .set({ status, updatedAt: new Date() })
+        .where(eq(tasks.id, taskId))
+        .returning();
       return updated ? mapTask(updated) : null;
     },
     deleteTask: async (
@@ -969,13 +1245,179 @@ export const resolvers = {
     ) => {
       const user = requireUser(context.user);
       const groupId = requireGroup(context.groupId);
-      await requireMembership(user, groupId);
       const db = getDb();
+      const [existingTask] = await db
+        .select()
+        .from(tasks)
+        .where(and(eq(tasks.id, taskId), eq(tasks.groupId, groupId)))
+        .limit(1);
+      if (!existingTask) {
+        return null;
+      }
+      await requireOwnerOrRole(
+        user,
+        groupId,
+        [existingTask.createdByUserId, existingTask.responsibleUserId],
+        LEADER_ROLES,
+      );
       const [removed] = await db
         .delete(tasks)
         .where(and(eq(tasks.id, taskId), eq(tasks.groupId, groupId)))
         .returning();
       return removed ? mapTask(removed) : null;
+    },
+    addMember: async (
+      _parent: unknown,
+      { member }: { member: { email: string; roleIds?: string[] } },
+      context: GraphQLContext,
+    ) => {
+      const user = requireUser(context.user);
+      const groupId = requireGroup(context.groupId);
+      await requireRole(user, groupId, GROUP_ADMIN_ROLES);
+      const db = getDb();
+      const email = member.email.toLowerCase();
+      const [existingUser] = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, email))
+        .limit(1);
+      if (!existingUser) {
+        throw new GraphQLError(
+          "No account found with that email. Ask them to sign up first.",
+          { extensions: { code: "NOT_FOUND" } },
+        );
+      }
+      const [membership] = await db
+        .insert(memberships)
+        .values({ userId: existingUser.id, groupId, status: "active" })
+        .onConflictDoUpdate({
+          target: [memberships.userId, memberships.groupId],
+          set: { status: "active", updatedAt: new Date() },
+        })
+        .returning();
+      const roleIds = (member.roleIds ?? []).filter(
+        (id): id is string => Boolean(id),
+      );
+      if (roleIds.length > 0 && membership) {
+        await db
+          .insert(membershipRoles)
+          .values(roleIds.map((roleId) => ({ membershipId: membership.id, roleId })))
+          .onConflictDoNothing();
+      }
+      return hydrateUser(existingUser, groupId);
+    },
+    setMemberStatus: async (
+      _parent: unknown,
+      { userId, status }: { userId: string; status: string },
+      context: GraphQLContext,
+    ) => {
+      const user = requireUser(context.user);
+      const groupId = requireGroup(context.groupId);
+      await requireRole(user, groupId, GROUP_ADMIN_ROLES);
+      const db = getDb();
+      await db
+        .update(memberships)
+        .set({ status, updatedAt: new Date() })
+        .where(and(eq(memberships.userId, userId), eq(memberships.groupId, groupId)));
+      const [row] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+      return row ? hydrateUser(row, groupId) : null;
+    },
+    removeMember: async (
+      _parent: unknown,
+      { userId }: { userId: string },
+      context: GraphQLContext,
+    ) => {
+      const user = requireUser(context.user);
+      const groupId = requireGroup(context.groupId);
+      await requireRole(user, groupId, GROUP_ADMIN_ROLES);
+      const db = getDb();
+      const [row] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+      await db
+        .delete(memberships)
+        .where(and(eq(memberships.userId, userId), eq(memberships.groupId, groupId)));
+      return row ? mapUser(row) : null;
+    },
+    updateMember: async (
+      _parent: unknown,
+      { userId, user: userInput }: { userId: string; user: UserInput },
+      context: GraphQLContext,
+    ) => {
+      const current = requireUser(context.user);
+      const groupId = requireGroup(context.groupId);
+      await requireOwnerOrRole(current, groupId, [userId], GROUP_ADMIN_ROLES);
+      const db = getDb();
+      const [updated] = await db
+        .update(users)
+        .set({
+          firstName: userInput.firstName,
+          lastName: userInput.lastName,
+          preferredName: userInput.preferredName,
+          scoutName: userInput.scoutName,
+          scoutRego: userInput.scoutRego,
+          status: userInput.status,
+          gender: userInput.gender,
+          dob: toDate(userInput.dob) ?? undefined,
+          section: userInput.section,
+          email: userInput.email?.toLowerCase(),
+          phone: userInput.phone,
+          taskAvailability: userInput.taskAvailabity,
+          updatedAt: new Date(),
+        })
+        .where(eq(users.id, userId))
+        .returning();
+      return updated ? hydrateUser(updated, groupId) : null;
+    },
+    assignMemberRole: async (
+      _parent: unknown,
+      { userId, roleId }: { userId: string; roleId: string },
+      context: GraphQLContext,
+    ) => {
+      const user = requireUser(context.user);
+      const groupId = requireGroup(context.groupId);
+      await requireRole(user, groupId, GROUP_ADMIN_ROLES);
+      const db = getDb();
+      const [membership] = await db
+        .select()
+        .from(memberships)
+        .where(and(eq(memberships.userId, userId), eq(memberships.groupId, groupId)))
+        .limit(1);
+      if (!membership) {
+        return null;
+      }
+      await db
+        .insert(membershipRoles)
+        .values({ membershipId: membership.id, roleId })
+        .onConflictDoNothing();
+      const [row] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+      return row ? hydrateUser(row, groupId) : null;
+    },
+    removeMemberRole: async (
+      _parent: unknown,
+      { userId, roleId }: { userId: string; roleId: string },
+      context: GraphQLContext,
+    ) => {
+      const user = requireUser(context.user);
+      const groupId = requireGroup(context.groupId);
+      await requireRole(user, groupId, GROUP_ADMIN_ROLES);
+      const db = getDb();
+      const [membership] = await db
+        .select()
+        .from(memberships)
+        .where(and(eq(memberships.userId, userId), eq(memberships.groupId, groupId)))
+        .limit(1);
+      if (!membership) {
+        return null;
+      }
+      await db
+        .delete(membershipRoles)
+        .where(
+          and(
+            eq(membershipRoles.membershipId, membership.id),
+            eq(membershipRoles.roleId, roleId),
+          ),
+        );
+      const [row] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+      return row ? hydrateUser(row, groupId) : null;
     },
   },
 };

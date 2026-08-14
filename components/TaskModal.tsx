@@ -9,15 +9,19 @@ import {
   Input,
   Label,
   Modal,
-  ModalActions,
-  ModalContent,
-  ModalHeader,
   Segment,
   Select,
 } from "semantic-ui-react";
-import { QUERY_SINGLE_TASK } from "@/lib/client/queries";
-import { DELETE_TASK, REMOVE_USER_TASK, UPDATE_TASK } from "@/lib/client/mutations";
+import { QUERY_SINGLE_TASK, QUERY_TASKS } from "@/lib/client/queries";
+import {
+  ADD_TASK,
+  DELETE_TASK,
+  REMOVE_USER_TASK,
+  UPDATE_TASK,
+} from "@/lib/client/mutations";
 import type { Task } from "@/lib/client/types";
+import { usePermissions } from "@/lib/client/usePermissions";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 const emptyTask: Task = {
   _id: "",
@@ -42,15 +46,19 @@ type Props = {
   activeTask: string | null;
   showTaskModal: boolean;
   setShowTaskModal: (open: boolean) => void;
+  onSaved?: () => void;
 };
 
 export default function TaskModal({
   activeTask,
   showTaskModal,
   setShowTaskModal,
+  onSaved,
 }: Props) {
+  const isCreateMode = !activeTask;
   const [taskData, setTaskData] = useState<Task>(emptyTask);
   const [deleteCheckOpen, setDeleteCheckOpen] = useState(false);
+  const { permissions } = usePermissions();
 
   const { data } = useQuery<{ singleTask: Task }>(QUERY_SINGLE_TASK, {
     variables: { taskId: activeTask },
@@ -58,24 +66,34 @@ export default function TaskModal({
   });
 
   useEffect(() => {
-    if (data?.singleTask) {
+    if (isCreateMode) {
+      setTaskData(emptyTask);
+    } else if (data?.singleTask) {
       setTaskData(data.singleTask);
     }
-  }, [data]);
+  }, [data, isCreateMode]);
+
+  const refetchQueries = [{ query: QUERY_TASKS }];
 
   const [removeUserFromTask] = useMutation(REMOVE_USER_TASK);
-  const [updateTask] = useMutation(UPDATE_TASK);
-  const [deleteTask] = useMutation(DELETE_TASK);
+  const [addTask] = useMutation(ADD_TASK, { refetchQueries });
+  const [updateTask] = useMutation(UPDATE_TASK, { refetchQueries });
+  const [deleteTask] = useMutation(DELETE_TASK, { refetchQueries });
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = event.target;
     setTaskData({ ...taskData, [name]: value });
   };
 
+  const canManage = Boolean(permissions.canManageTasks) || isCreateMode;
+
+  const handleClose = () => setShowTaskModal(false);
+
   return (
     <Modal
       centered={false}
       open={showTaskModal}
+      onClose={handleClose}
       aria-labelledby="task-modal"
       size="large"
       dimmer="blurring"
@@ -84,18 +102,24 @@ export default function TaskModal({
         <Form
           onSubmit={(event) => {
             event.preventDefault();
-            void updateTask({
-              variables: {
-                taskId: taskData._id,
-                taskData: {
-                  name: taskData.name,
-                  description: taskData.description,
-                  duration: parseFloat(String(taskData.duration ?? 0)),
-                  priority: parseInt(String(taskData.priority ?? 0), 10),
-                  status: taskData.status,
-                },
-              },
-            });
+            const variables = {
+              name: taskData.name,
+              description: taskData.description,
+              duration: parseFloat(String(taskData.duration ?? 0)),
+              priority: parseInt(String(taskData.priority ?? 0), 10),
+              status: taskData.status,
+              dueDate: taskData.dueDate || undefined,
+            };
+            if (isCreateMode) {
+              void addTask({ variables: { taskData: variables } }).then(() => {
+                setShowTaskModal(false);
+                onSaved?.();
+              });
+            } else {
+              void updateTask({
+                variables: { taskId: taskData._id, taskData: variables },
+              }).then(() => onSaved?.());
+            }
           }}
         >
           <FormField
@@ -104,6 +128,7 @@ export default function TaskModal({
             label="Task Name"
             name="name"
             onChange={handleInputChange}
+            disabled={!canManage}
           />
           <FormField
             control={Input}
@@ -111,6 +136,7 @@ export default function TaskModal({
             label="Description"
             name="description"
             onChange={handleInputChange}
+            disabled={!canManage}
           />
           <FormField>
             <label>Priority</label>
@@ -122,6 +148,7 @@ export default function TaskModal({
               name="priority"
               value={taskData.priority ?? 0}
               onChange={handleInputChange}
+              disabled={!canManage}
             />
             <Label circular size="big">
               {taskData.priority}
@@ -137,6 +164,7 @@ export default function TaskModal({
               name="duration"
               value={taskData.duration ?? 0}
               onChange={handleInputChange}
+              disabled={!canManage}
             />
             <Label circular size="big">
               {taskData.duration} hrs
@@ -148,6 +176,7 @@ export default function TaskModal({
             label="Due Date"
             name="dueDate"
             onChange={handleInputChange}
+            disabled={!canManage}
           />
           <FormField
             control={Select}
@@ -176,50 +205,42 @@ export default function TaskModal({
             name="responsible"
             readOnly
           />
-          <p>created by: {taskData.createdBy?.displayName}</p>
-          <Button type="submit">Update</Button>
-          <Button
-            type="button"
-            onClick={() => {
-              void removeUserFromTask({ variables: { taskId: taskData._id } });
-              setShowTaskModal(false);
-            }}
-          >
-            Remove from my Tasks
-          </Button>
-          <Button type="button" onClick={() => setDeleteCheckOpen(true)}>
-            Delete Task?
-          </Button>
-          <Button type="button" onClick={() => setShowTaskModal(false)}>
+          {!isCreateMode ? <p>created by: {taskData.createdBy?.displayName}</p> : null}
+          <Button type="submit">{isCreateMode ? "Create" : "Update"}</Button>
+          {!isCreateMode ? (
+            <Button
+              type="button"
+              onClick={() => {
+                void removeUserFromTask({ variables: { taskId: taskData._id } }).then(() =>
+                  onSaved?.(),
+                );
+                setShowTaskModal(false);
+              }}
+            >
+              Remove from my Tasks
+            </Button>
+          ) : null}
+          {!isCreateMode && canManage ? (
+            <Button type="button" onClick={() => setDeleteCheckOpen(true)}>
+              Delete Task?
+            </Button>
+          ) : null}
+          <Button type="button" onClick={handleClose}>
             Close
           </Button>
         </Form>
       </Segment>
-      <Modal
-        onClose={() => setDeleteCheckOpen(false)}
+      <ConfirmDialog
         open={deleteCheckOpen}
-        size="small"
-      >
-        <ModalHeader>Confirm Delete</ModalHeader>
-        <ModalContent>
-          <p>Are you sure you want to delete the {taskData.name} Task?</p>
-        </ModalContent>
-        <ModalActions>
-          <Button
-            icon="check"
-            content="Yes"
-            onClick={() => {
-              void deleteTask({ variables: { taskId: taskData._id } });
-              setDeleteCheckOpen(false);
-              setShowTaskModal(false);
-            }}
-          />
-          <Button
-            content="No"
-            onClick={() => setDeleteCheckOpen(false)}
-          />
-        </ModalActions>
-      </Modal>
+        header="Confirm Delete"
+        message={`Are you sure you want to delete the ${taskData.name} task?`}
+        onCancel={() => setDeleteCheckOpen(false)}
+        onConfirm={() => {
+          void deleteTask({ variables: { taskId: taskData._id } }).then(() => onSaved?.());
+          setDeleteCheckOpen(false);
+          setShowTaskModal(false);
+        }}
+      />
     </Modal>
   );
 }
