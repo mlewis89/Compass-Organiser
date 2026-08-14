@@ -48,8 +48,8 @@ Create a Clerk account with `alex.leader@example.com` to pick up the seeded grou
 | `DATABASE_URL` | Neon connection string (Marketplace-provisioned) |
 | `CLERK_SECRET_KEY` | Clerk server key (Marketplace-provisioned) |
 | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk publishable key |
-| `NEXT_PUBLIC_CLERK_SIGN_IN_URL` | `/sign-in` |
-| `NEXT_PUBLIC_CLERK_SIGN_UP_URL` | `/sign-up` |
+| `NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL` | `/dashboard` after Account Portal sign-in |
+| `NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL` | `/dashboard` after Account Portal sign-up |
 | `JWT_SECRET` | Still used by leftover GraphQL password mutations |
 | `JWT_EXPIRY` | Token lifetime, e.g. `7d` |
 | `DEFAULT_GROUP_SLUG` | Active group until a group switcher exists |
@@ -77,7 +77,7 @@ Clerk is identity only. Scout groups and roles stay in Neon:
 
 Do **not** use Clerk Organizations as the source of truth for scout roles.
 
-Clerk production instances cannot use a `*.vercel.app` hostname. This Hobby deploy uses the Clerk development instance. A custom domain is required before switching to live keys.
+Clerk production instances cannot use a `*.vercel.app` hostname. This Hobby deploy uses the Clerk development instance and redirects `/sign-in` and `/sign-up` to the `*.accounts.dev` Account Portal. Remove any `compass-organiser.vercel.app` production domain from the Clerk dashboard if sign-in tries to use `accounts.compass-organiser.vercel.app`. A custom domain you own is required before switching to live keys.
 
 ## Hobby notes
 
