@@ -4,6 +4,8 @@ Scout group organiser for notice-board posts, events, skill-matched tasks, and m
 
 **Live:** [https://compass-organiser.vercel.app](https://compass-organiser.vercel.app)
 
+Public group pages live at `/groups/{slug}` (sample: `/groups/default`). The home page introduces Compass; it does not list a group's events.
+
 ## Stack
 
 - Next.js App Router (TypeScript)

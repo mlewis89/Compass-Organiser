@@ -27,9 +27,11 @@ function formatEventDate(value?: string | null) {
   return Number.isNaN(parsed.getTime()) ? "" : parsed.toLocaleDateString();
 }
 
-export default function EventList() {
+export default function EventList({ groupSlug }: { groupSlug?: string }) {
   const [state, dispatch] = useCompassContext();
-  const { data } = useQuery<{ events: EventItem[] }>(QUERY_EVENTS);
+  const { data } = useQuery<{ events: EventItem[] }>(QUERY_EVENTS, {
+    variables: { groupSlug },
+  });
   const events = data?.events;
 
   return (

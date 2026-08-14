@@ -177,10 +177,18 @@ export const typeDefs = `#graphql
     value: String
   }
 
+  type Group {
+    _id: ID!
+    name: String!
+    slug: String!
+    status: String
+  }
+
   type Query {
-    boardPosts: [BoardPost]
-    events: [Event]
-    singleEvent(eventId: ID!): Event
+    publicGroup(slug: String!): Group
+    boardPosts(groupSlug: String): [BoardPost]
+    events(groupSlug: String): [Event]
+    singleEvent(eventId: ID!, groupSlug: String): Event
     userTasks(userId: ID): [Task]
     suggestedTasks(numberOfTasks: Int, userSkills: [updateSkill], userId: ID): [Task]
     tasks: [Task]

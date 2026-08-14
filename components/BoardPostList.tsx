@@ -17,8 +17,10 @@ import { QUERY_BOARDPOST } from "@/lib/client/queries";
 import type { BoardPost } from "@/lib/client/types";
 import PlaceholderPost from "@/components/placeholder/PlaceholderPost";
 
-export default function BoardPostList() {
-  const { data } = useQuery<{ boardPosts: BoardPost[] }>(QUERY_BOARDPOST);
+export default function BoardPostList({ groupSlug }: { groupSlug?: string }) {
+  const { data } = useQuery<{ boardPosts: BoardPost[] }>(QUERY_BOARDPOST, {
+    variables: { groupSlug },
+  });
   const posts = data?.boardPosts;
 
   return (

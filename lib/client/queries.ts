@@ -1,8 +1,19 @@
 import { gql } from "@apollo/client";
 
+export const QUERY_PUBLIC_GROUP = gql`
+  query PublicGroup($slug: String!) {
+    publicGroup(slug: $slug) {
+      _id
+      name
+      slug
+      status
+    }
+  }
+`;
+
 export const QUERY_BOARDPOST = gql`
-  query boardPosts {
-    boardPosts {
+  query boardPosts($groupSlug: String) {
+    boardPosts(groupSlug: $groupSlug) {
       title
       isPublic
       image
@@ -22,8 +33,8 @@ export const QUERY_BOARDPOST = gql`
 `;
 
 export const QUERY_EVENTS = gql`
-  query Events {
-    events {
+  query Events($groupSlug: String) {
+    events(groupSlug: $groupSlug) {
       _id
       title
       organisor {
@@ -41,8 +52,8 @@ export const QUERY_EVENTS = gql`
 `;
 
 export const QUERY_SINGLE_EVENT = gql`
-  query SingleEvent($eventId: ID!) {
-    singleEvent(eventId: $eventId) {
+  query SingleEvent($eventId: ID!, $groupSlug: String) {
+    singleEvent(eventId: $eventId, groupSlug: $groupSlug) {
       _id
       attending {
         _id

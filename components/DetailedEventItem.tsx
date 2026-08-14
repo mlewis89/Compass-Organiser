@@ -27,12 +27,12 @@ function formatDateTime(value?: string | null) {
   return `${parsed.toLocaleDateString()} ${parsed.toLocaleTimeString()}`;
 }
 
-export default function DetailedEventItem() {
+export default function DetailedEventItem({ groupSlug }: { groupSlug?: string }) {
   const [state] = useCompassContext();
   const { data, loading } = useQuery<{ singleEvent: EventItem }>(
     QUERY_SINGLE_EVENT,
     {
-      variables: { eventId: state.activeEventId },
+      variables: { eventId: state.activeEventId, groupSlug },
       skip: !state.activeEventId,
     },
   );

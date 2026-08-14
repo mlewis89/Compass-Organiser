@@ -6,27 +6,51 @@ import { AuthenticationError, type JwtUser } from "@/lib/auth/jwt";
 
 export const GROUP_COOKIE = "compass_group";
 
+export async function findGroupBySlug(slug: string) {
+  const db = getDb();
+  const [row] = await db
+    .select()
+    .from(groups)
+    .where(eq(groups.slug, slug))
+    .limit(1);
+  return row ?? null;
+}
+
 export async function resolveGroupId(
   requestedSlug?: string | null,
 ): Promise<string | null> {
-  const db = getDb();
   const slug =
     requestedSlug ||
     process.env.DEFAULT_GROUP_SLUG ||
     "default";
 
-  const [bySlug] = await db
-    .select({ id: groups.id })
-    .from(groups)
-    .where(eq(groups.slug, slug))
-    .limit(1);
-
+  const bySlug = await findGroupBySlug(slug);
   if (bySlug) {
     return bySlug.id;
   }
 
+  const db = getDb();
   const [first] = await db.select({ id: groups.id }).from(groups).limit(1);
   return first?.id ?? null;
+}
+
+export async function hasActiveMembership(
+  userId: string,
+  groupId: string,
+): Promise<boolean> {
+  const db = getDb();
+  const [membership] = await db
+    .select({ id: memberships.id })
+    .from(memberships)
+    .where(
+      and(
+        eq(memberships.userId, userId),
+        eq(memberships.groupId, groupId),
+        eq(memberships.status, "active"),
+      ),
+    )
+    .limit(1);
+  return Boolean(membership);
 }
 
 export async function groupSlugFromRequest(): Promise<string | null> {

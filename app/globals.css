@@ -9,3 +9,16 @@
 .timeSlider {
   width: 100%;
 }
+
+.landing-panel {
+  margin-bottom: 2rem;
+}
+
+.landing-lead {
+  font-size: 1.15rem;
+  max-width: 46rem;
+}
+
+.landing-split {
+  margin-top: 2rem;
+}

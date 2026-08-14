@@ -6,7 +6,11 @@ import {
   requireUser,
   signToken,
 } from "@/lib/auth/jwt";
-import { requireMembership } from "@/lib/tenancy";
+import {
+  findGroupBySlug,
+  hasActiveMembership,
+  requireMembership,
+} from "@/lib/tenancy";
 import {
   boardPosts,
   eventAttendees,
@@ -259,6 +263,30 @@ function requireGroup(groupId: string | null) {
   return groupId;
 }
 
+async function scopedGroupId(
+  context: GraphQLContext,
+  groupSlug?: string | null,
+) {
+  if (groupSlug) {
+    const group = await findGroupBySlug(groupSlug);
+    if (!group) {
+      return null;
+    }
+    return group.id;
+  }
+  return requireGroup(context.groupId);
+}
+
+async function canSeePrivateContent(
+  context: GraphQLContext,
+  groupId: string,
+) {
+  if (!context.user) {
+    return false;
+  }
+  return hasActiveMembership(context.user._id, groupId);
+}
+
 export const resolvers = {
   User: {
     _id: (parent: { id?: string; _id?: string }) => parent._id ?? parent.id,
@@ -287,14 +315,30 @@ export const resolvers = {
     _id: (parent: { id?: string; _id?: string }) => parent._id ?? parent.id,
   },
   Query: {
+    publicGroup: async (_parent: unknown, { slug }: { slug: string }) => {
+      const group = await findGroupBySlug(slug);
+      if (!group) {
+        return null;
+      }
+      return {
+        _id: group.id,
+        name: group.name,
+        slug: group.slug,
+        status: group.status,
+      };
+    },
     boardPosts: async (
       _parent: unknown,
-      _args: unknown,
+      { groupSlug }: { groupSlug?: string | null },
       context: GraphQLContext,
     ) => {
-      const groupId = requireGroup(context.groupId);
+      const groupId = await scopedGroupId(context, groupSlug);
+      if (!groupId) {
+        return [];
+      }
       const db = getDb();
-      const rows = context.user
+      const includePrivate = await canSeePrivateContent(context, groupId);
+      const rows = includePrivate
         ? await db
             .select()
             .from(boardPosts)
@@ -311,12 +355,16 @@ export const resolvers = {
     },
     events: async (
       _parent: unknown,
-      _args: unknown,
+      { groupSlug }: { groupSlug?: string | null },
       context: GraphQLContext,
     ) => {
-      const groupId = requireGroup(context.groupId);
+      const groupId = await scopedGroupId(context, groupSlug);
+      if (!groupId) {
+        return [];
+      }
       const db = getDb();
-      const rows = context.user
+      const includePrivate = await canSeePrivateContent(context, groupId);
+      const rows = includePrivate
         ? await db
             .select()
             .from(events)
@@ -331,10 +379,13 @@ export const resolvers = {
     },
     singleEvent: async (
       _parent: unknown,
-      { eventId }: { eventId: string },
+      { eventId, groupSlug }: { eventId: string; groupSlug?: string | null },
       context: GraphQLContext,
     ) => {
-      const groupId = requireGroup(context.groupId);
+      const groupId = await scopedGroupId(context, groupSlug);
+      if (!groupId) {
+        return null;
+      }
       const db = getDb();
       const [row] = await db
         .select()
@@ -344,7 +395,8 @@ export const resolvers = {
       if (!row) {
         return null;
       }
-      if (!context.user && !row.isPublic) {
+      const includePrivate = await canSeePrivateContent(context, groupId);
+      if (!includePrivate && !row.isPublic) {
         return null;
       }
       return mapEvent(row);
