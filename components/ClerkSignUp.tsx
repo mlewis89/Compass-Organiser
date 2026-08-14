@@ -10,6 +10,7 @@ export default function ClerkSignUp() {
         path="/sign-up"
         signInUrl="/sign-in"
         forceRedirectUrl="/dashboard"
+        signInForceRedirectUrl="/dashboard"
       />
     </div>
   );

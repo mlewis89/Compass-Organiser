@@ -47,9 +47,6 @@ export default function Nav() {
             name="members"
             active={pathname === "/members"}
           />,
-          <MenuItem key="account">
-            <UserButton />
-          </MenuItem>,
         ]
       : [
           <MenuItem
@@ -100,7 +97,12 @@ export default function Nav() {
             <Image src="/path.png" alt="" />
           </GridColumn>
           <GridColumn width={7} verticalAlign="bottom">
-            <Menu stackable>{items}</Menu>
+            <div style={{ display: "flex", alignItems: "flex-end", gap: "0.75rem" }}>
+              <Menu stackable style={{ flex: 1, marginBottom: 0 }}>
+                {items}
+              </Menu>
+              {isLoaded && isSignedIn ? <UserButton /> : null}
+            </div>
           </GridColumn>
         </GridRow>
       </Grid>

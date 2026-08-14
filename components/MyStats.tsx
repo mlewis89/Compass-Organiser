@@ -16,7 +16,7 @@ type Stat = { name: string; value: string };
 export default function MyStats() {
   const { loading, data } = useQuery<{ myStats: Stat[] }>(QUERY_ME_STATS);
 
-  if (loading || !data) {
+  if (loading || !data?.myStats) {
     return <p>Loading...</p>;
   }
 

@@ -72,11 +72,13 @@ export default function MyTasks() {
           </TableBody>
         </Table>
       </Segment>
-      <TaskModal
-        activeTask={activeTask}
-        showTaskModal={showTaskModal}
-        setShowTaskModal={setShowTaskModal}
-      />
+      {showTaskModal && activeTask ? (
+        <TaskModal
+          activeTask={activeTask}
+          showTaskModal={showTaskModal}
+          setShowTaskModal={setShowTaskModal}
+        />
+      ) : null}
     </>
   );
 }

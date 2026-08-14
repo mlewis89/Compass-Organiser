@@ -33,7 +33,7 @@ export default function BoardPostList({ groupSlug }: { groupSlug?: string }) {
               <Item>
                 {post.image ? <ItemImage size="tiny" src={post.image} /> : null}
                 <ItemContent>
-                  <ItemHeader as="a">{post.title}</ItemHeader>
+                  <ItemHeader>{post.title}</ItemHeader>
                   <ItemDescription>{post.content}</ItemDescription>
                   <ItemExtra>{` ~ ${post.createdBy?.displayName ?? ""}`}</ItemExtra>
                 </ItemContent>
