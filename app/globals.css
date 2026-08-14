@@ -24,6 +24,12 @@
 }
 
 .clerk-auth-panel {
-  display: flex;
-  justify-content: center;
+  min-height: 28rem;
+}
+
+.clerk-auth-panel .cl-rootBox,
+.clerk-auth-panel .cl-cardBox,
+.clerk-auth-panel .cl-card {
+  margin-left: auto;
+  margin-right: auto;
 }

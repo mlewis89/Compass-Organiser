@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { UserButton, useAuth } from "@clerk/nextjs";
 import {
@@ -22,28 +21,28 @@ export default function Nav() {
       ? [
           <MenuItem
             key="dashboard"
-            as={Link}
+            as="a"
             href="/dashboard"
             name="Dashboard"
             active={pathname === "/dashboard"}
           />,
           <MenuItem
             key="tasks"
-            as={Link}
+            as="a"
             href="/tasks"
             name="Tasks"
             active={pathname === "/tasks"}
           />,
           <MenuItem
             key="events"
-            as={Link}
+            as="a"
             href="/events"
             name="Events"
             active={pathname === "/events"}
           />,
           <MenuItem
             key="members"
-            as={Link}
+            as="a"
             href="/members"
             name="members"
             active={pathname === "/members"}
@@ -55,35 +54,35 @@ export default function Nav() {
       : [
           <MenuItem
             key="home"
-            as={Link}
+            as="a"
             href="/"
             name="Home"
             active={pathname === "/"}
           />,
           <MenuItem
             key="about"
-            as={Link}
+            as="a"
             href="/about"
             name="About"
             active={pathname === "/about"}
           />,
           <MenuItem
             key="contact"
-            as={Link}
+            as="a"
             href="/contact"
             name="Contact"
             active={pathname === "/contact"}
           />,
           <MenuItem
             key="sign-in"
-            as={Link}
+            as="a"
             href="/sign-in"
             name="Log in"
             active={pathname.startsWith("/sign-in")}
           />,
           <MenuItem
             key="sign-up"
-            as={Link}
+            as="a"
             href="/sign-up"
             name="Sign up"
             active={pathname.startsWith("/sign-up")}
