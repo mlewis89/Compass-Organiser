@@ -20,6 +20,7 @@
     "@apollo/client": "^3.13.8",
     "@apollo/server": "^4.12.2",
     "@as-integrations/next": "^3.2.0",
+    "@clerk/nextjs": "^7.7.5",
     "@neondatabase/serverless": "^1.0.1",
     "@vercel/config": "^0.0.24",
     "bcryptjs": "^3.0.2",

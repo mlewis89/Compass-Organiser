@@ -1,6 +1,6 @@
 # Compass Organiser
 
-Scout group organiser for notice-board posts, events, skill-matched tasks, and members. Hosted as a Next.js App Router app on Vercel Hobby, with Neon Postgres and a Group/Membership schema ready for Clerk later.
+Scout group organiser for notice-board posts, events, skill-matched tasks, and members. Hosted as a Next.js App Router app on Vercel Hobby, with Neon Postgres and Clerk for identity.
 
 **Live:** [https://compass-organiser.vercel.app](https://compass-organiser.vercel.app)
 
@@ -11,14 +11,15 @@ Public group pages live at `/groups/{slug}` (sample: `/groups/default`). The hom
 - Next.js App Router (TypeScript)
 - Apollo GraphQL at `/api/graphql`
 - Neon Postgres + Drizzle ORM
-- JWT login for Phase 1 (Clerk is the planned Phase 2 identity layer)
+- Clerk for sign-in / sign-up (scout groups and roles stay in Neon)
 
 ## Local setup
 
 1. Install dependencies: `npm install`
 2. Link the Vercel project: `vercel link`
 3. Provision Neon: `vercel integration add neon` (finish any browser claim step)
-4. Set secrets (names only here):
+4. Provision Clerk: `npx vercel@latest integration add clerk` (Free plan is enough)
+5. Set remaining secrets (names only here):
 
 ```bash
 vercel env add JWT_SECRET development preview production
@@ -26,26 +27,30 @@ vercel env add JWT_EXPIRY development preview production
 vercel env add DEFAULT_GROUP_SLUG development preview production
 ```
 
-Use a long random value for `JWT_SECRET`, `7d` for `JWT_EXPIRY`, and `default` for `DEFAULT_GROUP_SLUG`.
+Use a long random value for `JWT_SECRET`, `7d` for `JWT_EXPIRY`, and `default` for `DEFAULT_GROUP_SLUG`. Clerk keys come from the Marketplace install.
 
-5. Pull env: `vercel env pull .env.local --yes`
-6. Push schema and seed (never run seed as a Vercel build hook):
+6. Pull env: `vercel env pull .env.local --yes`
+7. Push schema and seed (never run seed as a Vercel build hook):
 
 ```bash
 npm run db:push
 npm run db:seed
 ```
 
-7. Start the app: `npm run dev`
+8. Start the app: `npm run dev`
 
-Default seed login: `alex.leader@example.com` / `password`
+Create a Clerk account with `alex.leader@example.com` to pick up the seeded group-leader membership. New emails get a Neon user and are joined to the default group until invites exist.
 
 ## Environment variables
 
 | Name | Purpose |
 |------|---------|
 | `DATABASE_URL` | Neon connection string (Marketplace-provisioned) |
-| `JWT_SECRET` | Signs Phase 1 session tokens |
+| `CLERK_SECRET_KEY` | Clerk server key (Marketplace-provisioned) |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk publishable key |
+| `NEXT_PUBLIC_CLERK_SIGN_IN_URL` | `/sign-in` |
+| `NEXT_PUBLIC_CLERK_SIGN_UP_URL` | `/sign-up` |
+| `JWT_SECRET` | Still used by leftover GraphQL password mutations |
 | `JWT_EXPIRY` | Token lifetime, e.g. `7d` |
 | `DEFAULT_GROUP_SLUG` | Active group until a group switcher exists |
 
@@ -60,19 +65,19 @@ Preview deployments currently share the same Neon database as development unless
 - `npm run db:push` — apply Drizzle schema (`dotenv-cli` loads `.env.local`)
 - `npm run db:seed` — seed the default group (CLI only)
 
-## Auth Phase 2 (not implemented yet)
+## Auth (Clerk + Neon)
 
-Clerk will replace JWT identity. The schema is already shaped for that:
+Clerk is identity only. Scout groups and roles stay in Neon:
 
-- `users.externalAuthId` — store the Clerk user id; leave `passwordHash` null
-- `users.email` unique — upsert on first Clerk session
-- `groups` + `memberships` + `membership_roles` — scout groups and roles stay in Neon
-- `lib/auth/jwt.ts` `requireUser()` and `lib/tenancy.ts` `requireMembership()` — swap the identity source, keep the same checks
+- `users.externalAuthId` — Clerk user id; `passwordHash` is unused for Clerk accounts
+- First session upserts the Neon user by Clerk id, then by email
+- `groups` + `memberships` + `membership_roles` — UnitLeader, Treasurer, and the rest live here
+- `requireUser()` / `requireMembership()` still gate GraphQL after the Clerk session is mapped
 - Cookie `compass_group` is reserved for a later group switcher
 
-Do **not** use Clerk Organizations as the source of truth for scout roles (UnitLeader, Treasurer, etc.).
+Do **not** use Clerk Organizations as the source of truth for scout roles.
 
-Install later with `vercel integration add clerk`, then `@clerk/nextjs` v7, `ClerkProvider`, and `proxy.ts` + `clerkMiddleware`.
+Clerk production instances cannot use a `*.vercel.app` hostname. This Hobby deploy uses the Clerk development instance. A custom domain is required before switching to live keys.
 
 ## Hobby notes
 

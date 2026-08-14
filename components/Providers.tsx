@@ -6,29 +6,18 @@ import {
   InMemoryCache,
   createHttpLink,
 } from "@apollo/client";
-import { setContext } from "@apollo/client/link/context";
 import { type ReactNode } from "react";
 import { Container } from "semantic-ui-react";
 import { CompassProvider } from "@/lib/client/CompassContext";
-import Auth from "@/lib/client/auth";
 import Nav from "@/components/Nav";
-
-const authLink = setContext((_, { headers }) => {
-  const token = Auth.getToken();
-  return {
-    headers: {
-      ...headers,
-      authorization: token ? `Bearer ${token}` : "",
-    },
-  };
-});
 
 const httpLink = createHttpLink({
   uri: "/api/graphql",
+  credentials: "same-origin",
 });
 
 const client = new ApolloClient({
-  link: authLink.concat(httpLink),
+  link: httpLink,
   cache: new InMemoryCache(),
 });
 

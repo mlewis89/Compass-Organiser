@@ -22,3 +22,8 @@
 .landing-split {
   margin-top: 2rem;
 }
+
+.clerk-auth-panel {
+  display: flex;
+  justify-content: center;
+}

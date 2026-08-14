@@ -1,22 +1,20 @@
 "use client";
 
+import { useAuth } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, type ReactNode } from "react";
-import Auth from "@/lib/client/auth";
+import { useEffect, type ReactNode } from "react";
 
 export default function AuthGuard({ children }: { children: ReactNode }) {
   const router = useRouter();
-  const [ready, setReady] = useState(false);
+  const { isLoaded, isSignedIn } = useAuth();
 
   useEffect(() => {
-    if (!Auth.loggedIn()) {
-      router.replace("/");
-      return;
+    if (isLoaded && !isSignedIn) {
+      router.replace("/sign-in");
     }
-    setReady(true);
-  }, [router]);
+  }, [isLoaded, isSignedIn, router]);
 
-  if (!ready) {
+  if (!isLoaded || !isSignedIn) {
     return null;
   }
 

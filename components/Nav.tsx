@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Show, UserButton } from "@clerk/nextjs";
 import {
   Grid,
   GridColumn,
@@ -12,17 +12,9 @@ import {
   MenuItem,
   Segment,
 } from "semantic-ui-react";
-import Auth from "@/lib/client/auth";
-import LoginSignUpModal from "@/components/LoginSignUpModal";
 
 export default function Nav() {
   const pathname = usePathname();
-  const [showModal, setShowModal] = useState(false);
-  const [loggedIn, setLoggedIn] = useState(false);
-
-  useEffect(() => {
-    setLoggedIn(Auth.loggedIn());
-  }, []);
 
   return (
     <Segment>
@@ -36,7 +28,7 @@ export default function Nav() {
           </GridColumn>
           <GridColumn width={7} verticalAlign="bottom">
             <Menu stackable>
-              {loggedIn ? (
+              <Show when="signed-in">
                 <>
                   <MenuItem
                     as={Link}
@@ -62,17 +54,19 @@ export default function Nav() {
                     name="members"
                     active={pathname === "/members"}
                   />
-                  <MenuItem
-                    content="Log out"
-                    onClick={() => {
-                      Auth.logout();
-                      setLoggedIn(false);
-                    }}
-                  />
+                  <MenuItem>
+                    <UserButton />
+                  </MenuItem>
                 </>
-              ) : (
+              </Show>
+              <Show when="signed-out">
                 <>
-                  <MenuItem as={Link} href="/" name="Home" active={pathname === "/"} />
+                  <MenuItem
+                    as={Link}
+                    href="/"
+                    name="Home"
+                    active={pathname === "/"}
+                  />
                   <MenuItem
                     as={Link}
                     href="/about"
@@ -85,14 +79,24 @@ export default function Nav() {
                     name="Contact"
                     active={pathname === "/contact"}
                   />
-                  <MenuItem content="Log in" onClick={() => setShowModal(true)} />
+                  <MenuItem
+                    as={Link}
+                    href="/sign-in"
+                    name="Log in"
+                    active={pathname.startsWith("/sign-in")}
+                  />
+                  <MenuItem
+                    as={Link}
+                    href="/sign-up"
+                    name="Sign up"
+                    active={pathname.startsWith("/sign-up")}
+                  />
                 </>
-              )}
+              </Show>
             </Menu>
           </GridColumn>
         </GridRow>
       </Grid>
-      <LoginSignUpModal showModal={showModal} setShowModal={setShowModal} />
     </Segment>
   );
 }

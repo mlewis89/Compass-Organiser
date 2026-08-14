@@ -27,8 +27,8 @@ export default function ContactPage() {
           <Link href="/groups/default">/groups/default</Link>.
         </li>
         <li className="item">
-          Members: use <strong>Log in</strong> in the header to reach the
-          dashboard, tasks, and private events.
+          Members: use <strong>Log in</strong> in the header (Clerk) to reach
+          the dashboard, tasks, and private events.
         </li>
       </ul>
 

@@ -1,9 +1,6 @@
 import type { NextRequest } from "next/server";
-import {
-  readTokenFromRequest,
-  verifyToken,
-  type JwtUser,
-} from "@/lib/auth/jwt";
+import type { JwtUser } from "@/lib/auth/jwt";
+import { syncUserFromClerk } from "@/lib/auth/syncUser";
 import { groupSlugFromRequest, resolveGroupId } from "@/lib/tenancy";
 
 export type GraphQLContext = {
@@ -11,9 +8,8 @@ export type GraphQLContext = {
   groupId: string | null;
 };
 
-export async function createContext(req: NextRequest): Promise<GraphQLContext> {
-  const token = readTokenFromRequest(req);
-  const user = token ? verifyToken(token) : null;
+export async function createContext(_req: NextRequest): Promise<GraphQLContext> {
+  const user = await syncUserFromClerk();
   const slug = await groupSlugFromRequest();
   const groupId = await resolveGroupId(slug);
   return { user, groupId };
