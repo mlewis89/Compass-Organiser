@@ -9,7 +9,6 @@ import {
 import { setContext } from "@apollo/client/link/context";
 import { useAuth } from "@clerk/nextjs";
 import { type ReactNode, useMemo } from "react";
-import { CompassProvider } from "@/lib/client/CompassContext";
 
 function createApolloClient(getToken: () => Promise<string | null>) {
   const authLink = setContext(async (_, { headers }) => {
