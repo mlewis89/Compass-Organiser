@@ -41,7 +41,7 @@ function formatCell(task: Task, key: (typeof headers)[number]) {
 export default function AllTasks() {
   const { data, loading } = useQuery<{ tasks: Task[] }>(QUERY_TASKS);
 
-  if (loading || !data) {
+  if (loading || !data?.tasks) {
     return <p>Loading</p>;
   }
 
