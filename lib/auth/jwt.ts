@@ -16,6 +16,13 @@ export const AuthenticationError = new GraphQLError(
   },
 );
 
+export const GroupNotConfiguredError = new GraphQLError(
+  "No active group is configured",
+  {
+    extensions: { code: "INTERNAL_SERVER_ERROR" },
+  },
+);
+
 function getSecret() {
   const secret = process.env.JWT_SECRET;
   if (!secret) {

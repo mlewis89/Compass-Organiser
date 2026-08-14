@@ -9,8 +9,14 @@ export type GraphQLContext = {
 };
 
 export async function createContext(_req: NextRequest): Promise<GraphQLContext> {
-  const user = await syncUserFromClerk();
-  const slug = await groupSlugFromRequest();
-  const groupId = await resolveGroupId(slug);
-  return { user, groupId };
+  try {
+    const user = await syncUserFromClerk();
+    const slug = await groupSlugFromRequest();
+    const groupId = await resolveGroupId(slug);
+    return { user, groupId };
+  } catch (error) {
+    console.error("GraphQL context creation failed:", error);
+    const groupId = await resolveGroupId(null).catch(() => null);
+    return { user: null, groupId };
+  }
 }

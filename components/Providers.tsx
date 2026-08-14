@@ -19,6 +19,10 @@ const httpLink = createHttpLink({
 const client = new ApolloClient({
   link: httpLink,
   cache: new InMemoryCache(),
+  defaultOptions: {
+    watchQuery: { errorPolicy: "all" },
+    query: { errorPolicy: "all" },
+  },
 });
 
 export default function Providers({ children }: { children: ReactNode }) {

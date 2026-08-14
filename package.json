@@ -25,6 +25,7 @@
     "@vercel/config": "^0.0.24",
     "bcryptjs": "^3.0.2",
     "drizzle-orm": "^0.44.4",
+    "find-dom-node-polyfill": "^1.0.3",
     "graphql": "^16.11.0",
     "jsonwebtoken": "^9.0.2",
     "jwt-decode": "^4.0.0",

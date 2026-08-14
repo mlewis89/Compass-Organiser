@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { getDb } from "@/lib/db";
 import {
   AuthenticationError,
+  GroupNotConfiguredError,
   requireUser,
   signToken,
 } from "@/lib/auth/jwt";
@@ -258,7 +259,7 @@ async function hydrateUser(user: UserRow, groupId: string | null) {
 
 function requireGroup(groupId: string | null) {
   if (!groupId) {
-    throw new Error("No active group is configured");
+    throw GroupNotConfiguredError;
   }
   return groupId;
 }
@@ -274,7 +275,7 @@ async function scopedGroupId(
     }
     return group.id;
   }
-  return requireGroup(context.groupId);
+  return context.groupId;
 }
 
 async function canSeePrivateContent(
