@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { useMutation } from "@apollo/client";
+import { ApolloError, useMutation } from "@apollo/client";
 import {
+  Button,
   Checkbox,
   Form,
   Header,
@@ -11,9 +12,10 @@ import {
   Segment,
 } from "semantic-ui-react";
 import { UPDATE_GROUP_MODULES } from "@/lib/client/mutations";
+import { QUERY_MY_GROUPS } from "@/lib/client/queries";
 import { useGroupModules } from "@/lib/client/useGroupModules";
 import { usePermissions } from "@/lib/client/usePermissions";
-import type { EnabledModules } from "@/lib/client/types";
+import type { GroupSummary } from "@/lib/client/types";
 import type { StoredEnabledModules } from "@/lib/groupModules";
 
 const MODULE_OPTIONS: Array<{
@@ -43,6 +45,23 @@ const MODULE_OPTIONS: Array<{
   },
 ];
 
+function mutationErrorMessage(error: unknown): string {
+  if (error instanceof ApolloError) {
+    const fromGraphQL = error.graphQLErrors[0]?.message;
+    if (fromGraphQL) {
+      return fromGraphQL;
+    }
+    if (error.networkError) {
+      return error.networkError.message;
+    }
+    return error.message;
+  }
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return "Could not save module settings.";
+}
+
 export default function GroupSettingsPage() {
   const router = useRouter();
   const { permissions, loading: permissionsLoading } = usePermissions();
@@ -52,9 +71,12 @@ export default function GroupSettingsPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const [updateModules, { loading: saving }] = useMutation<
-    { updateGroupModules: { enabledModules: EnabledModules } },
-    { modules: Partial<StoredEnabledModules> }
-  >(UPDATE_GROUP_MODULES);
+    { updateGroupModules: GroupSummary },
+    { modules: StoredEnabledModules }
+  >(UPDATE_GROUP_MODULES, {
+    refetchQueries: [{ query: QUERY_MY_GROUPS }],
+    awaitRefetchQueries: true,
+  });
 
   const canManage = Boolean(
     permissions.canManageGroupModules || permissions.isPlatformAdmin,
@@ -71,8 +93,6 @@ export default function GroupSettingsPage() {
   }, [loading, canManage, router]);
 
   // Sync from server only when loaded values change — not on every render.
-  // useGroupModules() returns a new object each time; depending on it would
-  // reset draft and make toggles appear stuck.
   useEffect(() => {
     if (modulesLoading) {
       return;
@@ -120,16 +140,25 @@ export default function GroupSettingsPage() {
   };
 
   const onSave = async () => {
+    if (!draft || saving) {
+      return;
+    }
     setSavedMessage(null);
     setErrorMessage(null);
     try {
-      await updateModules({ variables: { modules: draft } });
+      const result = await updateModules({ variables: { modules: draft } });
+      if (result.errors?.length) {
+        setErrorMessage(result.errors[0]?.message ?? "Could not save module settings.");
+        return;
+      }
+      if (!result.data?.updateGroupModules) {
+        setErrorMessage("Could not save module settings.");
+        return;
+      }
       await refetch();
       setSavedMessage("Module settings saved.");
     } catch (error) {
-      setErrorMessage(
-        error instanceof Error ? error.message : "Could not save module settings.",
-      );
+      setErrorMessage(mutationErrorMessage(error));
     }
   };
 
@@ -143,10 +172,12 @@ export default function GroupSettingsPage() {
       </p>
       {savedMessage ? <Message positive content={savedMessage} /> : null}
       {errorMessage ? <Message negative content={errorMessage} /> : null}
-      <Form onSubmit={(event) => {
-        event.preventDefault();
-        void onSave();
-      }}>
+      <Form
+        onSubmit={(event: FormEvent) => {
+          event.preventDefault();
+          void onSave();
+        }}
+      >
         {MODULE_OPTIONS.map((option) => (
           <Form.Field key={option.key}>
             <Checkbox
@@ -162,9 +193,17 @@ export default function GroupSettingsPage() {
             </p>
           </Form.Field>
         ))}
-        <Form.Button primary type="submit" loading={saving} disabled={saving}>
+        <Button
+          primary
+          type="button"
+          loading={saving}
+          disabled={saving}
+          onClick={() => {
+            void onSave();
+          }}
+        >
           Save
-        </Form.Button>
+        </Button>
       </Form>
     </Segment>
   );
