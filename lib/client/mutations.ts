@@ -72,33 +72,27 @@ export const ARCHIVE_SKILL = gql`
   }
 `;
 
-export const REQUEST_PROMOTE_SKILL = gql`
-  mutation RequestPromoteSkill($skillId: ID!) {
-    requestPromoteSkill(skillId: $skillId) {
+export const PROMOTE_GROUP_SKILL = gql`
+  mutation PromoteGroupSkill($skillId: ID!) {
+    promoteGroupSkill(skillId: $skillId) {
       _id
       name
       status
       scope
+      groupId
     }
   }
 `;
 
-export const APPROVE_PLATFORM_SKILL = gql`
-  mutation ApprovePlatformSkill($skillId: ID!) {
-    approvePlatformSkill(skillId: $skillId) {
+export const MERGE_SKILLS = gql`
+  mutation MergeSkills($targetId: ID!, $sourceIds: [ID!]!) {
+    mergeSkills(targetId: $targetId, sourceIds: $sourceIds) {
       _id
       name
       status
-    }
-  }
-`;
-
-export const REJECT_PLATFORM_SKILL = gql`
-  mutation RejectPlatformSkill($skillId: ID!) {
-    rejectPlatformSkill(skillId: $skillId) {
-      _id
-      name
-      status
+      scope
+      taskCount
+      userCount
     }
   }
 `;

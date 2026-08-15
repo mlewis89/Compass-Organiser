@@ -5,6 +5,7 @@ export type Skill = {
   parentId?: string | null;
   scope?: string | null;
   groupId?: string | null;
+  group?: GroupSummary | null;
   status?: string | null;
   createdByUserId?: string | null;
   taskCount?: number | null;

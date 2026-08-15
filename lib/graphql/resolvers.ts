@@ -339,12 +339,21 @@ async function setTaskUnits(
   await db.insert(taskUnits).values(unitIds.map((unitId) => ({ taskId, unitId })));
 }
 
+type SkillGroupSummary = {
+  _id: string;
+  name: string;
+  slug: string;
+  status: string | null;
+  enabledModules: ReturnType<typeof expandEnabledModules>;
+};
+
 function mapSkillRow(
   skill: typeof skills.$inferSelect,
   extras?: {
     isActiveForUser?: boolean;
     taskCount?: number;
     userCount?: number;
+    group?: SkillGroupSummary | null;
   },
 ) {
   return {
@@ -356,6 +365,7 @@ function mapSkillRow(
     isActiveForUser: extras?.isActiveForUser,
     taskCount: extras?.taskCount,
     userCount: extras?.userCount,
+    group: extras?.group,
   };
 }
 
@@ -430,20 +440,159 @@ async function resolveRequiredSkillIds(
   return [...new Set(ids)];
 }
 
-async function loadSkillUsage(skillId: string) {
+async function loadSkillUsageMap(skillIds: string[]) {
+  const usage = new Map<string, { taskCount: number; userCount: number }>();
+  for (const id of skillIds) {
+    usage.set(id, { taskCount: 0, userCount: 0 });
+  }
+  if (skillIds.length === 0) {
+    return usage;
+  }
   const db = getDb();
-  const [taskRow] = await db
-    .select({ value: count() })
+  const taskRows = await db
+    .select({ skillId: taskSkills.skillId, value: count() })
     .from(taskSkills)
-    .where(eq(taskSkills.skillId, skillId));
-  const [userRow] = await db
-    .select({ value: count() })
+    .where(inArray(taskSkills.skillId, skillIds))
+    .groupBy(taskSkills.skillId);
+  const userRows = await db
+    .select({ skillId: userSkills.skillId, value: count() })
     .from(userSkills)
-    .where(eq(userSkills.skillId, skillId));
-  return {
-    taskCount: Number(taskRow?.value ?? 0),
-    userCount: Number(userRow?.value ?? 0),
-  };
+    .where(inArray(userSkills.skillId, skillIds))
+    .groupBy(userSkills.skillId);
+  for (const row of taskRows) {
+    const current = usage.get(row.skillId) ?? { taskCount: 0, userCount: 0 };
+    current.taskCount = Number(row.value ?? 0);
+    usage.set(row.skillId, current);
+  }
+  for (const row of userRows) {
+    const current = usage.get(row.skillId) ?? { taskCount: 0, userCount: 0 };
+    current.userCount = Number(row.value ?? 0);
+    usage.set(row.skillId, current);
+  }
+  return usage;
+}
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function requireUuid(id: string, label: string) {
+  if (!UUID_RE.test(id)) {
+    throw new GraphQLError(`Invalid ${label}`);
+  }
+  return id.toLowerCase();
+}
+
+async function hydrateCatalogSkills(rows: (typeof skills.$inferSelect)[]) {
+  const usage = await loadSkillUsageMap(rows.map((skill) => skill.id));
+  const groupIds = [
+    ...new Set(
+      rows
+        .map((skill) => skill.groupId)
+        .filter((id): id is string => Boolean(id)),
+    ),
+  ];
+  const groupById = new Map<string, SkillGroupSummary>();
+  if (groupIds.length > 0) {
+    const db = getDb();
+    const groupRows = await db
+      .select()
+      .from(groups)
+      .where(inArray(groups.id, groupIds));
+    for (const group of groupRows) {
+      groupById.set(group.id, mapGroup(group));
+    }
+  }
+  return rows.map((skill) =>
+    mapSkillRow(skill, {
+      ...usage.get(skill.id),
+      group: skill.groupId ? (groupById.get(skill.groupId) ?? null) : null,
+    }),
+  );
+}
+
+async function mergeSkillsImpl(targetId: string, sourceIds: string[]) {
+  const target = requireUuid(targetId, "target skill");
+  const sources = [
+    ...new Set(
+      sourceIds
+        .filter((id) => id !== targetId)
+        .map((id) => requireUuid(id, "source skill")),
+    ),
+  ];
+  if (sources.length === 0) {
+    throw new GraphQLError("Select at least one skill to merge");
+  }
+  const existingTarget = await getSkillOrThrow(target);
+  const db = getDb();
+  const sourceRows = await db
+    .select()
+    .from(skills)
+    .where(inArray(skills.id, sources));
+  if (sourceRows.length !== sources.length) {
+    throw new GraphQLError("One or more skills to merge were not found");
+  }
+
+  const sourceSet = new Set(sources);
+  let nextParent = existingTarget.parentId;
+  const seen = new Set<string>();
+  while (nextParent && sourceSet.has(nextParent)) {
+    if (seen.has(nextParent)) {
+      nextParent = null;
+      break;
+    }
+    seen.add(nextParent);
+    const ancestor = await getSkillOrThrow(nextParent);
+    nextParent = ancestor.parentId;
+  }
+
+  if (nextParent !== existingTarget.parentId) {
+    await db
+      .update(skills)
+      .set({ parentId: nextParent })
+      .where(eq(skills.id, target));
+  }
+
+  const taskLinks = await db
+    .select()
+    .from(taskSkills)
+    .where(inArray(taskSkills.skillId, sources));
+  if (taskLinks.length > 0) {
+    await db
+      .insert(taskSkills)
+      .values(taskLinks.map((row) => ({ taskId: row.taskId, skillId: target })))
+      .onConflictDoNothing();
+    await db.delete(taskSkills).where(inArray(taskSkills.skillId, sources));
+  }
+
+  const userLinks = await db
+    .select()
+    .from(userSkills)
+    .where(inArray(userSkills.skillId, sources));
+  if (userLinks.length > 0) {
+    await db
+      .insert(userSkills)
+      .values(userLinks.map((row) => ({ userId: row.userId, skillId: target })))
+      .onConflictDoNothing();
+    await db.delete(userSkills).where(inArray(userSkills.skillId, sources));
+  }
+
+  await db
+    .update(skills)
+    .set({ parentId: target })
+    .where(and(inArray(skills.parentId, sources), ne(skills.id, target)));
+
+  await db.delete(skills).where(inArray(skills.id, sources));
+
+  const [merged] = await db
+    .select()
+    .from(skills)
+    .where(eq(skills.id, target))
+    .limit(1);
+  if (!merged) {
+    throw new GraphQLError("Skill not found");
+  }
+  const [hydrated] = await hydrateCatalogSkills([merged]);
+  return hydrated ?? mapSkillRow(merged);
 }
 
 async function getSkillOrThrow(skillId: string) {
@@ -1179,6 +1328,19 @@ export const resolvers = {
   },
   Skill: {
     _id: (parent: { id?: string; _id?: string }) => parent._id ?? parent.id,
+    group: async (parent: {
+      group?: SkillGroupSummary | null;
+      groupId?: string | null;
+    }) => {
+      if (parent.group) {
+        return parent.group;
+      }
+      if (!parent.groupId) {
+        return null;
+      }
+      const group = await findGroupById(parent.groupId);
+      return group ? mapGroup(group) : null;
+    },
   },
   Query: {
     publicGroup: async (_parent: unknown, { slug }: { slug: string }) => {
@@ -1502,37 +1664,46 @@ export const resolvers = {
         .from(skills)
         .where(and(...conditions))
         .orderBy(asc(skills.name));
-      return Promise.all(
-        rows.map(async (skill) => {
-          const usage = await loadSkillUsage(skill.id);
-          return mapSkillRow(skill, usage);
-        }),
-      );
+      return hydrateCatalogSkills(rows);
     },
     platformSkills: async (
       _parent: unknown,
-      { includePending }: { includePending?: boolean },
+      _args: unknown,
       context: GraphQLContext,
     ) => {
       const user = requireUser(context.user);
       requirePlatformAdmin(user);
       const db = getDb();
-      const statusValues = includePending
-        ? ["approved", "pending", "archived"]
-        : ["approved", "archived"];
       const rows = await db
         .select()
         .from(skills)
         .where(
-          and(eq(skills.scope, "platform"), inArray(skills.status, statusValues)),
+          and(
+            eq(skills.scope, "platform"),
+            inArray(skills.status, ["approved", "archived"]),
+          ),
         )
         .orderBy(asc(skills.name));
-      return Promise.all(
-        rows.map(async (skill) => {
-          const usage = await loadSkillUsage(skill.id);
-          return mapSkillRow(skill, usage);
-        }),
-      );
+      return hydrateCatalogSkills(rows);
+    },
+    adminGroupSkills: async (
+      _parent: unknown,
+      { includeArchived }: { includeArchived?: boolean },
+      context: GraphQLContext,
+    ) => {
+      const user = requireUser(context.user);
+      requirePlatformAdmin(user);
+      const db = getDb();
+      const conditions = [eq(skills.scope, "group")];
+      if (!includeArchived) {
+        conditions.push(ne(skills.status, "archived"));
+      }
+      const rows = await db
+        .select()
+        .from(skills)
+        .where(and(...conditions))
+        .orderBy(asc(skills.name));
+      return hydrateCatalogSkills(rows);
     },
     myStats: async (
       _parent: unknown,
@@ -2029,18 +2200,21 @@ export const resolvers = {
         .returning();
       return updated ? mapSkillRow(updated) : null;
     },
-    requestPromoteSkill: async (
+    promoteGroupSkill: async (
       _parent: unknown,
       { skillId }: { skillId: string },
       context: GraphQLContext,
     ) => {
       const user = requireUser(context.user);
-      const groupId = requireGroup(context.groupId);
-      await requireModule(groupId, "skills");
-      await requireRole(user, groupId, GROUP_ADMIN_ROLES);
+      requirePlatformAdmin(user);
       const existing = await getSkillOrThrow(skillId);
-      if (existing.scope !== "group" || existing.groupId !== groupId) {
+      if (existing.scope !== "group") {
         throw new GraphQLError("Only group skills can be promoted");
+      }
+      if (existing.status === "archived") {
+        throw new GraphQLError(
+          "Archived skills cannot be promoted. Restore the skill first, or merge it into a platform skill.",
+        );
       }
       const db = getDb();
       const [platformExisting] = await db
@@ -2051,79 +2225,40 @@ export const resolvers = {
         )
         .limit(1);
       if (platformExisting) {
-        if (platformExisting.status === "archived") {
-          const [restored] = await db
-            .update(skills)
-            .set({ status: "pending" })
-            .where(eq(skills.id, platformExisting.id))
-            .returning();
-          return restored ? mapSkillRow(restored) : null;
-        }
-        return mapSkillRow(platformExisting);
+        throw new GraphQLError(
+          `A platform skill named “${existing.name}” already exists. Merge into it instead.`,
+        );
       }
-      let parentId: string | null = null;
-      if (existing.parentId) {
-        const parent = await getSkillOrThrow(existing.parentId);
-        if (parent.scope === "platform" && parent.status === "approved") {
-          parentId = parent.id;
+      let parentId = existing.parentId;
+      if (parentId) {
+        const parent = await getSkillOrThrow(parentId);
+        if (parent.scope !== "platform" || parent.status !== "approved") {
+          parentId = null;
         }
       }
-      const [created] = await db
-        .insert(skills)
-        .values({
-          name: existing.name,
-          parentId,
+      const [updated] = await db
+        .update(skills)
+        .set({
           scope: "platform",
-          status: "pending",
-          createdByUserId: user._id,
+          groupId: null,
+          status: "approved",
+          parentId,
         })
-        .returning();
-      return created ? mapSkillRow(created) : null;
-    },
-    approvePlatformSkill: async (
-      _parent: unknown,
-      { skillId }: { skillId: string },
-      context: GraphQLContext,
-    ) => {
-      const user = requireUser(context.user);
-      requirePlatformAdmin(user);
-      const existing = await getSkillOrThrow(skillId);
-      if (existing.scope !== "platform") {
-        throw new GraphQLError("Only platform skills can be approved");
-      }
-      const db = getDb();
-      const [updated] = await db
-        .update(skills)
-        .set({ status: "approved" })
         .where(eq(skills.id, skillId))
         .returning();
-      return updated ? mapSkillRow(updated) : null;
+      if (!updated) {
+        throw new GraphQLError("Skill not found");
+      }
+      const [hydrated] = await hydrateCatalogSkills([updated]);
+      return hydrated ?? mapSkillRow(updated);
     },
-    rejectPlatformSkill: async (
+    mergeSkills: async (
       _parent: unknown,
-      { skillId }: { skillId: string },
+      { targetId, sourceIds }: { targetId: string; sourceIds: string[] },
       context: GraphQLContext,
     ) => {
-      const user = requireUser(context.user);
-      requirePlatformAdmin(user);
-      const existing = await getSkillOrThrow(skillId);
-      if (existing.scope !== "platform") {
-        throw new GraphQLError("Only platform skills can be rejected");
-      }
-      const db = getDb();
-      if (existing.status === "pending") {
-        const [removed] = await db
-          .delete(skills)
-          .where(eq(skills.id, skillId))
-          .returning();
-        return removed ? mapSkillRow(removed) : null;
-      }
-      const [updated] = await db
-        .update(skills)
-        .set({ status: "archived" })
-        .where(eq(skills.id, skillId))
-        .returning();
-      return updated ? mapSkillRow(updated) : null;
+      requirePlatformAdmin(context.user);
+      return mergeSkillsImpl(targetId, sourceIds);
     },
     createPlatformSkill: async (
       _parent: unknown,

@@ -46,7 +46,8 @@ export default function AdminSkillsPage() {
       <Segment padded>
         <Header as="h2">Platform skills</Header>
         <p>
-          Curate shared default skills and approve promotions requested by groups.
+          Curate shared default skills, promote group skills onto the platform
+          catalog, and merge duplicates into one skill.
         </p>
       </Segment>
       <PlatformSkillsPanel />

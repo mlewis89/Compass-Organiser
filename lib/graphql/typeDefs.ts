@@ -137,6 +137,7 @@ export const typeDefs = `#graphql
     children: [Skill]
     scope: String
     groupId: ID
+    group: Group
     status: String
     createdByUserId: ID
     taskCount: Int
@@ -320,7 +321,8 @@ export const typeDefs = `#graphql
     me: User
     pageSkills(userId: ID): [Skill]
     groupSkills(includeArchived: Boolean): [Skill]
-    platformSkills(includePending: Boolean): [Skill]
+    platformSkills: [Skill]
+    adminGroupSkills(includeArchived: Boolean): [Skill]
     myStats(userId: ID): [Stat]
     roles: [Role]
     myPermissions: Permissions
@@ -341,9 +343,8 @@ export const typeDefs = `#graphql
     createSkill(skill: createSkillInput!): Skill
     updateSkillCatalog(skillId: ID!, skill: updateSkillCatalogInput!): Skill
     archiveSkill(skillId: ID!): Skill
-    requestPromoteSkill(skillId: ID!): Skill
-    approvePlatformSkill(skillId: ID!): Skill
-    rejectPlatformSkill(skillId: ID!): Skill
+    promoteGroupSkill(skillId: ID!): Skill
+    mergeSkills(targetId: ID!, sourceIds: [ID!]!): Skill
     createPlatformSkill(skill: createSkillInput!): Skill
     assignUserTask(taskId: ID!, userId: ID): User
     removeUserFromTask(taskId: ID!, userId: ID): User

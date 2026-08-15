@@ -12,7 +12,8 @@
     "db:push": "dotenv -e .env.local -- drizzle-kit push",
     "db:generate": "dotenv -e .env.local -- drizzle-kit generate",
     "db:seed": "dotenv -e .env.local -- tsx scripts/seed.ts",
-    "db:migrate-responsible": "dotenv -e .env.local -- tsx scripts/migrate-task-responsible.ts"
+    "db:migrate-responsible": "dotenv -e .env.local -- tsx scripts/migrate-task-responsible.ts",
+    "db:cleanup-pending-skills": "dotenv -e .env.local -- tsx scripts/cleanup-pending-platform-skills.ts"
   },
   "keywords": [],
   "author": "",

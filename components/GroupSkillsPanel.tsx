@@ -25,7 +25,6 @@ import {
 import {
   ARCHIVE_SKILL,
   CREATE_SKILL,
-  REQUEST_PROMOTE_SKILL,
   UPDATE_SKILL_CATALOG,
 } from "@/lib/client/mutations";
 import type { Skill } from "@/lib/client/types";
@@ -48,7 +47,6 @@ export default function GroupSkillsPanel() {
   });
   const [updateSkill] = useMutation(UPDATE_SKILL_CATALOG);
   const [archiveSkill] = useMutation(ARCHIVE_SKILL);
-  const [promoteSkill] = useMutation(REQUEST_PROMOTE_SKILL);
 
   const skills = data?.groupSkills ?? [];
   const parentOptions = useMemo(() => {
@@ -196,36 +194,17 @@ export default function GroupSkillsPanel() {
                 <TableCell>{skill.userCount ?? 0}</TableCell>
                 <TableCell>
                   {skill.status !== "archived" ? (
-                    <>
-                      <Button
-                        size="mini"
-                        type="button"
-                        onClick={() => {
-                          void archiveSkill({
-                            variables: { skillId: skill._id },
-                          }).then(() => refresh());
-                        }}
-                      >
-                        Archive
-                      </Button>
-                      <Button
-                        size="mini"
-                        type="button"
-                        onClick={() => {
-                          void promoteSkill({
-                            variables: { skillId: skill._id },
-                          })
-                            .then(() => {
-                              setMessage(
-                                `Promotion requested for “${skill.name}”`,
-                              );
-                            })
-                            .catch((err: Error) => setError(err.message));
-                        }}
-                      >
-                        Promote
-                      </Button>
-                    </>
+                    <Button
+                      size="mini"
+                      type="button"
+                      onClick={() => {
+                        void archiveSkill({
+                          variables: { skillId: skill._id },
+                        }).then(() => refresh());
+                      }}
+                    >
+                      Archive
+                    </Button>
                   ) : (
                     <Button
                       size="mini"

@@ -263,12 +263,31 @@ export const QUERY_GROUP_SKILLS = gql`
 `;
 
 export const QUERY_PLATFORM_SKILLS = gql`
-  query PlatformSkills($includePending: Boolean) {
-    platformSkills(includePending: $includePending) {
+  query PlatformSkills {
+    platformSkills {
       _id
       name
       parentId
       scope
+      status
+      taskCount
+      userCount
+    }
+  }
+`;
+
+export const QUERY_ADMIN_GROUP_SKILLS = gql`
+  query AdminGroupSkills($includeArchived: Boolean) {
+    adminGroupSkills(includeArchived: $includeArchived) {
+      _id
+      name
+      parentId
+      scope
+      groupId
+      group {
+        _id
+        name
+      }
       status
       taskCount
       userCount

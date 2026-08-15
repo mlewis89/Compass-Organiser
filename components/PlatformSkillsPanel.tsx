@@ -19,105 +19,328 @@ import {
   TableHeaderCell,
   TableRow,
 } from "semantic-ui-react";
-import { QUERY_PLATFORM_SKILLS } from "@/lib/client/queries";
 import {
-  APPROVE_PLATFORM_SKILL,
+  QUERY_ADMIN_GROUP_SKILLS,
+  QUERY_PLATFORM_SKILLS,
+} from "@/lib/client/queries";
+import {
   ARCHIVE_SKILL,
   CREATE_PLATFORM_SKILL,
-  REJECT_PLATFORM_SKILL,
+  MERGE_SKILLS,
+  PROMOTE_GROUP_SKILL,
   UPDATE_SKILL_CATALOG,
 } from "@/lib/client/mutations";
 import type { Skill } from "@/lib/client/types";
 
+function skillLabel(skill: Skill) {
+  const archived = skill.status === "archived" ? ", archived" : "";
+  if (skill.scope === "platform") {
+    return `${skill.name} (platform${archived})`;
+  }
+  const groupName = skill.group?.name ?? "group";
+  return `${skill.name} (${groupName}${archived})`;
+}
+
 export default function PlatformSkillsPanel() {
-  const [includePending, setIncludePending] = useState(true);
+  const [includeArchivedGroups, setIncludeArchivedGroups] = useState(false);
   const [name, setName] = useState("");
   const [parentId, setParentId] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [mergeTargetId, setMergeTargetId] = useState("");
+  const [mergeSourceIds, setMergeSourceIds] = useState<string[]>([]);
 
-  const { data, refetch, loading } = useQuery<{ platformSkills: Skill[] }>(
-    QUERY_PLATFORM_SKILLS,
-    { variables: { includePending } },
-  );
+  const {
+    data: platformData,
+    refetch: refetchPlatform,
+    loading: loadingPlatform,
+  } = useQuery<{ platformSkills: Skill[] }>(QUERY_PLATFORM_SKILLS);
+
+  const {
+    data: groupData,
+    refetch: refetchGroups,
+    loading: loadingGroups,
+  } = useQuery<{ adminGroupSkills: Skill[] }>(QUERY_ADMIN_GROUP_SKILLS, {
+    variables: { includeArchived: includeArchivedGroups },
+  });
 
   const [createSkill, { loading: creating }] = useMutation(CREATE_PLATFORM_SKILL);
   const [updateSkill] = useMutation(UPDATE_SKILL_CATALOG);
   const [archiveSkill] = useMutation(ARCHIVE_SKILL);
-  const [approveSkill] = useMutation(APPROVE_PLATFORM_SKILL);
-  const [rejectSkill] = useMutation(REJECT_PLATFORM_SKILL);
+  const [promoteSkill, { loading: promoting }] = useMutation(PROMOTE_GROUP_SKILL);
+  const [mergeSkills, { loading: merging }] = useMutation(MERGE_SKILLS);
 
-  const skills = data?.platformSkills ?? [];
-  const pending = skills.filter((skill) => skill.status === "pending");
-  const catalog = skills.filter((skill) => skill.status !== "pending");
+  const platformCatalog = platformData?.platformSkills ?? [];
+  const groupSkills = groupData?.adminGroupSkills ?? [];
   const parentOptions = useMemo(
     () =>
-      catalog.filter(
+      platformCatalog.filter(
         (skill) => !skill.parentId && skill.status === "approved",
       ),
-    [catalog],
+    [platformCatalog],
   );
   const parentNameById = useMemo(() => {
     const map = new Map<string, string>();
-    for (const skill of skills) {
+    for (const skill of [...platformCatalog, ...groupSkills]) {
       map.set(skill._id, skill.name ?? "");
     }
     return map;
-  }, [skills]);
+  }, [platformCatalog, groupSkills]);
+
+  const mergeCandidates = useMemo(() => {
+    const byId = new Map<string, Skill>();
+    for (const skill of [...platformCatalog, ...groupSkills]) {
+      byId.set(skill._id, skill);
+    }
+    return [...byId.values()].sort((a, b) =>
+      (a.name ?? "").localeCompare(b.name ?? ""),
+    );
+  }, [platformCatalog, groupSkills]);
+
+  const mergeTarget =
+    mergeCandidates.find((skill) => skill._id === mergeTargetId) ?? null;
+  const mergeSources = mergeCandidates.filter((skill) =>
+    mergeSourceIds.includes(skill._id),
+  );
+  const mergeSourceTaskCount = mergeSources.reduce(
+    (sum, skill) => sum + (skill.taskCount ?? 0),
+    0,
+  );
+  const mergeSourceUserCount = mergeSources.reduce(
+    (sum, skill) => sum + (skill.userCount ?? 0),
+    0,
+  );
+  const canMerge =
+    Boolean(mergeTarget) &&
+    mergeSources.length > 0 &&
+    !mergeSourceIds.includes(mergeTargetId);
 
   const refresh = async () => {
-    await refetch();
+    await Promise.all([refetchPlatform(), refetchGroups()]);
+  };
+
+  const toggleMergeSource = (skillId: string, checked: boolean) => {
+    setMergeSourceIds((current) => {
+      if (!checked) {
+        return current.filter((id) => id !== skillId);
+      }
+      if (skillId === mergeTargetId || current.includes(skillId)) {
+        return current;
+      }
+      return [...current, skillId];
+    });
   };
 
   return (
     <>
+      {error ? <Message negative content={error} /> : null}
+      {message ? <Message positive content={message} /> : null}
+
       <Segment padded>
-        <Header as="h3">Pending promotions</Header>
-        {pending.length === 0 ? (
-          <p>No pending skill promotions.</p>
-        ) : (
-          <Table celled compact>
-            <TableHeader>
+        <Header as="h3">Group skills</Header>
+        <p>
+          Promote a group skill to the platform catalog. Existing tasks and
+          users keep pointing at the same skill.
+        </p>
+        <div style={{ margin: "0 0 1rem" }}>
+          <Checkbox
+            label="Include archived group skills"
+            checked={includeArchivedGroups}
+            onChange={(_event, field) =>
+              setIncludeArchivedGroups(Boolean(field.checked))
+            }
+          />
+        </div>
+        <Table celled compact>
+          <TableHeader>
+            <TableRow>
+              <TableHeaderCell>Name</TableHeaderCell>
+              <TableHeaderCell>Group</TableHeaderCell>
+              <TableHeaderCell>Parent</TableHeaderCell>
+              <TableHeaderCell>Tasks</TableHeaderCell>
+              <TableHeaderCell>Users</TableHeaderCell>
+              <TableHeaderCell>Actions</TableHeaderCell>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loadingGroups ? (
               <TableRow>
-                <TableHeaderCell>Name</TableHeaderCell>
-                <TableHeaderCell>Actions</TableHeaderCell>
+                <TableCell colSpan={6}>Loading…</TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {pending.map((skill) => (
+            ) : groupSkills.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6}>No group skills.</TableCell>
+              </TableRow>
+            ) : (
+              groupSkills.map((skill) => (
                 <TableRow key={skill._id}>
-                  <TableCell>{skill.name}</TableCell>
                   <TableCell>
-                    <Button
-                      size="mini"
-                      positive
-                      type="button"
-                      onClick={() => {
-                        void approveSkill({
-                          variables: { skillId: skill._id },
-                        }).then(() => refresh());
-                      }}
-                    >
-                      Approve
-                    </Button>
-                    <Button
-                      size="mini"
-                      negative
-                      type="button"
-                      onClick={() => {
-                        void rejectSkill({
-                          variables: { skillId: skill._id },
-                        }).then(() => refresh());
-                      }}
-                    >
-                      Reject
-                    </Button>
+                    {skill.name}
+                    {skill.status === "archived" ? (
+                      <Label size="mini" style={{ marginLeft: "0.5rem" }}>
+                        archived
+                      </Label>
+                    ) : null}
+                  </TableCell>
+                  <TableCell>{skill.group?.name ?? "—"}</TableCell>
+                  <TableCell>
+                    {skill.parentId
+                      ? parentNameById.get(skill.parentId) ?? "—"
+                      : "—"}
+                  </TableCell>
+                  <TableCell>{skill.taskCount ?? 0}</TableCell>
+                  <TableCell>{skill.userCount ?? 0}</TableCell>
+                  <TableCell>
+                    {skill.status !== "archived" ? (
+                      <Button
+                        size="mini"
+                        type="button"
+                        loading={promoting}
+                        onClick={() => {
+                          setError(null);
+                          setMessage(null);
+                          void promoteSkill({
+                            variables: { skillId: skill._id },
+                          })
+                            .then(() => {
+                              setMessage(
+                                `“${skill.name}” is now a platform skill`,
+                              );
+                              return refresh();
+                            })
+                            .catch((err: Error) => setError(err.message));
+                        }}
+                      >
+                        Promote
+                      </Button>
+                    ) : (
+                      "—"
+                    )}
                   </TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </Segment>
+
+      <Segment padded>
+        <Header as="h3">Merge skills</Header>
+        <p>
+          Collapse duplicate skills into one entity. Tasks and users on the
+          merged skills are moved onto the skill you keep.
+        </p>
+        <Table celled compact>
+          <TableHeader>
+            <TableRow>
+              <TableHeaderCell>Keep</TableHeaderCell>
+              <TableHeaderCell>Merge</TableHeaderCell>
+              <TableHeaderCell>Name</TableHeaderCell>
+              <TableHeaderCell>Scope</TableHeaderCell>
+              <TableHeaderCell>Tasks</TableHeaderCell>
+              <TableHeaderCell>Users</TableHeaderCell>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loadingPlatform || loadingGroups ? (
+              <TableRow>
+                <TableCell colSpan={6}>Loading…</TableCell>
+              </TableRow>
+            ) : mergeCandidates.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6}>No skills to merge.</TableCell>
+              </TableRow>
+            ) : (
+              mergeCandidates.map((skill) => (
+                <TableRow key={skill._id}>
+                  <TableCell collapsing>
+                    <input
+                      type="radio"
+                      name="merge-target"
+                      aria-label={`Keep ${skill.name}`}
+                      checked={mergeTargetId === skill._id}
+                      onChange={() => {
+                        setMergeTargetId(skill._id);
+                        setMergeSourceIds((current) =>
+                          current.filter((id) => id !== skill._id),
+                        );
+                      }}
+                    />
+                  </TableCell>
+                  <TableCell collapsing>
+                    <Checkbox
+                      checked={mergeSourceIds.includes(skill._id)}
+                      disabled={mergeTargetId === skill._id}
+                      aria-label={`Merge ${skill.name}`}
+                      onChange={(_event, field) =>
+                        toggleMergeSource(skill._id, Boolean(field.checked))
+                      }
+                    />
+                  </TableCell>
+                  <TableCell>
+                    {skill.name}
+                    {skill.status === "archived" ? (
+                      <Label size="mini" style={{ marginLeft: "0.5rem" }}>
+                        archived
+                      </Label>
+                    ) : null}
+                  </TableCell>
+                  <TableCell>
+                    {skill.scope === "platform"
+                      ? "Platform"
+                      : (skill.group?.name ?? "Group")}
+                  </TableCell>
+                  <TableCell>{skill.taskCount ?? 0}</TableCell>
+                  <TableCell>{skill.userCount ?? 0}</TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+        {canMerge && mergeTarget ? (
+          <Message info>
+            Merge {mergeSources.map(skillLabel).join(", ")} into{" "}
+            {skillLabel(mergeTarget)}. {mergeSourceTaskCount} task
+            {mergeSourceTaskCount === 1 ? "" : "s"} and {mergeSourceUserCount}{" "}
+            user{mergeSourceUserCount === 1 ? "" : "s"} will move. Removed
+            names: {mergeSources.map((skill) => skill.name).join(", ")}.
+          </Message>
+        ) : (
+          <p>Select one skill to keep and at least one skill to merge into it.</p>
         )}
+        <Button
+          type="button"
+          primary
+          disabled={!canMerge}
+          loading={merging}
+          onClick={() => {
+            if (!canMerge || !mergeTarget) {
+              return;
+            }
+            const confirmed = window.confirm(
+              `Merge ${mergeSources.map((skill) => skill.name).join(", ")} into ${mergeTarget.name}? This cannot be undone.`,
+            );
+            if (!confirmed) {
+              return;
+            }
+            setError(null);
+            setMessage(null);
+            void mergeSkills({
+              variables: {
+                targetId: mergeTarget._id,
+                sourceIds: mergeSources.map((skill) => skill._id),
+              },
+            })
+              .then(() => {
+                setMergeSourceIds([]);
+                setMessage(`Merged into “${mergeTarget.name}”`);
+                return refresh();
+              })
+              .catch((err: Error) => setError(err.message));
+          }}
+        >
+          Merge skills
+        </Button>
       </Segment>
 
       <Segment padded>
@@ -176,19 +399,6 @@ export default function PlatformSkillsPanel() {
           </Button>
         </Form>
 
-        <div style={{ margin: "1rem 0" }}>
-          <Checkbox
-            label="Include pending in catalog query"
-            checked={includePending}
-            onChange={(_event, field) =>
-              setIncludePending(Boolean(field.checked))
-            }
-          />
-        </div>
-
-        {error ? <Message negative content={error} /> : null}
-        {message ? <Message positive content={message} /> : null}
-
         <Table celled compact>
           <TableHeader>
             <TableRow>
@@ -201,12 +411,12 @@ export default function PlatformSkillsPanel() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {loading ? (
+            {loadingPlatform ? (
               <TableRow>
                 <TableCell colSpan={6}>Loading…</TableCell>
               </TableRow>
             ) : (
-              catalog.map((skill) => (
+              platformCatalog.map((skill) => (
                 <TableRow key={skill._id}>
                   <TableCell>
                     <Input
