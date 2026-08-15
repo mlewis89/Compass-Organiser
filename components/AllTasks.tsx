@@ -27,6 +27,7 @@ const headers = [
   "duration",
   "requiredSkills",
   "responsible",
+  "units",
   "status",
 ] as const;
 
@@ -37,6 +38,11 @@ function formatCell(task: Task, key: (typeof headers)[number]) {
     case "responsible":
       return (task.responsible ?? [])
         .map((person) => person.displayName)
+        .filter(Boolean)
+        .join(", ");
+    case "units":
+      return (task.units ?? [])
+        .map((unit) => unit.name)
         .filter(Boolean)
         .join(", ");
     case "dueDate":

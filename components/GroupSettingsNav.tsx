@@ -10,6 +10,9 @@ export default function GroupSettingsNav() {
   const { permissions } = usePermissions();
   const { enabledModules } = useGroupModules();
 
+  const showUnits =
+    enabledModules.tasks &&
+    (permissions.canManageTasks || permissions.isPlatformAdmin);
   const showSkills =
     enabledModules.skills &&
     (permissions.canManageMembers || permissions.isPlatformAdmin);
@@ -26,6 +29,14 @@ export default function GroupSettingsNav() {
           name="Members"
           active={pathname.startsWith("/settings/members")}
         />
+        {showUnits ? (
+          <MenuItem
+            as="a"
+            href="/settings/units"
+            name="Units"
+            active={pathname.startsWith("/settings/units")}
+          />
+        ) : null}
         {showSkills ? (
           <MenuItem
             as="a"

@@ -50,7 +50,10 @@ import {
   skills,
   taskResponsible,
   taskSkills,
+  taskUnits,
   tasks,
+  unitMembers,
+  units,
   userGuardians,
   userSkills,
   userTasks,
@@ -94,6 +97,7 @@ type TaskInput = {
   priority?: number;
   requiredSkills?: SkillInput[];
   responsible?: UserInput[] | null;
+  units?: { _id?: string }[] | null;
 };
 type EventInput = {
   title?: string;
@@ -193,6 +197,129 @@ async function setTaskResponsible(taskId: string, people: UserInput[] | null | u
   for (const userId of userIds) {
     await ensureUserTaskAssignment(userId, taskId);
   }
+}
+
+async function loadMembersForUnit(unitId: string) {
+  const db = getDb();
+  const rows = await db
+    .select({ user: users })
+    .from(unitMembers)
+    .innerJoin(users, eq(unitMembers.userId, users.id))
+    .where(eq(unitMembers.unitId, unitId));
+  return rows.map(({ user }) => mapUser(user));
+}
+
+async function mapUnit(unit: typeof units.$inferSelect) {
+  return {
+    ...unit,
+    _id: unit.id,
+    members: await loadMembersForUnit(unit.id),
+  };
+}
+
+async function loadUnitsForTask(taskId: string) {
+  const db = getDb();
+  const rows = await db
+    .select({ unit: units })
+    .from(taskUnits)
+    .innerJoin(units, eq(taskUnits.unitId, units.id))
+    .where(eq(taskUnits.taskId, taskId));
+  return Promise.all(rows.map(({ unit }) => mapUnit(unit)));
+}
+
+async function loadUnitMemberIdsForTask(taskId: string): Promise<string[]> {
+  const db = getDb();
+  const rows = await db
+    .select({ userId: unitMembers.userId })
+    .from(taskUnits)
+    .innerJoin(unitMembers, eq(taskUnits.unitId, unitMembers.unitId))
+    .where(eq(taskUnits.taskId, taskId));
+  return [...new Set(rows.map((row) => row.userId))];
+}
+
+async function loadTaskOwnerIds(task: {
+  id: string;
+  createdByUserId: string | null;
+}): Promise<Array<string | null | undefined>> {
+  const [responsibleIds, unitMemberIds] = await Promise.all([
+    loadResponsibleUserIds(task.id),
+    loadUnitMemberIdsForTask(task.id),
+  ]);
+  return [task.createdByUserId, ...responsibleIds, ...unitMemberIds];
+}
+
+async function requireGroupUnit(
+  groupId: string,
+  unitId: string,
+): Promise<typeof units.$inferSelect> {
+  const db = getDb();
+  const [unit] = await db
+    .select()
+    .from(units)
+    .where(and(eq(units.id, unitId), eq(units.groupId, groupId)))
+    .limit(1);
+  if (!unit) {
+    throw new GraphQLError("Unit not found");
+  }
+  return unit;
+}
+
+async function requireGroupUnitIds(groupId: string, unitIds: string[]) {
+  if (unitIds.length === 0) {
+    return;
+  }
+  const db = getDb();
+  const rows = await db
+    .select({ id: units.id })
+    .from(units)
+    .where(and(eq(units.groupId, groupId), inArray(units.id, unitIds)));
+  if (rows.length !== unitIds.length) {
+    throw new GraphQLError("One or more units do not belong to the active group");
+  }
+}
+
+async function requireActiveGroupMemberIds(groupId: string, userIds: string[]) {
+  if (userIds.length === 0) {
+    return;
+  }
+  const db = getDb();
+  const rows = await db
+    .select({ userId: memberships.userId })
+    .from(memberships)
+    .where(
+      and(
+        eq(memberships.groupId, groupId),
+        eq(memberships.status, "active"),
+        inArray(memberships.userId, userIds),
+      ),
+    );
+  if (rows.length !== userIds.length) {
+    throw new GraphQLError("One or more members are not active in this group");
+  }
+}
+
+async function setTaskUnits(
+  taskId: string,
+  groupId: string,
+  unitInputs: { _id?: string }[] | null | undefined,
+) {
+  if (unitInputs === undefined) {
+    return;
+  }
+  const db = getDb();
+  const unitIds = [
+    ...new Set(
+      (unitInputs ?? [])
+        .map((unit) => unit._id)
+        .filter((id): id is string => Boolean(id)),
+    ),
+  ];
+  await requireGroupUnitIds(groupId, unitIds);
+  await db.delete(taskUnits).where(eq(taskUnits.taskId, taskId));
+  if (unitIds.length === 0) {
+    return;
+  }
+  await db.insert(taskUnits).values(unitIds.map((unitId) => ({ taskId, unitId })));
 }
 
 function mapSkillRow(
@@ -336,13 +463,14 @@ async function mapTask(task: typeof tasks.$inferSelect) {
     dueDate: dateString(task.dueDate),
     requiredSkills: await loadSkillsForTask(task.id),
     responsible: await loadResponsibleForTask(task.id),
+    units: await loadUnitsForTask(task.id),
     createdBy: await loadUserById(task.createdByUserId),
   };
 }
 
 type TaskRow = typeof tasks.$inferSelect;
 
-/** Tasks claimed via user_tasks, plus any where the user is Person Responsible. */
+/** Tasks claimed via user_tasks, personally responsible, or assigned via a unit. */
 async function loadTasksForUser(
   userId: string,
   groupId?: string | null,
@@ -354,8 +482,11 @@ async function loadTasksForUser(
   const responsibleWhere = groupId
     ? and(eq(taskResponsible.userId, userId), eq(tasks.groupId, groupId))
     : eq(taskResponsible.userId, userId);
+  const unitWhere = groupId
+    ? and(eq(unitMembers.userId, userId), eq(tasks.groupId, groupId))
+    : eq(unitMembers.userId, userId);
 
-  const [claimed, responsible] = await Promise.all([
+  const [claimed, responsible, unitAssigned] = await Promise.all([
     db
       .select({ task: tasks })
       .from(userTasks)
@@ -366,6 +497,12 @@ async function loadTasksForUser(
       .from(taskResponsible)
       .innerJoin(tasks, eq(taskResponsible.taskId, tasks.id))
       .where(responsibleWhere),
+    db
+      .select({ task: tasks })
+      .from(unitMembers)
+      .innerJoin(taskUnits, eq(unitMembers.unitId, taskUnits.unitId))
+      .innerJoin(tasks, eq(taskUnits.taskId, tasks.id))
+      .where(unitWhere),
   ]);
 
   const byId = new Map<string, TaskRow>();
@@ -373,6 +510,9 @@ async function loadTasksForUser(
     byId.set(task.id, task);
   }
   for (const { task } of responsible) {
+    byId.set(task.id, task);
+  }
+  for (const { task } of unitAssigned) {
     byId.set(task.id, task);
   }
   return [...byId.values()];
@@ -631,6 +771,9 @@ export const resolvers = {
     Priority: (parent: { priority?: number | null; Priority?: number | null }) =>
       parent.Priority ?? parent.priority,
   },
+  Unit: {
+    _id: (parent: { id?: string; _id?: string }) => parent._id ?? parent.id,
+  },
   Event: {
     _id: (parent: { id?: string; _id?: string }) => parent._id ?? parent.id,
   },
@@ -821,11 +964,20 @@ export const resolvers = {
         .where(eq(taskResponsible.userId, targetId));
       const responsibleSet = new Set(responsibleRows.map((row) => row.taskId));
 
+      const unitTaskRows = await db
+        .select({ taskId: taskUnits.taskId })
+        .from(unitMembers)
+        .innerJoin(taskUnits, eq(unitMembers.unitId, taskUnits.unitId))
+        .where(eq(unitMembers.userId, targetId));
+      const unitTaskSet = new Set(unitTaskRows.map((row) => row.taskId));
+
       const unique = new Map(matching.map(({ task }) => [task.id, task]));
       const sorted = [...unique.values()]
         .filter(
           (task) =>
-            !assignedSet.has(task.id) && !responsibleSet.has(task.id),
+            !assignedSet.has(task.id) &&
+            !responsibleSet.has(task.id) &&
+            !unitTaskSet.has(task.id),
         )
         .sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0))
         .slice(0, limit);
@@ -1004,6 +1156,29 @@ export const resolvers = {
         .where(and(eq(tasks.id, taskId), eq(tasks.groupId, groupId)))
         .limit(1);
       return row ? mapTask(row) : null;
+    },
+    units: async (_parent: unknown, _args: unknown, context: GraphQLContext) => {
+      requireUser(context.user);
+      const groupId = requireGroup(context.groupId);
+      await requireModule(groupId, "tasks");
+      const db = getDb();
+      const rows = await db
+        .select()
+        .from(units)
+        .where(eq(units.groupId, groupId))
+        .orderBy(asc(units.name));
+      return Promise.all(rows.map(mapUnit));
+    },
+    singleUnit: async (
+      _parent: unknown,
+      { unitId }: { unitId: string },
+      context: GraphQLContext,
+    ) => {
+      requireUser(context.user);
+      const groupId = requireGroup(context.groupId);
+      await requireModule(groupId, "tasks");
+      const unit = await requireGroupUnit(groupId, unitId);
+      return mapUnit(unit);
     },
     singleMember: async (
       _parent: unknown,
@@ -1846,6 +2021,7 @@ export const resolvers = {
         );
       }
       await setTaskResponsible(created.id, taskData.responsible ?? []);
+      await setTaskUnits(created.id, groupId, taskData.units ?? []);
       return mapTask(created);
     },
     updateTask: async (
@@ -1865,11 +2041,10 @@ export const resolvers = {
       if (!existingTask) {
         return null;
       }
-      const responsibleIds = await loadResponsibleUserIds(existingTask.id);
       await requireOwnerOrRole(
         user,
         groupId,
-        [existingTask.createdByUserId, ...responsibleIds],
+        await loadTaskOwnerIds(existingTask),
         LEADER_ROLES,
       );
       const [updated] = await db
@@ -1902,6 +2077,7 @@ export const resolvers = {
         }
       }
       await setTaskResponsible(taskId, taskData.responsible);
+      await setTaskUnits(taskId, groupId, taskData.units);
       return mapTask(updated);
     },
     setTaskStatus: async (
@@ -1921,11 +2097,10 @@ export const resolvers = {
       if (!existingTask) {
         return null;
       }
-      const responsibleIds = await loadResponsibleUserIds(existingTask.id);
       await requireOwnerOrRole(
         user,
         groupId,
-        [existingTask.createdByUserId, ...responsibleIds],
+        await loadTaskOwnerIds(existingTask),
         LEADER_ROLES,
       );
       const [updated] = await db
@@ -1952,11 +2127,10 @@ export const resolvers = {
       if (!existingTask) {
         return null;
       }
-      const responsibleIds = await loadResponsibleUserIds(existingTask.id);
       await requireOwnerOrRole(
         user,
         groupId,
-        [existingTask.createdByUserId, ...responsibleIds],
+        await loadTaskOwnerIds(existingTask),
         LEADER_ROLES,
       );
       const [removed] = await db
@@ -1964,6 +2138,105 @@ export const resolvers = {
         .where(and(eq(tasks.id, taskId), eq(tasks.groupId, groupId)))
         .returning();
       return removed ? mapTask(removed) : null;
+    },
+    addUnit: async (
+      _parent: unknown,
+      { unit }: { unit: { name: string } },
+      context: GraphQLContext,
+    ) => {
+      const user = requireUser(context.user);
+      const groupId = requireGroup(context.groupId);
+      await requireModule(groupId, "tasks");
+      await requireRole(user, groupId, LEADER_ROLES);
+      const name = unit.name.trim();
+      if (!name) {
+        throw new GraphQLError("Unit name is required");
+      }
+      const db = getDb();
+      const [duplicate] = await db
+        .select({ id: units.id })
+        .from(units)
+        .where(and(eq(units.groupId, groupId), eq(units.name, name)))
+        .limit(1);
+      if (duplicate) {
+        throw new GraphQLError("A unit with that name already exists");
+      }
+      const [created] = await db
+        .insert(units)
+        .values({ groupId, name })
+        .returning();
+      return mapUnit(created);
+    },
+    updateUnit: async (
+      _parent: unknown,
+      { unitId, unit }: { unitId: string; unit: { name?: string } },
+      context: GraphQLContext,
+    ) => {
+      const user = requireUser(context.user);
+      const groupId = requireGroup(context.groupId);
+      await requireModule(groupId, "tasks");
+      await requireRole(user, groupId, LEADER_ROLES);
+      await requireGroupUnit(groupId, unitId);
+      const name = unit.name?.trim();
+      if (!name) {
+        throw new GraphQLError("Unit name is required");
+      }
+      const db = getDb();
+      const [duplicate] = await db
+        .select({ id: units.id })
+        .from(units)
+        .where(
+          and(eq(units.groupId, groupId), eq(units.name, name), ne(units.id, unitId)),
+        )
+        .limit(1);
+      if (duplicate) {
+        throw new GraphQLError("A unit with that name already exists");
+      }
+      const [updated] = await db
+        .update(units)
+        .set({ name, updatedAt: new Date() })
+        .where(and(eq(units.id, unitId), eq(units.groupId, groupId)))
+        .returning();
+      return updated ? mapUnit(updated) : null;
+    },
+    deleteUnit: async (
+      _parent: unknown,
+      { unitId }: { unitId: string },
+      context: GraphQLContext,
+    ) => {
+      const user = requireUser(context.user);
+      const groupId = requireGroup(context.groupId);
+      await requireModule(groupId, "tasks");
+      await requireRole(user, groupId, LEADER_ROLES);
+      const existing = await requireGroupUnit(groupId, unitId);
+      const mapped = await mapUnit(existing);
+      const db = getDb();
+      await db
+        .delete(units)
+        .where(and(eq(units.id, unitId), eq(units.groupId, groupId)));
+      return mapped;
+    },
+    setUnitMembers: async (
+      _parent: unknown,
+      { unitId, userIds }: { unitId: string; userIds: string[] },
+      context: GraphQLContext,
+    ) => {
+      const user = requireUser(context.user);
+      const groupId = requireGroup(context.groupId);
+      await requireModule(groupId, "tasks");
+      await requireRole(user, groupId, LEADER_ROLES);
+      await requireGroupUnit(groupId, unitId);
+      const uniqueIds = [...new Set(userIds.filter(Boolean))];
+      await requireActiveGroupMemberIds(groupId, uniqueIds);
+      const db = getDb();
+      await db.delete(unitMembers).where(eq(unitMembers.unitId, unitId));
+      if (uniqueIds.length > 0) {
+        await db
+          .insert(unitMembers)
+          .values(uniqueIds.map((memberId) => ({ unitId, userId: memberId })));
+      }
+      const refreshed = await requireGroupUnit(groupId, unitId);
+      return mapUnit(refreshed);
     },
     inviteMember: async (
       _parent: unknown,

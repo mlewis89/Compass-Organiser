@@ -170,6 +170,7 @@ export const typeDefs = `#graphql
     dueDate: String
     duration: Float
     responsible: [User]
+    units: [Unit]
     createdBy: User
     priority: Int
     Priority: Int
@@ -184,10 +185,26 @@ export const typeDefs = `#graphql
     dueDate: String
     duration: Float
     responsible: [updateUser]
+    units: [updateUnit]
     createdBy: updateUser
     priority: Int
     description: String
     status: String
+  }
+
+  type Unit {
+    _id: ID!
+    name: String!
+    members: [User]
+  }
+
+  input updateUnit {
+    _id: ID
+    name: String
+  }
+
+  input createUnitInput {
+    name: String!
   }
 
   type Auth {
@@ -271,6 +288,8 @@ export const typeDefs = `#graphql
     suggestedTasks(numberOfTasks: Int, userSkills: [updateSkill], userId: ID): [Task]
     tasks: [Task]
     singleTask(taskId: ID!): Task
+    units: [Unit]
+    singleUnit(unitId: ID!): Unit
     members: [User]
     singleMember(userId: ID!): User
     me: User
@@ -317,6 +336,10 @@ export const typeDefs = `#graphql
     updateTask(taskId: ID!, taskData: updateTask!): Task
     deleteTask(taskId: ID!): Task
     setTaskStatus(taskId: ID!, status: String!): Task
+    addUnit(unit: createUnitInput!): Unit
+    updateUnit(unitId: ID!, unit: updateUnit!): Unit
+    deleteUnit(unitId: ID!): Unit
+    setUnitMembers(unitId: ID!, userIds: [ID!]!): Unit
     inviteMember(member: addMemberInput!): InviteMemberResult
     resendInvite(userId: ID!): InviteMemberResult
     setMemberStatus(userId: ID!, status: String!): User

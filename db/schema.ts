@@ -198,6 +198,36 @@ export const taskResponsible = pgTable("task_responsible", {
     .references(() => users.id, { onDelete: "cascade" }),
 }, (table) => [primaryKey({ columns: [table.taskId, table.userId] })]);
 
+export const units = pgTable("units", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  groupId: uuid("group_id")
+    .notNull()
+    .references(() => groups.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  ...timestamps,
+}, (table) => [
+  uniqueIndex("units_group_name_idx").on(table.groupId, table.name),
+  index("units_group_idx").on(table.groupId),
+]);
+
+export const unitMembers = pgTable("unit_members", {
+  unitId: uuid("unit_id")
+    .notNull()
+    .references(() => units.id, { onDelete: "cascade" }),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+}, (table) => [primaryKey({ columns: [table.unitId, table.userId] })]);
+
+export const taskUnits = pgTable("task_units", {
+  taskId: uuid("task_id")
+    .notNull()
+    .references(() => tasks.id, { onDelete: "cascade" }),
+  unitId: uuid("unit_id")
+    .notNull()
+    .references(() => units.id, { onDelete: "cascade" }),
+}, (table) => [primaryKey({ columns: [table.taskId, table.unitId] })]);
+
 export const userTasks = pgTable("user_tasks", {
   userId: uuid("user_id")
     .notNull()
@@ -269,6 +299,7 @@ export const groupsRelations = relations(groups, ({ many }) => ({
   families: many(families),
   payments: many(payments),
   skills: many(skills),
+  units: many(units),
 }));
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -276,6 +307,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   userSkills: many(userSkills),
   userTasks: many(userTasks),
   taskResponsible: many(taskResponsible),
+  unitMembers: many(unitMembers),
   organisedEvents: many(events),
   createdPosts: many(boardPosts),
   familyMembers: many(familyMembers),
@@ -354,7 +386,24 @@ export const tasksRelations = relations(tasks, ({ one, many }) => ({
   }),
   taskSkills: many(taskSkills),
   taskResponsible: many(taskResponsible),
+  taskUnits: many(taskUnits),
   userTasks: many(userTasks),
+}));
+
+export const unitsRelations = relations(units, ({ one, many }) => ({
+  group: one(groups, { fields: [units.groupId], references: [groups.id] }),
+  unitMembers: many(unitMembers),
+  taskUnits: many(taskUnits),
+}));
+
+export const unitMembersRelations = relations(unitMembers, ({ one }) => ({
+  unit: one(units, { fields: [unitMembers.unitId], references: [units.id] }),
+  user: one(users, { fields: [unitMembers.userId], references: [users.id] }),
+}));
+
+export const taskUnitsRelations = relations(taskUnits, ({ one }) => ({
+  task: one(tasks, { fields: [taskUnits.taskId], references: [tasks.id] }),
+  unit: one(units, { fields: [taskUnits.unitId], references: [units.id] }),
 }));
 
 export const taskSkillsRelations = relations(taskSkills, ({ one }) => ({

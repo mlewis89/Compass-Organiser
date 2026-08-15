@@ -30,7 +30,14 @@ export type Task = {
   status?: string | null;
   requiredSkills?: Skill[];
   responsible?: UserSummary[];
+  units?: UnitSummary[];
   createdBy?: UserSummary | null;
+};
+
+export type UnitSummary = {
+  _id: string;
+  name: string;
+  members?: UserSummary[];
 };
 
 export type EventItem = {

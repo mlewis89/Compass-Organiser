@@ -13,14 +13,14 @@ import {
   Segment,
   Select,
 } from "semantic-ui-react";
-import { QUERY_MEMBERS, QUERY_SINGLE_TASK, QUERY_TASKS } from "@/lib/client/queries";
+import { QUERY_MEMBERS, QUERY_SINGLE_TASK, QUERY_TASKS, QUERY_UNITS } from "@/lib/client/queries";
 import {
   ADD_TASK,
   DELETE_TASK,
   REMOVE_USER_TASK,
   UPDATE_TASK,
 } from "@/lib/client/mutations";
-import type { Member, Skill, Task } from "@/lib/client/types";
+import type { Member, Skill, Task, UnitSummary } from "@/lib/client/types";
 import { usePermissions } from "@/lib/client/usePermissions";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import SkillPicker from "@/components/SkillPicker";
@@ -45,6 +45,7 @@ const emptyTask: Task = {
   dueDate: "",
   requiredSkills: [],
   responsible: [],
+  units: [],
   createdBy: { _id: "", displayName: "" },
 };
 
@@ -79,6 +80,9 @@ export default function TaskModal({
   const { data: membersData } = useQuery<{ members: Member[] }>(QUERY_MEMBERS, {
     skip: !showTaskModal,
   });
+  const { data: unitsData } = useQuery<{ units: UnitSummary[] }>(QUERY_UNITS, {
+    skip: !showTaskModal,
+  });
 
   useEffect(() => {
     if (isCreateMode) {
@@ -106,6 +110,25 @@ export default function TaskModal({
     }
     return options;
   }, [membersData?.members, taskData.responsible]);
+
+  const unitOptions = useMemo(() => {
+    const list = unitsData?.units ?? [];
+    const options = list.map((unit) => ({
+      key: unit._id,
+      value: unit._id,
+      text: unit.name,
+    }));
+    for (const unit of taskData.units ?? []) {
+      if (unit._id && !options.some((option) => option.value === unit._id)) {
+        options.unshift({
+          key: unit._id,
+          value: unit._id,
+          text: unit.name || "Current unit",
+        });
+      }
+    }
+    return options;
+  }, [unitsData?.units, taskData.units]);
 
   const refetchQueries = [{ query: QUERY_TASKS }];
 
@@ -155,6 +178,9 @@ export default function TaskModal({
               responsible: (taskData.responsible ?? [])
                 .filter((person) => person._id)
                 .map((person) => ({ _id: person._id })),
+              units: (taskData.units ?? [])
+                .filter((unit) => unit._id)
+                .map((unit) => ({ _id: unit._id })),
             };
             if (isCreateMode) {
               void addTask({ variables: { taskData: variables } }).then(() => {
@@ -278,6 +304,42 @@ export default function TaskModal({
                       _id: memberId,
                       displayName:
                         selected?.text ?? existing?.displayName ?? "",
+                    };
+                  }),
+                });
+              }}
+            />
+          </FormField>
+          <FormField>
+            <label>Units</label>
+            <Dropdown
+              placeholder="Search units…"
+              fluid
+              multiple
+              search
+              selection
+              clearable
+              options={unitOptions}
+              value={(taskData.units ?? [])
+                .map((unit) => unit._id)
+                .filter(Boolean)}
+              disabled={!canManage}
+              onChange={(_event, dropdownData) => {
+                const selectedIds = Array.isArray(dropdownData.value)
+                  ? dropdownData.value.map(String)
+                  : [];
+                setTaskData({
+                  ...taskData,
+                  units: selectedIds.map((unitId) => {
+                    const selected = unitOptions.find(
+                      (option) => option.value === unitId,
+                    );
+                    const existing = (taskData.units ?? []).find(
+                      (unit) => unit._id === unitId,
+                    );
+                    return {
+                      _id: unitId,
+                      name: selected?.text ?? existing?.name ?? "",
                     };
                   }),
                 });

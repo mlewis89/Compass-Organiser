@@ -166,6 +166,10 @@ export const ADD_TASK = gql`
         _id
         displayName
       }
+      units {
+        _id
+        name
+      }
       priority
       description
       status
@@ -188,6 +192,10 @@ export const UPDATE_TASK = gql`
         _id
         displayName
       }
+      units {
+        _id
+        name
+      }
       priority
       description
       status
@@ -205,6 +213,10 @@ export const DELETE_TASK = gql`
       responsible {
         _id
         displayName
+      }
+      units {
+        _id
+        name
       }
       priority
       description
@@ -481,6 +493,58 @@ export const UPDATE_GROUP_MODULES = gql`
         noticeBoard
         memberStats
         skills
+      }
+    }
+  }
+`;
+
+export const ADD_UNIT = gql`
+  mutation AddUnit($unit: createUnitInput!) {
+    addUnit(unit: $unit) {
+      _id
+      name
+      members {
+        _id
+        displayName
+      }
+    }
+  }
+`;
+
+export const UPDATE_UNIT = gql`
+  mutation UpdateUnit($unitId: ID!, $unit: updateUnit!) {
+    updateUnit(unitId: $unitId, unit: $unit) {
+      _id
+      name
+      members {
+        _id
+        displayName
+      }
+    }
+  }
+`;
+
+export const DELETE_UNIT = gql`
+  mutation DeleteUnit($unitId: ID!) {
+    deleteUnit(unitId: $unitId) {
+      _id
+      name
+    }
+  }
+`;
+
+export const SET_UNIT_MEMBERS = gql`
+  mutation SetUnitMembers($unitId: ID!, $userIds: [ID!]!) {
+    setUnitMembers(unitId: $unitId, userIds: $userIds) {
+      _id
+      name
+      members {
+        _id
+        displayName
+        firstName
+        lastName
+        preferredName
+        scoutName
       }
     }
   }

@@ -99,6 +99,10 @@ export const QUERY_SINGLE_TASK = gql`
         _id
         displayName
       }
+      units {
+        _id
+        name
+      }
       createdBy {
         _id
         displayName
@@ -124,6 +128,10 @@ export const QUERY_SUGGESTED_TASKS = gql`
       responsible {
         displayName
         _id
+      }
+      units {
+        _id
+        name
       }
       createdBy {
         _id
@@ -155,6 +163,10 @@ export const QUERY_TASKS = gql`
       responsible {
         displayName
         _id
+      }
+      units {
+        _id
+        name
       }
       status
     }
@@ -353,6 +365,23 @@ export const QUERY_ROLES = gql`
       _id
       name
       isUniformed
+    }
+  }
+`;
+
+export const QUERY_UNITS = gql`
+  query Units {
+    units {
+      _id
+      name
+      members {
+        _id
+        displayName
+        firstName
+        lastName
+        preferredName
+        scoutName
+      }
     }
   }
 `;
