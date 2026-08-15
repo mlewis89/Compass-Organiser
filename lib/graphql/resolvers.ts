@@ -105,6 +105,7 @@ type TaskInput = {
   requiredSkills?: SkillInput[];
   responsible?: UserInput[] | null;
   units?: { _id?: string }[] | null;
+  parentTaskId?: string | null;
 };
 type EventInput = {
   title?: string;
@@ -461,21 +462,240 @@ async function requireSkillCatalogAccess(
   await requireRole(user, groupId, GROUP_ADMIN_ROLES);
 }
 
-async function mapTask(task: typeof tasks.$inferSelect) {
-  return {
-    ...task,
-    _id: task.id,
-    Name: task.name,
-    Priority: task.priority,
-    dueDate: dateString(task.dueDate),
-    requiredSkills: await loadSkillsForTask(task.id),
-    responsible: await loadResponsibleForTask(task.id),
-    units: await loadUnitsForTask(task.id),
-    createdBy: await loadUserById(task.createdByUserId),
-  };
+type TaskRow = typeof tasks.$inferSelect;
+
+type ParentSummary = { _id: string; name: string };
+
+async function loadTasksByIds(ids: string[]): Promise<TaskRow[]> {
+  if (ids.length === 0) {
+    return [];
+  }
+  const db = getDb();
+  return db.select().from(tasks).where(inArray(tasks.id, ids));
 }
 
-type TaskRow = typeof tasks.$inferSelect;
+/** Ancestors and descendants of the seed rows, staying in the same groups. */
+async function expandTaskForest(seed: TaskRow[]): Promise<TaskRow[]> {
+  const byId = new Map(seed.map((task) => [task.id, task]));
+  const db = getDb();
+
+  let missingParentIds = [
+    ...new Set(
+      [...byId.values()]
+        .map((task) => task.parentTaskId)
+        .filter((id): id is string => id != null && !byId.has(id)),
+    ),
+  ];
+  while (missingParentIds.length > 0) {
+    const parents = await db
+      .select()
+      .from(tasks)
+      .where(inArray(tasks.id, missingParentIds));
+    const next: string[] = [];
+    for (const parent of parents) {
+      byId.set(parent.id, parent);
+      if (parent.parentTaskId && !byId.has(parent.parentTaskId)) {
+        next.push(parent.parentTaskId);
+      }
+    }
+    missingParentIds = next;
+  }
+
+  let frontier = [...byId.keys()];
+  while (frontier.length > 0) {
+    const children = await db
+      .select()
+      .from(tasks)
+      .where(inArray(tasks.parentTaskId, frontier));
+    const next: string[] = [];
+    for (const child of children) {
+      if (!byId.has(child.id)) {
+        byId.set(child.id, child);
+        next.push(child.id);
+      }
+    }
+    frontier = next;
+  }
+
+  return [...byId.values()];
+}
+
+async function loadDescendantCounts(
+  taskIds: string[],
+): Promise<Map<string, number>> {
+  const counts = new Map(taskIds.map((id) => [id, 0]));
+  if (taskIds.length === 0) {
+    return counts;
+  }
+  const belonging = new Map<string, Set<string>>();
+  for (const id of taskIds) {
+    belonging.set(id, new Set([id]));
+  }
+  const db = getDb();
+  let frontier = [...taskIds];
+  while (frontier.length > 0) {
+    const children = await db
+      .select({ id: tasks.id, parentTaskId: tasks.parentTaskId })
+      .from(tasks)
+      .where(inArray(tasks.parentTaskId, frontier));
+    const next: string[] = [];
+    for (const child of children) {
+      const parentSeeds = belonging.get(child.parentTaskId ?? "") ?? new Set();
+      const seeds = belonging.get(child.id) ?? new Set();
+      for (const seed of parentSeeds) {
+        if (seed !== child.id && !seeds.has(seed)) {
+          seeds.add(seed);
+          counts.set(seed, (counts.get(seed) ?? 0) + 1);
+        }
+      }
+      belonging.set(child.id, seeds);
+      next.push(child.id);
+    }
+    frontier = next;
+  }
+  return counts;
+}
+
+function includeAncestorStubs(
+  visible: TaskRow[],
+  forest: TaskRow[],
+): { rows: TaskRow[]; stubIds: Set<string> } {
+  const forestById = new Map(forest.map((task) => [task.id, task]));
+  const included = new Map(visible.map((task) => [task.id, task]));
+  const stubIds = new Set<string>();
+  for (const task of visible) {
+    let parentId = task.parentTaskId;
+    while (parentId) {
+      if (included.has(parentId)) {
+        break;
+      }
+      const parent = forestById.get(parentId);
+      if (!parent) {
+        break;
+      }
+      included.set(parent.id, parent);
+      stubIds.add(parent.id);
+      parentId = parent.parentTaskId;
+    }
+  }
+  return { rows: [...included.values()], stubIds };
+}
+
+async function visibleTaskForest(
+  seed: TaskRow[],
+  userId: string,
+  groupId: string,
+  viewAll: boolean,
+): Promise<{ rows: TaskRow[]; stubIds: Set<string> }> {
+  const forest = await expandTaskForest(seed);
+  const visible = await filterVisibleTasks(forest, userId, groupId, viewAll);
+  return includeAncestorStubs(visible, forest);
+}
+
+async function mapTasks(
+  rows: TaskRow[],
+  stubIds: Set<string> = new Set(),
+) {
+  if (rows.length === 0) {
+    return [];
+  }
+  const parentIds = [
+    ...new Set(
+      rows
+        .map((task) => task.parentTaskId)
+        .filter((id): id is string => Boolean(id)),
+    ),
+  ];
+  const knownIds = new Set(rows.map((task) => task.id));
+  const missingParentIds = parentIds.filter((id) => !knownIds.has(id));
+  const extraParents = await loadTasksByIds(missingParentIds);
+  const parentById = new Map<string, ParentSummary>();
+  for (const task of rows) {
+    parentById.set(task.id, { _id: task.id, name: task.name });
+  }
+  for (const parent of extraParents) {
+    parentById.set(parent.id, { _id: parent.id, name: parent.name });
+  }
+  const descendantCounts = await loadDescendantCounts(rows.map((task) => task.id));
+  return Promise.all(
+    rows.map(async (task) => ({
+      ...task,
+      _id: task.id,
+      Name: task.name,
+      Priority: task.priority,
+      dueDate: dateString(task.dueDate),
+      parentTaskId: task.parentTaskId,
+      parent: task.parentTaskId
+        ? (parentById.get(task.parentTaskId) ?? null)
+        : null,
+      descendantCount: descendantCounts.get(task.id) ?? 0,
+      isStub: stubIds.has(task.id),
+      requiredSkills: stubIds.has(task.id)
+        ? []
+        : await loadSkillsForTask(task.id),
+      responsible: stubIds.has(task.id)
+        ? []
+        : await loadResponsibleForTask(task.id),
+      units: stubIds.has(task.id) ? [] : await loadUnitsForTask(task.id),
+      createdBy: stubIds.has(task.id)
+        ? null
+        : await loadUserById(task.createdByUserId),
+    })),
+  );
+}
+
+async function mapTask(
+  task: TaskRow,
+  stubIds: Set<string> = new Set(),
+) {
+  const [mapped] = await mapTasks([task], stubIds);
+  return mapped;
+}
+
+async function resolveParentTaskId(
+  groupId: string,
+  parentTaskId: string | null | undefined,
+  taskId?: string,
+): Promise<string | null | undefined> {
+  if (parentTaskId === undefined) {
+    return undefined;
+  }
+  if (parentTaskId === null || parentTaskId === "") {
+    return null;
+  }
+  if (taskId && parentTaskId === taskId) {
+    throw new GraphQLError("A task cannot be its own parent");
+  }
+  const db = getDb();
+  const [parent] = await db
+    .select()
+    .from(tasks)
+    .where(and(eq(tasks.id, parentTaskId), eq(tasks.groupId, groupId)))
+    .limit(1);
+  if (!parent) {
+    throw new GraphQLError("Parent task not found");
+  }
+  if (taskId) {
+    let cursor: string | null = parentTaskId;
+    const seen = new Set<string>();
+    while (cursor) {
+      if (cursor === taskId) {
+        throw new GraphQLError("A task cannot be nested under its own descendant");
+      }
+      if (seen.has(cursor)) {
+        break;
+      }
+      seen.add(cursor);
+      const [row] = await db
+        .select({ parentTaskId: tasks.parentTaskId })
+        .from(tasks)
+        .where(eq(tasks.id, cursor))
+        .limit(1);
+      cursor = row?.parentTaskId ?? null;
+    }
+  }
+  return parentTaskId;
+}
 
 /** Tasks claimed via user_tasks, personally responsible, or assigned via a unit. */
 async function loadTasksForUser(
@@ -662,15 +882,26 @@ async function loadTasksForUnit(unitId: string, groupId: string): Promise<TaskRo
   return rows.map(({ task }) => task);
 }
 
-async function mapUnitBucket(unit: typeof units.$inferSelect, groupId: string) {
+async function mapUnitBucket(
+  unit: typeof units.$inferSelect,
+  groupId: string,
+  userId: string,
+  viewAll: boolean,
+) {
   const unitTasks = await loadTasksForUnit(unit.id, groupId);
   const openTasks = unitTasks.filter(isTaskOpen);
   const withResponsible = await loadTaskIdsWithResponsible(
     openTasks.map((task) => task.id),
   );
+  const { rows, stubIds } = await visibleTaskForest(
+    unitTasks,
+    userId,
+    groupId,
+    viewAll,
+  );
   return {
     unit: await mapUnit(unit),
-    tasks: await Promise.all(unitTasks.map(mapTask)),
+    tasks: await mapTasks(rows, stubIds),
     allocated: openTasks.filter((task) => withResponsible.has(task.id)).length,
     total: openTasks.length,
   };
@@ -800,7 +1031,7 @@ async function hydrateUser(user: UserRow, groupId: string | null) {
   return {
     ...mapped,
     skills: skillRows.map(({ skill }) => mapSkillRow(skill)),
-    myTasks: await Promise.all(assigned.map((task) => mapTask(task))),
+    myTasks: await mapTasks(await expandTaskForest(assigned)),
     parentGardian: guardianRows.map(({ guardian }) => mapUser(guardian)),
     ParentGardian: guardianRows.map(({ guardian }) => mapUser(guardian)),
     family,
@@ -1045,7 +1276,8 @@ export const resolvers = {
         .orderBy(desc(tasks.priority));
       const viewAll = await canViewAllUnitBuckets(user, groupId);
       const visible = await filterVisibleTasks(rows, user._id, groupId, viewAll);
-      return Promise.all(visible.map(mapTask));
+      const { rows: forest, stubIds } = includeAncestorStubs(visible, rows);
+      return mapTasks(forest, stubIds);
     },
     userTasks: async (
       _parent: unknown,
@@ -1057,7 +1289,7 @@ export const resolvers = {
       await requireModule(groupId, "tasks");
       const targetId = userId || user._id;
       const rows = await loadTasksForUser(targetId, groupId);
-      return Promise.all(rows.map((task) => mapTask(task)));
+      return mapTasks(await expandTaskForest(rows));
     },
     suggestedTasks: async (
       _parent: unknown,
@@ -1157,7 +1389,7 @@ export const resolvers = {
       const byPriority = (a: TaskRow, b: TaskRow) =>
         (b.priority ?? 0) - (a.priority ?? 0);
       const filled = eligible.sort(byPriority).slice(0, limit);
-      return Promise.all(filled.map(mapTask));
+      return mapTasks(filled);
     },
     members: async (
       _parent: unknown,
@@ -1370,7 +1602,9 @@ export const resolvers = {
       await requireModule(groupId, "tasks");
       const viewAll = await canViewAllUnitBuckets(user, groupId);
       const visibleUnits = await loadVisibleUnits(user._id, groupId, viewAll);
-      return Promise.all(visibleUnits.map((unit) => mapUnitBucket(unit, groupId)));
+      return Promise.all(visibleUnits.map((unit) =>
+        mapUnitBucket(unit, groupId, user._id, viewAll),
+      ));
     },
     unassignedTasks: async (
       _parent: unknown,
@@ -1399,9 +1633,8 @@ export const resolvers = {
             .where(eq(tasks.groupId, groupId))
         ).map((row) => row.taskId),
       );
-      return Promise.all(
-        rows.filter((task) => !assignedIds.has(task.id)).map(mapTask),
-      );
+      const unassigned = rows.filter((task) => !assignedIds.has(task.id));
+      return mapTasks(await expandTaskForest(unassigned));
     },
     singleMember: async (
       _parent: unknown,
@@ -2231,6 +2464,10 @@ export const resolvers = {
       const groupId = requireGroup(context.groupId);
       await requireModule(groupId, "tasks");
       await requireRole(user, groupId, LEADER_ROLES);
+      const parentTaskId = await resolveParentTaskId(
+        groupId,
+        taskData.parentTaskId,
+      );
       const db = getDb();
       const [created] = await db
         .insert(tasks)
@@ -2243,6 +2480,7 @@ export const resolvers = {
           duration: taskData.duration,
           priority: taskData.priority,
           createdByUserId: user._id,
+          parentTaskId: parentTaskId ?? null,
         })
         .returning();
 
@@ -2257,7 +2495,15 @@ export const resolvers = {
         );
       }
       await setTaskResponsible(created.id, taskData.responsible ?? []);
-      await setTaskUnits(created.id, groupId, taskData.units ?? []);
+      let unitInputs = taskData.units;
+      if (
+        parentTaskId &&
+        (!unitInputs || unitInputs.length === 0)
+      ) {
+        const parentUnits = await loadUnitsForTask(parentTaskId);
+        unitInputs = parentUnits.map((unit) => ({ _id: unit._id }));
+      }
+      await setTaskUnits(created.id, groupId, unitInputs ?? []);
       return mapTask(created);
     },
     updateTask: async (
@@ -2283,6 +2529,11 @@ export const resolvers = {
         await loadTaskOwnerIds(existingTask),
         LEADER_ROLES,
       );
+      const parentTaskId = await resolveParentTaskId(
+        groupId,
+        taskData.parentTaskId,
+        taskId,
+      );
       const [updated] = await db
         .update(tasks)
         .set({
@@ -2292,6 +2543,7 @@ export const resolvers = {
           dueDate: toDate(taskData.dueDate) ?? undefined,
           duration: taskData.duration,
           priority: taskData.priority,
+          ...(parentTaskId !== undefined ? { parentTaskId } : {}),
           updatedAt: new Date(),
         })
         .where(and(eq(tasks.id, taskId), eq(tasks.groupId, groupId)))

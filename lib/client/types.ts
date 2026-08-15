@@ -38,6 +38,10 @@ export type Task = {
   responsible?: UserSummary[];
   units?: UnitSummary[];
   createdBy?: UserSummary | null;
+  parentTaskId?: string | null;
+  parent?: { _id: string; name?: string | null } | null;
+  descendantCount?: number | null;
+  isStub?: boolean | null;
 };
 
 export type UnitBucket = {

@@ -176,6 +176,10 @@ export const typeDefs = `#graphql
     Priority: Int
     description: String
     status: String
+    parentTaskId: ID
+    parent: Task
+    descendantCount: Int
+    isStub: Boolean
   }
 
   input updateTask {
@@ -190,6 +194,7 @@ export const typeDefs = `#graphql
     priority: Int
     description: String
     status: String
+    parentTaskId: ID
   }
 
   type Unit {

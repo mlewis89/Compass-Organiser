@@ -11,6 +11,7 @@ import TaskKanban from "@/components/TaskKanban";
 import TaskList, { type TaskColumn } from "@/components/TaskList";
 import TaskModal from "@/components/TaskModal";
 import { isCompleteStatus, isWishlistStatus, TASK_STATUS } from "@/lib/taskStatus";
+import { filterTaskForest, taskForestHasVisible } from "@/lib/client/taskTree";
 
 const SHOW_EMPTY_BUCKETS_KEY = "all-tasks-show-empty-buckets";
 const HIDE_WISHLIST_KEY = "all-tasks-hide-wishlist";
@@ -32,12 +33,18 @@ const columns: TaskColumn[] = [
 
 function TaskBucketTable({
   tasks,
+  hideWishlist,
+  hideCompleted,
   onOpen,
   onComplete,
+  onAddSubtask,
 }: {
   tasks: Task[];
+  hideWishlist: boolean;
+  hideCompleted: boolean;
   onOpen: (taskId: string) => void;
   onComplete: (taskId: string) => void;
+  onAddSubtask?: (task: Task) => void;
 }) {
   if (tasks.length === 0) {
     return <p>No tasks in this bucket.</p>;
@@ -47,7 +54,10 @@ function TaskBucketTable({
     <TaskList
       tasks={tasks}
       columns={columns}
+      hideWishlist={hideWishlist}
+      hideCompleted={hideCompleted}
       mobileSummary={["status", "dueDate", "responsible"]}
+      onAddSubtask={onAddSubtask}
       renderActions={(task) => (
         <Button.Group size="tiny">
           <Button onClick={() => onOpen(task._id)}>Open</Button>
@@ -62,22 +72,6 @@ function TaskBucketTable({
   );
 }
 
-function visibleTasks(
-  tasks: Task[],
-  hideWishlist: boolean,
-  hideCompleted: boolean,
-): Task[] {
-  return tasks.filter((task) => {
-    if (hideWishlist && isWishlistStatus(task.status)) {
-      return false;
-    }
-    if (hideCompleted && isCompleteStatus(task.status)) {
-      return false;
-    }
-    return true;
-  });
-}
-
 export default function AllTasks() {
   const { permissions } = usePermissions();
   const canViewAll = Boolean(permissions.canViewAllUnitBuckets);
@@ -89,6 +83,7 @@ export default function AllTasks() {
   }>(QUERY_UNASSIGNED_TASKS, { skip: !canViewAll });
   const [setTaskStatus] = useMutation(SET_TASK_STATUS);
   const [activeTask, setActiveTask] = useState<string | null>(null);
+  const [parentTask, setParentTask] = useState<Task | null>(null);
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [showEmptyBuckets, setShowEmptyBuckets] = useState(false);
   const [hideWishlist, setHideWishlist] = useState(true);
@@ -97,17 +92,27 @@ export default function AllTasks() {
 
   const buckets = data?.unitBuckets ?? [];
   const unassigned = unassignedData?.unassignedTasks ?? [];
-  const bucketTasks = (tasks: Task[]) =>
-    visibleTasks(tasks, hideWishlist, hideCompleted);
+  const bucketVisible = (tasks: Task[]) =>
+    hideWishlist || hideCompleted
+      ? filterTaskForest(tasks, (task) => {
+          if (hideWishlist && isWishlistStatus(task.status)) {
+            return false;
+          }
+          if (hideCompleted && isCompleteStatus(task.status)) {
+            return false;
+          }
+          return true;
+        })
+      : tasks;
+  const hasVisible = (tasks: Task[]) => taskForestHasVisible(bucketVisible(tasks));
   const visibleBuckets = showEmptyBuckets
     ? buckets
-    : buckets.filter((bucket) => bucketTasks(bucket.tasks).length > 0);
-  const visibleUnassigned = bucketTasks(unassigned);
+    : buckets.filter((bucket) => hasVisible(bucket.tasks));
   const showUnassigned =
-    canViewAll && (showEmptyBuckets || visibleUnassigned.length > 0);
+    canViewAll && (showEmptyBuckets || hasVisible(unassigned));
   const emptyBucketCount =
-    buckets.filter((bucket) => bucketTasks(bucket.tasks).length === 0).length +
-    (canViewAll && visibleUnassigned.length === 0 ? 1 : 0);
+    buckets.filter((bucket) => !hasVisible(bucket.tasks)).length +
+    (canViewAll && !hasVisible(unassigned) ? 1 : 0);
 
   useEffect(() => {
     const storedEmpty = window.localStorage.getItem(SHOW_EMPTY_BUCKETS_KEY);
@@ -158,7 +163,14 @@ export default function AllTasks() {
   };
 
   const openTask = (taskId: string | null) => {
+    setParentTask(null);
     setActiveTask(taskId);
+    setShowTaskModal(true);
+  };
+
+  const openSubtask = (task: Task) => {
+    setActiveTask(null);
+    setParentTask(task);
     setShowTaskModal(true);
   };
 
@@ -182,8 +194,11 @@ export default function AllTasks() {
     ) : (
       <TaskBucketTable
         tasks={tasks}
+        hideWishlist={hideWishlist}
+        hideCompleted={hideCompleted}
         onOpen={openTask}
         onComplete={(taskId) => changeTaskStatus(taskId, TASK_STATUS.complete)}
+        onAddSubtask={permissions.canManageTasks ? openSubtask : undefined}
       />
     );
 
@@ -253,23 +268,32 @@ export default function AllTasks() {
       {visibleBuckets.map((bucket) => (
         <Segment padded key={bucket.unit._id}>
           <Label attached="top">{bucket.unit.name}</Label>
-          {renderBucket(bucketTasks(bucket.tasks))}
+          {renderBucket(bucket.tasks)}
         </Segment>
       ))}
 
       {showUnassigned ? (
         <Segment padded>
           <Label attached="top">Unassigned</Label>
-          {renderBucket(visibleUnassigned)}
+          {renderBucket(unassigned)}
         </Segment>
       ) : null}
 
       {showTaskModal ? (
         <TaskModal
           activeTask={activeTask}
+          parentTask={parentTask}
           showTaskModal={showTaskModal}
           setShowTaskModal={setShowTaskModal}
           onSaved={refresh}
+          onCreateSubtask={
+            permissions.canManageTasks
+              ? (parent) => {
+                  setActiveTask(null);
+                  setParentTask(parent);
+                }
+              : undefined
+          }
         />
       ) : null}
     </>

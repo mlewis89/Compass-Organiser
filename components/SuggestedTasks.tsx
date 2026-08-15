@@ -47,6 +47,8 @@ export default function SuggestedTasks() {
       <TaskList
         tasks={tasks}
         columns={columns}
+        nest={false}
+        showParentLabel
         mobileSummary={["duration", "status"]}
         renderActions={(task) => (
           <Button

@@ -13,7 +13,7 @@ import {
   Segment,
   Select,
 } from "semantic-ui-react";
-import { QUERY_MEMBERS, QUERY_SINGLE_TASK, QUERY_TASKS, QUERY_UNIT_BUCKETS, QUERY_UNITS, QUERY_UNASSIGNED_TASKS } from "@/lib/client/queries";
+import { QUERY_ME_TASKS, QUERY_MEMBERS, QUERY_SINGLE_TASK, QUERY_TASKS, QUERY_UNIT_BUCKETS, QUERY_UNITS, QUERY_UNASSIGNED_TASKS } from "@/lib/client/queries";
 import {
   ADD_TASK,
   DELETE_TASK,
@@ -48,22 +48,30 @@ const emptyTask: Task = {
   responsible: [],
   units: [],
   createdBy: { _id: "", displayName: "" },
+  parentTaskId: null,
+  parent: null,
+  descendantCount: 0,
 };
 
 type Props = {
   activeTask: string | null;
+  parentTask?: Task | null;
   showTaskModal: boolean;
   setShowTaskModal: (open: boolean) => void;
   onSaved?: () => void;
+  onCreateSubtask?: (parent: Task) => void;
 };
 
 export default function TaskModal({
   activeTask,
+  parentTask = null,
   showTaskModal,
   setShowTaskModal,
   onSaved,
+  onCreateSubtask,
 }: Props) {
   const isCreateMode = !activeTask;
+  const isSubtaskCreate = isCreateMode && Boolean(parentTask);
   const [taskData, setTaskData] = useState<Task>(emptyTask);
   const [deleteCheckOpen, setDeleteCheckOpen] = useState(false);
   const { permissions } = usePermissions();
@@ -81,11 +89,18 @@ export default function TaskModal({
 
   useEffect(() => {
     if (isCreateMode) {
-      setTaskData(emptyTask);
+      setTaskData({
+        ...emptyTask,
+        parentTaskId: parentTask?._id ?? null,
+        parent: parentTask
+          ? { _id: parentTask._id, name: parentTask.name }
+          : null,
+        units: parentTask?.units ?? [],
+      });
     } else if (data?.singleTask) {
       setTaskData(data.singleTask);
     }
-  }, [data, isCreateMode]);
+  }, [data, isCreateMode, parentTask]);
 
   const memberOptions = useMemo(() => {
     const members = membersData?.members ?? [];
@@ -129,6 +144,7 @@ export default function TaskModal({
     { query: QUERY_TASKS },
     { query: QUERY_UNIT_BUCKETS },
     { query: QUERY_UNASSIGNED_TASKS },
+    { query: QUERY_ME_TASKS },
   ];
 
   const [removeUserFromTask] = useMutation(REMOVE_USER_TASK);
@@ -180,6 +196,9 @@ export default function TaskModal({
               units: (taskData.units ?? [])
                 .filter((unit) => unit._id)
                 .map((unit) => ({ _id: unit._id })),
+              ...(isCreateMode && taskData.parentTaskId
+                ? { parentTaskId: taskData.parentTaskId }
+                : {}),
             };
             if (isCreateMode) {
               void addTask({ variables: { taskData: variables } }).then(() => {
@@ -196,7 +215,7 @@ export default function TaskModal({
           <FormField
             control={Input}
             value={taskData.name ?? ""}
-            label="Task Name"
+            label={isSubtaskCreate ? "Subtask Name" : "Task Name"}
             name="name"
             onChange={handleInputChange}
             disabled={!canManage}
@@ -347,7 +366,21 @@ export default function TaskModal({
             />
           </FormField>
           {!isCreateMode ? <p>created by: {taskData.createdBy?.displayName}</p> : null}
+          {taskData.parent?.name || isSubtaskCreate ? (
+            <p>
+              Nested under:{" "}
+              {taskData.parent?.name || parentTask?.name || "parent task"}
+            </p>
+          ) : null}
           <Button type="submit">{isCreateMode ? "Create" : "Update"}</Button>
+          {!isCreateMode && canManage && onCreateSubtask ? (
+            <Button
+              type="button"
+              onClick={() => onCreateSubtask(taskData)}
+            >
+              Add subtask
+            </Button>
+          ) : null}
           {!isCreateMode ? (
             <Button
               type="button"
@@ -374,7 +407,11 @@ export default function TaskModal({
       <ConfirmDialog
         open={deleteCheckOpen}
         header="Confirm Delete"
-        message={`Are you sure you want to delete the ${taskData.name} task?`}
+        message={
+          (taskData.descendantCount ?? 0) > 0
+            ? `Are you sure you want to delete "${taskData.name}" and its ${taskData.descendantCount} nested task${taskData.descendantCount === 1 ? "" : "s"}?`
+            : `Are you sure you want to delete the ${taskData.name} task?`
+        }
         onCancel={() => setDeleteCheckOpen(false)}
         onConfirm={() => {
           void deleteTask({ variables: { taskId: taskData._id } }).then(() => onSaved?.());

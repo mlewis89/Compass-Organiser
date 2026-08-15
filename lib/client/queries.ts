@@ -110,6 +110,13 @@ export const QUERY_SINGLE_TASK = gql`
       priority
       description
       status
+      parentTaskId
+      descendantCount
+      isStub
+      parent {
+        _id
+        name
+      }
     }
   }
 `;
@@ -148,6 +155,13 @@ export const QUERY_SUGGESTED_TASKS = gql`
       priority
       description
       status
+      parentTaskId
+      descendantCount
+      isStub
+      parent {
+        _id
+        name
+      }
     }
   }
 `;
@@ -177,6 +191,13 @@ export const QUERY_TASKS = gql`
         name
       }
       status
+      parentTaskId
+      descendantCount
+      isStub
+      parent {
+        _id
+        name
+      }
     }
   }
 `;
@@ -266,6 +287,17 @@ export const QUERY_ME_TASKS = gql`
         name
         priority
         status
+        parentTaskId
+        descendantCount
+        isStub
+        parent {
+          _id
+          name
+        }
+        units {
+          _id
+          name
+        }
       }
     }
   }
@@ -410,7 +442,18 @@ const UNIT_BUCKET_TASK_FIELDS = `
     displayName
     _id
   }
+  units {
+    _id
+    name
+  }
   status
+  parentTaskId
+  descendantCount
+  isStub
+  parent {
+    _id
+    name
+  }
 `;
 
 export const QUERY_UNIT_BUCKETS = gql`

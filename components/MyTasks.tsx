@@ -10,6 +10,7 @@ import { UPDATE_RERENDER_MYTASKS } from "@/lib/client/actions";
 import type { Task } from "@/lib/client/types";
 import TaskList, { type TaskColumn } from "@/components/TaskList";
 import TaskModal from "@/components/TaskModal";
+import { usePermissions } from "@/lib/client/usePermissions";
 
 const columns: TaskColumn[] = [
   { key: "name", label: "Name" },
@@ -23,7 +24,9 @@ const columns: TaskColumn[] = [
 export default function MyTasks() {
   const [state, dispatch] = useCompassContext();
   const [activeTask, setActiveTask] = useState<string | null>(null);
+  const [parentTask, setParentTask] = useState<Task | null>(null);
   const [showTaskModal, setShowTaskModal] = useState(false);
+  const { permissions } = usePermissions();
   const { data, refetch } = useQuery<{ me: { myTasks: Task[] } }>(QUERY_ME_TASKS);
   const [setTaskStatus] = useMutation(SET_TASK_STATUS);
 
@@ -44,10 +47,20 @@ export default function MyTasks() {
           tasks={tasks}
           columns={columns}
           mobileSummary={["status", "dueDate"]}
+          onAddSubtask={
+            permissions.canManageTasks
+              ? (task) => {
+                  setActiveTask(null);
+                  setParentTask(task);
+                  setShowTaskModal(true);
+                }
+              : undefined
+          }
           renderActions={(task) => (
             <Button.Group size="tiny">
               <Button
                 onClick={() => {
+                  setParentTask(null);
                   setActiveTask(task._id);
                   setShowTaskModal(true);
                 }}
@@ -70,12 +83,21 @@ export default function MyTasks() {
           )}
         />
       </Segment>
-      {showTaskModal && activeTask ? (
+      {showTaskModal ? (
         <TaskModal
           activeTask={activeTask}
+          parentTask={parentTask}
           showTaskModal={showTaskModal}
           setShowTaskModal={setShowTaskModal}
           onSaved={() => void refetch()}
+          onCreateSubtask={
+            permissions.canManageTasks
+              ? (parent) => {
+                  setActiveTask(null);
+                  setParentTask(parent);
+                }
+              : undefined
+          }
         />
       ) : null}
     </>

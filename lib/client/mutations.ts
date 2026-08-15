@@ -128,6 +128,11 @@ export const ASSIGN_USER_TASK = gql`
         name
         priority
         status
+        parentTaskId
+        parent {
+          _id
+          name
+        }
       }
     }
   }
@@ -146,6 +151,11 @@ export const REMOVE_USER_TASK = gql`
         duration
         dueDate
         description
+        parentTaskId
+        parent {
+          _id
+          name
+        }
       }
     }
   }
@@ -173,6 +183,13 @@ export const ADD_TASK = gql`
       priority
       description
       status
+      parentTaskId
+      descendantCount
+      isStub
+      parent {
+        _id
+        name
+      }
     }
   }
 `;
@@ -199,6 +216,13 @@ export const UPDATE_TASK = gql`
       priority
       description
       status
+      parentTaskId
+      descendantCount
+      isStub
+      parent {
+        _id
+        name
+      }
     }
   }
 `;
@@ -221,6 +245,8 @@ export const DELETE_TASK = gql`
       priority
       description
       status
+      parentTaskId
+      descendantCount
     }
   }
 `;

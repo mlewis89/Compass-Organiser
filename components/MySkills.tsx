@@ -71,35 +71,40 @@ export default function MySkills() {
 
   return (
     <Segment padded>
-      <Label attached="top">Skills</Label>
-      <Segment>
-        <Label attached="top">My Skills</Label>
-        {mySkills.length === 0 ? (
-          <p style={{ color: "#666" }}>
-            No skills yet — add what you can help with.
-          </p>
-        ) : (
-          <div style={{ marginBottom: "0.75rem" }}>
-            {mySkills.map((skill) => (
-              <Button
-                icon
-                labelPosition="right"
-                key={skill._id}
-                size="small"
-                style={{ marginBottom: "0.35rem" }}
-                onClick={() => removeChip(skill._id)}
-              >
-                {skill.name}
-                <Icon name="delete" />
-              </Button>
-            ))}
-          </div>
-        )}
-        <Button type="button" primary onClick={() => setAddOpen(true)}>
-          Add skills
-        </Button>
-        {error ? <Message negative content={error} style={{ marginTop: "0.75rem" }} /> : null}
-      </Segment>
+      <Label attached="top">My Skills</Label>
+      {mySkills.length === 0 ? (
+        <p style={{ color: "#666" }}>
+          No skills yet — add what you can help with.
+        </p>
+      ) : (
+        <div
+          style={{
+            marginBottom: "0.75rem",
+            maxHeight: 120,
+            overflowY: "auto",
+          }}
+        >
+          {mySkills.map((skill) => (
+            <Button
+              icon
+              labelPosition="right"
+              key={skill._id}
+              size="mini"
+              style={{ marginBottom: "0.25rem" }}
+              onClick={() => removeChip(skill._id)}
+            >
+              {skill.name}
+              <Icon name="delete" />
+            </Button>
+          ))}
+        </div>
+      )}
+      <Button type="button" primary onClick={() => setAddOpen(true)}>
+        Add skills
+      </Button>
+      {error ? (
+        <Message negative content={error} style={{ marginTop: "0.75rem" }} />
+      ) : null}
 
       <Modal open={addOpen} onClose={() => setAddOpen(false)} size="small">
         <ModalHeader>Add skills</ModalHeader>

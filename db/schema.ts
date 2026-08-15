@@ -177,8 +177,14 @@ export const tasks = pgTable("tasks", {
   duration: real("duration"),
   createdByUserId: uuid("created_by_user_id").references(() => users.id),
   priority: integer("priority"),
+  parentTaskId: uuid("parent_task_id").references((): AnyPgColumn => tasks.id, {
+    onDelete: "cascade",
+  }),
   ...timestamps,
-}, (table) => [index("tasks_group_idx").on(table.groupId)]);
+}, (table) => [
+  index("tasks_group_idx").on(table.groupId),
+  index("tasks_parent_idx").on(table.parentTaskId),
+]);
 
 export const taskSkills = pgTable("task_skills", {
   taskId: uuid("task_id")
@@ -384,6 +390,12 @@ export const tasksRelations = relations(tasks, ({ one, many }) => ({
     references: [users.id],
     relationName: "taskCreatedBy",
   }),
+  parent: one(tasks, {
+    fields: [tasks.parentTaskId],
+    references: [tasks.id],
+    relationName: "taskHierarchy",
+  }),
+  children: many(tasks, { relationName: "taskHierarchy" }),
   taskSkills: many(taskSkills),
   taskResponsible: many(taskResponsible),
   taskUnits: many(taskUnits),
