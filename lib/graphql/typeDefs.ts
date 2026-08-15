@@ -23,6 +23,7 @@ export const typeDefs = `#graphql
     role: [Role]
     skills: [Skill]
     myTasks: [Task]
+    accountStatus: String
   }
 
   input updateUser {
@@ -197,6 +198,11 @@ export const typeDefs = `#graphql
     roleIds: [ID]
   }
 
+  type InviteMemberResult {
+    user: User!
+    invitationSent: Boolean!
+  }
+
   type Query {
     publicGroup(slug: String!): Group
     boardPosts(groupSlug: String): [BoardPost]
@@ -238,7 +244,8 @@ export const typeDefs = `#graphql
     updateTask(taskId: ID!, taskData: updateTask!): Task
     deleteTask(taskId: ID!): Task
     setTaskStatus(taskId: ID!, status: String!): Task
-    addMember(member: addMemberInput!): User
+    inviteMember(member: addMemberInput!): InviteMemberResult
+    resendInvite(userId: ID!): InviteMemberResult
     setMemberStatus(userId: ID!, status: String!): User
     removeMember(userId: ID!): User
     updateMember(userId: ID!, user: updateUser!): User

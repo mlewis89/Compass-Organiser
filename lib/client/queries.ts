@@ -170,6 +170,7 @@ export const QUERY_MEMBERS = gql`
       email
       phone
       taskAvailabity
+      accountStatus
     }
   }
 `;
@@ -257,6 +258,7 @@ export const QUERY_SINGLE_MEMBER = gql`
       email
       phone
       taskAvailabity
+      accountStatus
       role {
         _id
         name

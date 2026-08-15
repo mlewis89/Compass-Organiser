@@ -77,6 +77,23 @@ Clerk is identity only. Scout groups and roles stay in Neon:
 
 Do **not** use Clerk Organizations as the source of truth for scout roles.
 
+### Inviting new members
+
+From the Members page, an admin with `GroupLeader` / `AssistGroupLeader` / `Secretary`
+can invite someone by email and (optionally) pre-assign roles:
+
+- If the email already has a Neon or Clerk account, they're added to the group
+  immediately (no email sent).
+- Otherwise a placeholder Neon user + membership + roles are created, and Clerk
+  emails them an invitation link (`clerkClient().invitations.createInvitation`).
+  When they create their account, the existing Clerk-to-Neon sync links it by
+  email and their roles are already in place.
+- Members who haven't created their account yet show an "Invited" badge and can
+  have their invite resent from the member detail modal.
+
+Clerk sends the invitation email itself — there's no separate transactional
+email provider configured in this app.
+
 Clerk production instances cannot use a `*.vercel.app` hostname. This Hobby deploy uses the Clerk development instance and redirects `/sign-in` and `/sign-up` to the `*.accounts.dev` Account Portal. Remove any `compass-organiser.vercel.app` production domain from the Clerk dashboard if sign-in tries to use `accounts.compass-organiser.vercel.app`. A custom domain you own is required before switching to live keys.
 
 ## Hobby notes

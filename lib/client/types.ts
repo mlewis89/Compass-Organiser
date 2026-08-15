@@ -68,6 +68,7 @@ export type Member = {
   email?: string | null;
   phone?: string | null;
   taskAvailabity?: number | null;
+  accountStatus?: string | null;
   role?: Role[] | null;
 };
 

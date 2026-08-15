@@ -51,7 +51,7 @@ export default function Members() {
             style={{ marginBottom: "1em" }}
             onClick={() => setShowAddModal(true)}
           >
-            Add Member
+            Invite Member
           </Button>
         ) : null}
         <Table celled selectable striped>
@@ -69,7 +69,17 @@ export default function Members() {
                 <TableRow key={item._id}>
                   {headers.map((propertyName) => (
                     <TableCell key={item._id + propertyName}>
-                      {String(item[propertyName] ?? "")}
+                      {propertyName === "displayName" &&
+                      item.accountStatus === "invited" ? (
+                        <>
+                          {String(item[propertyName] ?? "")}{" "}
+                          <Label size="tiny" color="yellow">
+                            Invited
+                          </Label>
+                        </>
+                      ) : (
+                        String(item[propertyName] ?? "")
+                      )}
                     </TableCell>
                   ))}
                   <TableCell>

@@ -21,6 +21,7 @@ export function mapUser(user: UserRow) {
     section: user.section,
     Section: user.section,
     dob: user.dob ? user.dob.toISOString() : null,
+    accountStatus: user.externalAuthId ? "active" : "invited",
   };
 }
 

@@ -276,16 +276,31 @@ const MEMBER_FIELDS = `
   email
   phone
   taskAvailabity
+  accountStatus
   role {
     _id
     name
   }
 `;
 
-export const ADD_MEMBER = gql`
-  mutation AddMember($member: addMemberInput!) {
-    addMember(member: $member) {
-      ${MEMBER_FIELDS}
+export const INVITE_MEMBER = gql`
+  mutation InviteMember($member: addMemberInput!) {
+    inviteMember(member: $member) {
+      invitationSent
+      user {
+        ${MEMBER_FIELDS}
+      }
+    }
+  }
+`;
+
+export const RESEND_INVITE = gql`
+  mutation ResendInvite($userId: ID!) {
+    resendInvite(userId: $userId) {
+      invitationSent
+      user {
+        ${MEMBER_FIELDS}
+      }
     }
   }
 `;

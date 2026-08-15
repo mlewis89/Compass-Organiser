@@ -1,6 +1,7 @@
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { GraphQLError } from "graphql";
+import { clerkClient } from "@clerk/nextjs/server";
 import { getDb } from "@/lib/db";
 import {
   AuthenticationError,
@@ -1266,7 +1267,7 @@ export const resolvers = {
         .returning();
       return removed ? mapTask(removed) : null;
     },
-    addMember: async (
+    inviteMember: async (
       _parent: unknown,
       { member }: { member: { email: string; roleIds?: string[] } },
       context: GraphQLContext,
@@ -1276,17 +1277,55 @@ export const resolvers = {
       await requireRole(user, groupId, GROUP_ADMIN_ROLES);
       const db = getDb();
       const email = member.email.toLowerCase();
-      const [existingUser] = await db
+      const roleIds = (member.roleIds ?? []).filter(
+        (id): id is string => Boolean(id),
+      );
+
+      let [existingUser] = await db
         .select()
         .from(users)
         .where(eq(users.email, email))
         .limit(1);
+      let invitationSent = false;
+
       if (!existingUser) {
-        throw new GraphQLError(
-          "No account found with that email. Ask them to sign up first.",
-          { extensions: { code: "NOT_FOUND" } },
-        );
+        const clerk = await clerkClient();
+        const clerkUsers = await clerk.users.getUserList({ emailAddress: [email] });
+        const matchedClerkUser = clerkUsers.data[0];
+
+        const localPart = email.split("@")[0] || "New";
+        const firstName = matchedClerkUser?.firstName?.trim() || localPart;
+        const lastName = matchedClerkUser?.lastName?.trim() || "Member";
+
+        const [created] = await db
+          .insert(users)
+          .values({
+            email,
+            externalAuthId: matchedClerkUser?.id ?? null,
+            firstName,
+            lastName,
+            passwordHash: null,
+          })
+          .returning();
+        existingUser = created;
+
+        if (!matchedClerkUser) {
+          try {
+            await clerk.invitations.createInvitation({
+              emailAddress: email,
+              notify: true,
+            });
+            invitationSent = true;
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            if (!/already exists|pending invitation/i.test(message)) {
+              throw error;
+            }
+            invitationSent = true;
+          }
+        }
       }
+
       const [membership] = await db
         .insert(memberships)
         .values({ userId: existingUser.id, groupId, status: "active" })
@@ -1295,16 +1334,55 @@ export const resolvers = {
           set: { status: "active", updatedAt: new Date() },
         })
         .returning();
-      const roleIds = (member.roleIds ?? []).filter(
-        (id): id is string => Boolean(id),
-      );
+
       if (roleIds.length > 0 && membership) {
         await db
           .insert(membershipRoles)
           .values(roleIds.map((roleId) => ({ membershipId: membership.id, roleId })))
           .onConflictDoNothing();
       }
-      return hydrateUser(existingUser, groupId);
+
+      return {
+        user: await hydrateUser(existingUser, groupId),
+        invitationSent,
+      };
+    },
+    resendInvite: async (
+      _parent: unknown,
+      { userId }: { userId: string },
+      context: GraphQLContext,
+    ) => {
+      const user = requireUser(context.user);
+      const groupId = requireGroup(context.groupId);
+      await requireRole(user, groupId, GROUP_ADMIN_ROLES);
+      const db = getDb();
+      const [row] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+      if (!row) {
+        throw new GraphQLError("Member not found", {
+          extensions: { code: "NOT_FOUND" },
+        });
+      }
+      if (row.externalAuthId) {
+        return { user: await hydrateUser(row, groupId), invitationSent: false };
+      }
+
+      const clerk = await clerkClient();
+      const pending = await clerk.invitations.getInvitationList({
+        status: "pending",
+        query: row.email,
+        limit: 10,
+      });
+      const existingInvitation = pending.data.find(
+        (invite) => invite.emailAddress.toLowerCase() === row.email.toLowerCase(),
+      );
+      if (existingInvitation) {
+        await clerk.invitations.revokeInvitation(existingInvitation.id);
+      }
+      await clerk.invitations.createInvitation({
+        emailAddress: row.email,
+        notify: true,
+      });
+      return { user: await hydrateUser(row, groupId), invitationSent: true };
     },
     setMemberStatus: async (
       _parent: unknown,

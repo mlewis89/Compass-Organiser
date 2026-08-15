@@ -9,6 +9,7 @@ import {
   FormField,
   Input,
   Label,
+  Message,
   Modal,
   Segment,
 } from "semantic-ui-react";
@@ -17,6 +18,7 @@ import {
   ASSIGN_MEMBER_ROLE,
   REMOVE_MEMBER,
   REMOVE_MEMBER_ROLE,
+  RESEND_INVITE,
   SET_MEMBER_STATUS,
   UPDATE_MEMBER,
 } from "@/lib/client/mutations";
@@ -50,6 +52,7 @@ export default function MemberModal({ userId, open, onClose, onChanged }: Props)
   const { permissions } = usePermissions();
   const [memberData, setMemberData] = useState<Member>(emptyMember);
   const [removeCheckOpen, setRemoveCheckOpen] = useState(false);
+  const [resendMessage, setResendMessage] = useState<string | null>(null);
 
   const { data, refetch } = useQuery<{ singleMember: Member }>(QUERY_SINGLE_MEMBER, {
     variables: { userId },
@@ -62,12 +65,19 @@ export default function MemberModal({ userId, open, onClose, onChanged }: Props)
     }
   }, [data]);
 
+  useEffect(() => {
+    setResendMessage(null);
+  }, [userId]);
+
   const refetchQueries = [{ query: QUERY_MEMBERS }];
   const [updateMember] = useMutation(UPDATE_MEMBER, { refetchQueries });
   const [setMemberStatus] = useMutation(SET_MEMBER_STATUS, { refetchQueries });
   const [removeMember] = useMutation(REMOVE_MEMBER, { refetchQueries });
   const [assignMemberRole] = useMutation(ASSIGN_MEMBER_ROLE, { refetchQueries });
   const [removeMemberRole] = useMutation(REMOVE_MEMBER_ROLE, { refetchQueries });
+  const [resendInvite, { loading: resendLoading }] = useMutation(RESEND_INVITE, {
+    refetchQueries,
+  });
 
   const canManage = Boolean(permissions.canManageMembers);
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -198,6 +208,25 @@ export default function MemberModal({ userId, open, onClose, onChanged }: Props)
               />
             ) : null}
           </FormField>
+          {canManage && memberData.accountStatus === "invited" ? (
+            <FormField>
+              <Message info>
+                This member hasn&apos;t created their account yet.
+              </Message>
+              <Button
+                type="button"
+                loading={resendLoading}
+                onClick={() =>
+                  void resendInvite({ variables: { userId } }).then(() => {
+                    setResendMessage(`Invitation resent to ${memberData.email}.`);
+                  })
+                }
+              >
+                Resend Invite
+              </Button>
+              {resendMessage ? <Message positive>{resendMessage}</Message> : null}
+            </FormField>
+          ) : null}
           {canManage ? <Button type="submit">Save Changes</Button> : null}
           {canManage ? (
             <Button

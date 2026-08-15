@@ -13,7 +13,7 @@ import {
   Select,
 } from "semantic-ui-react";
 import { QUERY_MEMBERS, QUERY_ROLES } from "@/lib/client/queries";
-import { ADD_MEMBER } from "@/lib/client/mutations";
+import { INVITE_MEMBER } from "@/lib/client/mutations";
 import type { Role } from "@/lib/client/types";
 
 type Props = {
@@ -25,8 +25,9 @@ type Props = {
 export default function AddMemberModal({ open, onClose, onAdded }: Props) {
   const [email, setEmail] = useState("");
   const [roleIds, setRoleIds] = useState<string[]>([]);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const { data: rolesData } = useQuery<{ roles: Role[] }>(QUERY_ROLES);
-  const [addMember, { error, loading }] = useMutation(ADD_MEMBER, {
+  const [inviteMember, { error, loading }] = useMutation(INVITE_MEMBER, {
     refetchQueries: [{ query: QUERY_MEMBERS }],
   });
 
@@ -38,6 +39,7 @@ export default function AddMemberModal({ open, onClose, onAdded }: Props) {
   const handleClose = () => {
     setEmail("");
     setRoleIds([]);
+    setSuccessMessage(null);
     onClose();
   };
 
@@ -47,10 +49,20 @@ export default function AddMemberModal({ open, onClose, onAdded }: Props) {
         <Form
           onSubmit={(event) => {
             event.preventDefault();
-            void addMember({ variables: { member: { email, roleIds } } }).then(() => {
-              handleClose();
-              onAdded();
-            });
+            setSuccessMessage(null);
+            void inviteMember({ variables: { member: { email, roleIds } } }).then(
+              (result) => {
+                const invitationSent = result.data?.inviteMember?.invitationSent;
+                setSuccessMessage(
+                  invitationSent
+                    ? `Invitation emailed to ${email}. They'll be ready to go once they create their account.`
+                    : `${email} was added to the group.`,
+                );
+                setEmail("");
+                setRoleIds([]);
+                onAdded();
+              },
+            );
           }}
         >
           <FormField
@@ -63,7 +75,11 @@ export default function AddMemberModal({ open, onClose, onAdded }: Props) {
             }
             required
           />
-          <p>The person must already have an account (they need to sign up first).</p>
+          <p>
+            If they already have an account they&apos;ll be added to the group
+            straight away. Otherwise we&apos;ll email them a link to create their
+            account &mdash; their roles will be waiting for them.
+          </p>
           <FormField
             control={Select}
             label="Roles"
@@ -76,11 +92,12 @@ export default function AddMemberModal({ open, onClose, onAdded }: Props) {
             ) => setRoleIds(selectData.value ?? [])}
           />
           {error ? <Message negative>{error.message}</Message> : null}
+          {successMessage ? <Message positive>{successMessage}</Message> : null}
           <Button type="submit" primary loading={loading}>
-            Add Member
+            Send Invite
           </Button>
           <Button type="button" onClick={handleClose}>
-            Cancel
+            Close
           </Button>
         </Form>
       </Segment>
