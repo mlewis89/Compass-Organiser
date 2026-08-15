@@ -136,7 +136,7 @@ export default function Nav() {
             <Image
               className="header-logo"
               src="/header.png"
-              size="medium"
+              fluid
               alt="Compass Organiser"
             />
           </GridColumn>

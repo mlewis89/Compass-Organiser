@@ -50,9 +50,12 @@ export default function SuggestedTasks() {
         nest={false}
         showParentLabel
         mobileSummary={["duration", "status"]}
-        renderActions={(task) => (
+        nameExtraAction={(task) => (
           <Button
-            size="tiny"
+            basic
+            size="mini"
+            compact
+            type="button"
             onClick={() => {
               void assignUserTask({ variables: { taskId: task._id } }).then(() => {
                 dispatch({ type: UPDATE_RERENDER_MYTASKS, payload: true });

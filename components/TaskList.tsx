@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   Button,
   Icon,
@@ -42,12 +42,14 @@ type TaskListProps = {
   tasks: Task[];
   columns: readonly TaskColumn[];
   mobileSummary?: readonly MobileSummaryField[];
-  renderActions?: (task: Task) => ReactNode;
   nest?: boolean;
   showParentLabel?: boolean;
   hideWishlist?: boolean;
   hideCompleted?: boolean;
+  onOpen?: (task: Task) => void;
+  onComplete?: (task: Task) => void;
   onAddSubtask?: (task: Task) => void;
+  nameExtraAction?: (task: Task) => ReactNode;
 };
 
 type StatusMeta = {
@@ -164,6 +166,10 @@ function summaryMetaParts(
   return parts;
 }
 
+function stopRowClick(event: { stopPropagation: () => void }) {
+  event.stopPropagation();
+}
+
 function TaskNameCell({
   task,
   depth,
@@ -171,6 +177,7 @@ function TaskNameCell({
   showParentLabel,
   collapsed,
   onToggle,
+  nameActions,
 }: {
   task: TaskTreeNode;
   depth: number;
@@ -178,6 +185,7 @@ function TaskNameCell({
   showParentLabel: boolean;
   collapsed: boolean;
   onToggle?: () => void;
+  nameActions?: ReactNode;
 }) {
   const hasChildren = nest && task.children.length > 0;
   const parentName = task.parent?.name;
@@ -207,6 +215,11 @@ function TaskNameCell({
         {showParentLabel && parentName ? (
           <span className="task-list-parent-label">Under {parentName}</span>
         ) : null}
+        {nameActions ? (
+          <div className="task-list-name-actions" onClick={stopRowClick}>
+            {nameActions}
+          </div>
+        ) : null}
       </div>
     </div>
   );
@@ -233,13 +246,18 @@ export default function TaskList({
   tasks,
   columns,
   mobileSummary = [],
-  renderActions,
   nest = true,
   showParentLabel = false,
   hideWishlist = false,
   hideCompleted = false,
+  onOpen,
+  onComplete,
   onAddSubtask,
+  nameExtraAction,
 }: TaskListProps) {
+  const listRef = useRef<HTMLDivElement>(null);
+  const tableWrapRef = useRef<HTMLDivElement>(null);
+  const [compact, setCompact] = useState(false);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(() => new Set());
 
@@ -298,66 +316,179 @@ export default function TaskList({
     });
   };
 
-  const actionsFor = (task: TaskTreeNode) => {
+  const nameActionsFor = (task: TaskTreeNode) => {
     if (task.isStub) {
       return null;
     }
+    const openButton = onOpen ? (
+      <Button
+        basic
+        size="mini"
+        compact
+        type="button"
+        onClick={() => onOpen(task)}
+      >
+        Open
+      </Button>
+    ) : null;
     const addButton = onAddSubtask ? (
-      <Button size="tiny" type="button" onClick={() => onAddSubtask(task)}>
+      <Button
+        basic
+        size="mini"
+        compact
+        type="button"
+        onClick={() => onAddSubtask(task)}
+      >
         Add subtask
       </Button>
     ) : null;
-    const provided = renderActions?.(task);
-    if (!provided && !addButton) {
+    const extra = nameExtraAction?.(task);
+    if (!openButton && !addButton && !extra) {
       return null;
     }
     return (
       <>
-        {provided}
+        {openButton}
         {addButton}
+        {extra}
       </>
     );
   };
 
-  const showActions = Boolean(renderActions || onAddSubtask);
+  const completeButtonFor = (task: TaskTreeNode) => {
+    if (task.isStub || !onComplete || isCompleteStatus(task.status)) {
+      return null;
+    }
+    return (
+      <Button
+        positive
+        size="mini"
+        compact
+        type="button"
+        onClick={(event) => {
+          event.stopPropagation();
+          onComplete(task);
+        }}
+      >
+        Complete
+      </Button>
+    );
+  };
+
+  const actionsFor = (task: TaskTreeNode) => {
+    if (task.isStub) {
+      return null;
+    }
+    const nameActions = nameActionsFor(task);
+    const completeButton = completeButtonFor(task);
+    if (!nameActions && !completeButton) {
+      return null;
+    }
+    return (
+      <>
+        {nameActions}
+        {completeButton}
+      </>
+    );
+  };
+
+  const showActions = Boolean(onOpen || onComplete || onAddSubtask || nameExtraAction);
+
+  const renderCell = (task: TaskTreeNode, key: TaskColumnKey) => {
+    if (key === "name") {
+      return (
+        <TaskNameCell
+          task={task}
+          depth={task.depth}
+          nest={nest}
+          showParentLabel={showParentLabel}
+          collapsed={collapsedIds.has(task._id)}
+          onToggle={() => toggleCollapsed(task._id)}
+          nameActions={nameActionsFor(task)}
+        />
+      );
+    }
+    if (task.isStub) {
+      return null;
+    }
+    if (key === "status") {
+      return (
+        <div className="task-list-status-cell">
+          <StatusLabel status={task.status} />
+          {completeButtonFor(task)}
+        </div>
+      );
+    }
+    return renderField(task, key);
+  };
+
+  useLayoutEffect(() => {
+    const list = listRef.current;
+    const wrap = tableWrapRef.current;
+    if (!list || !wrap) {
+      return;
+    }
+
+    const measure = () => {
+      const table = wrap.querySelector("table");
+      if (!table) {
+        return;
+      }
+      const available = list.clientWidth;
+      const needed = table.scrollWidth;
+      setCompact((wasCompact) => {
+        if (wasCompact) {
+          return needed > available - 16;
+        }
+        return needed > available + 1;
+      });
+    };
+
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(list);
+    observer.observe(wrap);
+    return () => observer.disconnect();
+  }, [rows, columns, showActions]);
 
   return (
-    <>
-      <div className="task-list-desktop">
+    <div
+      ref={listRef}
+      className={compact ? "task-list is-compact" : "task-list"}
+    >
+      <div className="task-list-desktop" ref={tableWrapRef}>
         <Table celled selectable unstackable>
           <TableHeader>
             <TableRow>
               {columns.map((column) => (
                 <TableHeaderCell key={column.key}>{column.label}</TableHeaderCell>
               ))}
-              {showActions ? <TableHeaderCell /> : null}
             </TableRow>
           </TableHeader>
           <TableBody>
-            {rows.map((task) => (
-              <TableRow
-                key={task._id}
-                className={task.isStub ? "task-list-stub-row" : undefined}
-              >
-                {columns.map((column) => (
-                  <TableCell key={`${task._id}-${column.key}`}>
-                    {column.key === "name" ? (
-                      <TaskNameCell
-                        task={task}
-                        depth={task.depth}
-                        nest={nest}
-                        showParentLabel={showParentLabel}
-                        collapsed={collapsedIds.has(task._id)}
-                        onToggle={() => toggleCollapsed(task._id)}
-                      />
-                    ) : task.isStub ? null : (
-                      renderField(task, column.key)
-                    )}
-                  </TableCell>
-                ))}
-                {showActions ? <TableCell>{actionsFor(task)}</TableCell> : null}
-              </TableRow>
-            ))}
+            {rows.map((task) => {
+              const canOpen = Boolean(onOpen) && !task.isStub;
+              return (
+                <TableRow
+                  key={task._id}
+                  className={
+                    [
+                      task.isStub ? "task-list-stub-row" : null,
+                      canOpen ? "task-list-row-open" : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" ") || undefined
+                  }
+                  onClick={canOpen ? () => onOpen?.(task) : undefined}
+                >
+                  {columns.map((column) => (
+                    <TableCell key={`${task._id}-${column.key}`}>
+                      {renderCell(task, column.key)}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </div>
@@ -380,7 +511,7 @@ export default function TaskList({
           ))}
         </div>
       )}
-    </>
+    </div>
   );
 }
 

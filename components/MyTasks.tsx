@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery } from "@apollo/client";
 import { useEffect, useState } from "react";
-import { Button, Label, Segment } from "semantic-ui-react";
+import { Label, Segment } from "semantic-ui-react";
 import { QUERY_ME_TASKS } from "@/lib/client/queries";
 import { SET_TASK_STATUS } from "@/lib/client/mutations";
 import { useCompassContext } from "@/lib/client/CompassContext";
@@ -47,6 +47,16 @@ export default function MyTasks() {
           tasks={tasks}
           columns={columns}
           mobileSummary={["status", "dueDate"]}
+          onOpen={(task) => {
+            setParentTask(null);
+            setActiveTask(task._id);
+            setShowTaskModal(true);
+          }}
+          onComplete={(task) => {
+            void setTaskStatus({
+              variables: { taskId: task._id, status: "complete" },
+            }).then(() => refetch());
+          }}
           onAddSubtask={
             permissions.canManageTasks
               ? (task) => {
@@ -56,31 +66,6 @@ export default function MyTasks() {
                 }
               : undefined
           }
-          renderActions={(task) => (
-            <Button.Group size="tiny">
-              <Button
-                onClick={() => {
-                  setParentTask(null);
-                  setActiveTask(task._id);
-                  setShowTaskModal(true);
-                }}
-              >
-                Open Task
-              </Button>
-              {task.status !== "complete" ? (
-                <Button
-                  positive
-                  onClick={() =>
-                    void setTaskStatus({
-                      variables: { taskId: task._id, status: "complete" },
-                    }).then(() => refetch())
-                  }
-                >
-                  Complete
-                </Button>
-              ) : null}
-            </Button.Group>
-          )}
         />
       </Segment>
       {showTaskModal ? (

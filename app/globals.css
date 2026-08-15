@@ -6,6 +6,20 @@
   background-color: #374c7a !important;
 }
 
+.app-nav {
+  overflow: hidden;
+}
+
+.app-nav .header-logo.ui.image {
+  width: 100% !important;
+  max-width: 20rem;
+  height: auto !important;
+}
+
+.app-nav .ui.grid > .row > .five.wide.column {
+  min-width: 0;
+}
+
 @media (min-width: 768px) {
   .ui.container.min-100-vh {
     padding-left: 2rem;
@@ -55,19 +69,38 @@
 }
 
 .task-list {
+  position: relative;
+  overflow: hidden;
   container-type: inline-size;
   container-name: task-list;
 }
 
 .task-list-desktop {
-  display: none;
+  overflow: hidden;
+}
+
+.task-list-desktop .ui.table {
+  width: max-content !important;
+  min-width: 100%;
 }
 
 .task-list-mobile {
-  display: block;
+  display: none;
   border: 1px solid rgba(34, 36, 38, 0.15);
   border-radius: 0.28571429rem;
   overflow: hidden;
+}
+
+.task-list.is-compact .task-list-desktop {
+  position: absolute;
+  left: 0;
+  top: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.task-list.is-compact .task-list-mobile {
+  display: block;
 }
 
 .task-list-row + .task-list-row {
@@ -178,17 +211,6 @@
 
   .task-list-detail {
     padding: 0 1rem 0.85rem;
-  }
-}
-
-@container task-list (min-width: 75rem) {
-  .task-list-desktop {
-    display: block;
-    overflow-x: auto;
-  }
-
-  .task-list-mobile {
-    display: none;
   }
 }
 
@@ -312,6 +334,24 @@
   flex-direction: column;
 }
 
+.task-list-name-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-top: 0.25rem;
+}
+
+.task-list-status-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+}
+
+.task-list-row-open {
+  cursor: pointer;
+}
+
 .task-list-parent-label {
   display: block;
   color: rgba(0, 0, 0, 0.55);
@@ -381,19 +421,26 @@
     padding: 0.75rem;
   }
 
+  .app-nav .ui.grid > .row {
+    flex-wrap: wrap;
+  }
+
   .app-nav .ui.grid > .row > .five.wide.column {
-    width: auto !important;
-    flex: 0 0 auto;
+    width: 100% !important;
+    flex: 1 1 100%;
+    min-width: 0;
+    margin-bottom: 0.5rem;
   }
 
   .app-nav .ui.grid > .row > .seven.wide.column {
-    width: auto !important;
-    flex: 1 1 auto;
+    width: 100% !important;
+    flex: 1 1 100%;
   }
 
   .app-nav .header-logo.ui.image {
-    width: 9.5rem;
-    max-width: 9.5rem;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
   }
 
   .app-nav .ui.menu {

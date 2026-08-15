@@ -57,17 +57,9 @@ function TaskBucketTable({
       hideWishlist={hideWishlist}
       hideCompleted={hideCompleted}
       mobileSummary={["status", "dueDate", "responsible"]}
+      onOpen={(task) => onOpen(task._id)}
+      onComplete={(task) => onComplete(task._id)}
       onAddSubtask={onAddSubtask}
-      renderActions={(task) => (
-        <Button.Group size="tiny">
-          <Button onClick={() => onOpen(task._id)}>Open</Button>
-          {task.status !== TASK_STATUS.complete ? (
-            <Button positive onClick={() => onComplete(task._id)}>
-              Complete
-            </Button>
-          ) : null}
-        </Button.Group>
-      )}
     />
   );
 }
