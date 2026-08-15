@@ -119,6 +119,51 @@ function StatusLabel({ status }: { status?: string | null }) {
   );
 }
 
+function DescriptionCell({ text }: { text: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const [overflows, setOverflows] = useState(false);
+  const textRef = useRef<HTMLParagraphElement>(null);
+
+  useLayoutEffect(() => {
+    const element = textRef.current;
+    if (!element || expanded) {
+      return;
+    }
+    setOverflows(element.scrollHeight > element.clientHeight + 1);
+  }, [text, expanded]);
+
+  if (!text) {
+    return "";
+  }
+
+  return (
+    <div className="task-list-description">
+      <p
+        ref={textRef}
+        className={
+          expanded
+            ? "task-list-description-text is-expanded"
+            : "task-list-description-text"
+        }
+      >
+        {text}
+      </p>
+      {overflows || expanded ? (
+        <button
+          type="button"
+          className="task-list-description-more"
+          onClick={(event) => {
+            event.stopPropagation();
+            setExpanded((current) => !current);
+          }}
+        >
+          {expanded ? "Less" : "More"}
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
 function renderField(task: Task, key: TaskColumnKey): ReactNode {
   switch (key) {
     case "dueDate":
@@ -136,7 +181,7 @@ function renderField(task: Task, key: TaskColumnKey): ReactNode {
     case "name":
       return task.name ?? "";
     case "description":
-      return task.description ?? "";
+      return <DescriptionCell text={task.description ?? ""} />;
   }
 }
 
