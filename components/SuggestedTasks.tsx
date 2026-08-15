@@ -46,6 +46,7 @@ export default function SuggestedTasks() {
             {headers.map((header) => (
               <TableHeaderCell key={header}>{header}</TableHeaderCell>
             ))}
+            <TableHeaderCell>required skills</TableHeaderCell>
             <TableHeaderCell />
           </TableRow>
         </TableHeader>
@@ -57,6 +58,12 @@ export default function SuggestedTasks() {
                   {String(task[propertyName] ?? "")}
                 </TableCell>
               ))}
+              <TableCell>
+                {(task.requiredSkills ?? [])
+                  .map((skill) => skill.name)
+                  .filter(Boolean)
+                  .join(", ") || "—"}
+              </TableCell>
               <TableCell>
                 <Button
                   onClick={() => {

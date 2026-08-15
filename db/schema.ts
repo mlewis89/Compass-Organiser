@@ -1,5 +1,6 @@
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
+  type AnyPgColumn,
   boolean,
   index,
   integer,
@@ -89,7 +90,27 @@ export const membershipRoles = pgTable("membership_roles", {
 export const skills = pgTable("skills", {
   id: uuid("id").defaultRandom().primaryKey(),
   name: text("name").notNull(),
-}, (table) => [uniqueIndex("skills_name_idx").on(table.name)]);
+  parentId: uuid("parent_id").references((): AnyPgColumn => skills.id, {
+    onDelete: "set null",
+  }),
+  /** platform = shared defaults; group = per-group catalog */
+  scope: text("scope").notNull().default("platform"),
+  groupId: uuid("group_id").references(() => groups.id, { onDelete: "cascade" }),
+  /** approved | pending | archived */
+  status: text("status").notNull().default("approved"),
+  createdByUserId: uuid("created_by_user_id").references(() => users.id, {
+    onDelete: "set null",
+  }),
+}, (table) => [
+  uniqueIndex("skills_platform_name_idx")
+    .on(table.name)
+    .where(sql`${table.scope} = 'platform'`),
+  uniqueIndex("skills_group_name_idx")
+    .on(table.groupId, table.name)
+    .where(sql`${table.scope} = 'group'`),
+  index("skills_group_idx").on(table.groupId),
+  index("skills_parent_idx").on(table.parentId),
+]);
 
 export const userSkills = pgTable("user_skills", {
   userId: uuid("user_id")
@@ -223,6 +244,7 @@ export const groupsRelations = relations(groups, ({ many }) => ({
   boardPosts: many(boardPosts),
   families: many(families),
   payments: many(payments),
+  skills: many(skills),
 }));
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -263,7 +285,18 @@ export const membershipRolesRelations = relations(membershipRoles, ({ one }) => 
   }),
 }));
 
-export const skillsRelations = relations(skills, ({ many }) => ({
+export const skillsRelations = relations(skills, ({ one, many }) => ({
+  parent: one(skills, {
+    fields: [skills.parentId],
+    references: [skills.id],
+    relationName: "skillHierarchy",
+  }),
+  children: many(skills, { relationName: "skillHierarchy" }),
+  group: one(groups, { fields: [skills.groupId], references: [groups.id] }),
+  createdBy: one(users, {
+    fields: [skills.createdByUserId],
+    references: [users.id],
+  }),
   userSkills: many(userSkills),
   taskSkills: many(taskSkills),
 }));

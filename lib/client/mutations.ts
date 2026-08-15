@@ -34,6 +34,87 @@ export const REMOVE_USER_SKILLS = gql`
   }
 `;
 
+export const CREATE_SKILL = gql`
+  mutation CreateSkill($skill: createSkillInput!) {
+    createSkill(skill: $skill) {
+      _id
+      name
+      parentId
+      scope
+      groupId
+      status
+    }
+  }
+`;
+
+export const UPDATE_SKILL_CATALOG = gql`
+  mutation UpdateSkillCatalog($skillId: ID!, $skill: updateSkillCatalogInput!) {
+    updateSkillCatalog(skillId: $skillId, skill: $skill) {
+      _id
+      name
+      parentId
+      scope
+      groupId
+      status
+      taskCount
+      userCount
+    }
+  }
+`;
+
+export const ARCHIVE_SKILL = gql`
+  mutation ArchiveSkill($skillId: ID!) {
+    archiveSkill(skillId: $skillId) {
+      _id
+      name
+      status
+    }
+  }
+`;
+
+export const REQUEST_PROMOTE_SKILL = gql`
+  mutation RequestPromoteSkill($skillId: ID!) {
+    requestPromoteSkill(skillId: $skillId) {
+      _id
+      name
+      status
+      scope
+    }
+  }
+`;
+
+export const APPROVE_PLATFORM_SKILL = gql`
+  mutation ApprovePlatformSkill($skillId: ID!) {
+    approvePlatformSkill(skillId: $skillId) {
+      _id
+      name
+      status
+    }
+  }
+`;
+
+export const REJECT_PLATFORM_SKILL = gql`
+  mutation RejectPlatformSkill($skillId: ID!) {
+    rejectPlatformSkill(skillId: $skillId) {
+      _id
+      name
+      status
+    }
+  }
+`;
+
+export const CREATE_PLATFORM_SKILL = gql`
+  mutation CreatePlatformSkill($skill: createSkillInput!) {
+    createPlatformSkill(skill: $skill) {
+      _id
+      name
+      parentId
+      scope
+      status
+    }
+  }
+`;
+
 export const ASSIGN_USER_TASK = gql`
   mutation AssignUserTask($taskId: ID!) {
     assignUserTask(taskId: $taskId) {

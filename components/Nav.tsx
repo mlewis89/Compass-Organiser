@@ -75,6 +75,17 @@ export default function Nav() {
             name="members"
             active={pathname === "/members"}
           />,
+          ...(permissions.canManageMembers || permissions.isPlatformAdmin
+            ? [
+                <MenuItem
+                  key="skills"
+                  as="a"
+                  href="/skills"
+                  name="Skills"
+                  active={pathname === "/skills"}
+                />,
+              ]
+            : []),
           ...(permissions.isPlatformAdmin
             ? [
                 <MenuItem
@@ -83,6 +94,13 @@ export default function Nav() {
                   href="/admin/groups"
                   name="Groups"
                   active={pathname.startsWith("/admin/groups")}
+                />,
+                <MenuItem
+                  key="admin-skills"
+                  as="a"
+                  href="/admin/skills"
+                  name="Platform skills"
+                  active={pathname.startsWith("/admin/skills")}
                 />,
               ]
             : []),
@@ -136,29 +154,74 @@ export default function Nav() {
             <Image src="/path.png" alt="" />
           </GridColumn>
           <GridColumn width={7} verticalAlign="bottom">
-            <div style={{ display: "flex", alignItems: "flex-end", gap: "0.75rem" }}>
-              <Menu stackable style={{ flex: 1, marginBottom: 0 }}>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-end",
+                gap: "0.5rem",
+              }}
+            >
+              {isLoaded && isSignedIn ? (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.75rem",
+                  }}
+                >
+                  {myGroups.length > 0 ? (
+                    <Dropdown
+                      text={
+                        myGroups.find((group) => group.slug === activeSlug)
+                          ?.name ?? "Group"
+                      }
+                      compact
+                      button
+                      className="icon"
+                    >
+                      <Dropdown.Menu>
+                        {myGroups.map((group) => (
+                          <Dropdown.Item
+                            key={group._id}
+                            active={group.slug === activeSlug}
+                            onClick={() => {
+                              if (group.slug !== activeSlug) {
+                                void switchGroup(group.slug);
+                              }
+                            }}
+                          >
+                            {group.name}
+                          </Dropdown.Item>
+                        ))}
+                        {permissions.isPlatformAdmin ? (
+                          <>
+                            <Dropdown.Divider />
+                            <Dropdown.Item
+                              as="a"
+                              href="/admin/groups"
+                              active={pathname.startsWith("/admin/groups")}
+                            >
+                              Edit groups
+                            </Dropdown.Item>
+                            <Dropdown.Item
+                              as="a"
+                              href="/admin/skills"
+                              active={pathname.startsWith("/admin/skills")}
+                            >
+                              Platform skills
+                            </Dropdown.Item>
+                          </>
+                        ) : null}
+                      </Dropdown.Menu>
+                    </Dropdown>
+                  ) : null}
+                  <UserButton />
+                </div>
+              ) : null}
+              <Menu stackable style={{ width: "100%", marginBottom: 0 }}>
                 {items}
               </Menu>
-              {isLoaded && isSignedIn && myGroups.length > 0 ? (
-                <Dropdown
-                  selection
-                  compact
-                  value={activeSlug ?? undefined}
-                  options={myGroups.map((group) => ({
-                    key: group._id,
-                    text: group.name,
-                    value: group.slug,
-                  }))}
-                  onChange={(_event, data) => {
-                    const slug = String(data.value ?? "");
-                    if (slug && slug !== activeSlug) {
-                      void switchGroup(slug);
-                    }
-                  }}
-                />
-              ) : null}
-              {isLoaded && isSignedIn ? <UserButton /> : null}
             </div>
           </GridColumn>
         </GridRow>

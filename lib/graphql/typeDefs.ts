@@ -132,12 +132,34 @@ export const typeDefs = `#graphql
     _id: ID!
     name: String
     isActiveForUser: Boolean
+    parentId: ID
+    parent: Skill
+    children: [Skill]
+    scope: String
+    groupId: ID
+    status: String
+    createdByUserId: ID
+    taskCount: Int
+    userCount: Int
   }
 
   input updateSkill {
     _id: ID
     name: String
+    parentId: ID
     isActiveForUser: Boolean
+  }
+
+  input createSkillInput {
+    name: String!
+    parentId: ID
+    groupId: ID
+  }
+
+  input updateSkillCatalogInput {
+    name: String
+    parentId: ID
+    status: String
   }
 
   type Task {
@@ -236,6 +258,8 @@ export const typeDefs = `#graphql
     singleMember(userId: ID!): User
     me: User
     pageSkills(userId: ID): [Skill]
+    groupSkills(includeArchived: Boolean): [Skill]
+    platformSkills(includePending: Boolean): [Skill]
     myStats(userId: ID): [Stat]
     roles: [Role]
     myPermissions: Permissions
@@ -253,6 +277,13 @@ export const typeDefs = `#graphql
     updateUserTime(taskAvailabity: Int!): User
     assignUserSkill(skillId: ID, userId: ID): User
     removeUserSkill(skillId: ID, userId: ID): User
+    createSkill(skill: createSkillInput!): Skill
+    updateSkillCatalog(skillId: ID!, skill: updateSkillCatalogInput!): Skill
+    archiveSkill(skillId: ID!): Skill
+    requestPromoteSkill(skillId: ID!): Skill
+    approvePlatformSkill(skillId: ID!): Skill
+    rejectPlatformSkill(skillId: ID!): Skill
+    createPlatformSkill(skill: createSkillInput!): Skill
     assignUserTask(taskId: ID!, userId: ID): User
     removeUserFromTask(taskId: ID!, userId: ID): User
     addBoardPost(postData: updateBoardPost!): BoardPost

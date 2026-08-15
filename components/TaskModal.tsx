@@ -19,9 +19,10 @@ import {
   REMOVE_USER_TASK,
   UPDATE_TASK,
 } from "@/lib/client/mutations";
-import type { Task } from "@/lib/client/types";
+import type { Skill, Task } from "@/lib/client/types";
 import { usePermissions } from "@/lib/client/usePermissions";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import SkillPicker from "@/components/SkillPicker";
 
 const emptyTask: Task = {
   _id: "",
@@ -89,6 +90,10 @@ export default function TaskModal({
 
   const handleClose = () => setShowTaskModal(false);
 
+  const handleSkillsChange = (skills: Skill[]) => {
+    setTaskData({ ...taskData, requiredSkills: skills });
+  };
+
   return (
     <Modal
       centered={false}
@@ -109,6 +114,11 @@ export default function TaskModal({
               priority: parseInt(String(taskData.priority ?? 0), 10),
               status: taskData.status,
               dueDate: taskData.dueDate || undefined,
+              requiredSkills: (taskData.requiredSkills ?? []).map((skill) => ({
+                _id: skill._id || undefined,
+                name: skill.name,
+                parentId: skill.parentId || undefined,
+              })),
             };
             if (isCreateMode) {
               void addTask({ variables: { taskData: variables } }).then(() => {
@@ -191,13 +201,16 @@ export default function TaskModal({
               setTaskData({ ...taskData, status: String(selectData.value ?? "") });
             }}
           />
-          <FormField
-            control={Input}
-            value={(taskData.requiredSkills ?? []).map((skill) => skill.name).join(", ")}
-            label="Required Skills"
-            name="requiredSkills"
-            readOnly
-          />
+          <FormField>
+            <label>Required Skills</label>
+            <SkillPicker
+              mode="task"
+              selectedIds={(taskData.requiredSkills ?? []).map((s) => s._id)}
+              onChange={handleSkillsChange}
+              disabled={!canManage}
+              allowCreate={canManage}
+            />
+          </FormField>
           <FormField
             control={Input}
             value={taskData.responsible?.displayName ?? ""}

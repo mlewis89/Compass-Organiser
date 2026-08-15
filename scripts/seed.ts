@@ -15,22 +15,22 @@ import {
   users,
 } from "../db/schema";
 
-const skillNames = [
-  "Web Development",
-  "Power Tools",
-  "Towing a trailer",
-  "Data entry",
-  "Admin",
-  "Accounting",
-  "Communication",
-  "English",
-  "General Help",
-  "Trades",
-  "3D Modeling/Printing",
-  "Wood working",
-  "Graphics Design",
-  "Chainsawing",
-  "Splitting wood",
+const skillSeed: Array<{ name: string; parent?: string }> = [
+  { name: "Web Development" },
+  { name: "Power Tools" },
+  { name: "Towing a trailer" },
+  { name: "Data entry" },
+  { name: "Admin" },
+  { name: "Accounting" },
+  { name: "Communication" },
+  { name: "English" },
+  { name: "General Help" },
+  { name: "Trades" },
+  { name: "3D Modeling/Printing" },
+  { name: "Wood working", parent: "Trades" },
+  { name: "Graphics Design" },
+  { name: "Chainsawing", parent: "Power Tools" },
+  { name: "Splitting wood", parent: "Power Tools" },
 ];
 
 const roleSeed = [
@@ -74,12 +74,35 @@ async function main() {
 
   const insertedSkills = await db
     .insert(skills)
-    .values(skillNames.map((name) => ({ name })))
+    .values(
+      skillSeed.map((skill) => ({
+        name: skill.name,
+        scope: "platform",
+        status: "approved",
+      })),
+    )
     .onConflictDoNothing()
     .returning();
   const allSkills =
-    insertedSkills.length > 0 ? insertedSkills : await db.select().from(skills);
+    insertedSkills.length > 0
+      ? insertedSkills
+      : await db.select().from(skills).where(eq(skills.scope, "platform"));
   const skillByName = new Map(allSkills.map((skill) => [skill.name, skill]));
+
+  for (const skill of skillSeed) {
+    if (!skill.parent) {
+      continue;
+    }
+    const current = skillByName.get(skill.name);
+    const parent = skillByName.get(skill.parent);
+    if (current && parent && current.parentId !== parent.id) {
+      await db
+        .update(skills)
+        .set({ parentId: parent.id })
+        .where(eq(skills.id, current.id));
+      skillByName.set(skill.name, { ...current, parentId: parent.id });
+    }
+  }
 
   const insertedRoles = await db
     .insert(roles)

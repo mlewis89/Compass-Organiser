@@ -2,6 +2,13 @@ export type Skill = {
   _id: string;
   name: string;
   isActiveForUser?: boolean;
+  parentId?: string | null;
+  scope?: string | null;
+  groupId?: string | null;
+  status?: string | null;
+  createdByUserId?: string | null;
+  taskCount?: number | null;
+  userCount?: number | null;
 };
 
 export type UserSummary = {

@@ -190,6 +190,39 @@ export const QUERY_USER_SKILLS = gql`
       _id
       isActiveForUser
       name
+      parentId
+      scope
+      groupId
+      status
+    }
+  }
+`;
+
+export const QUERY_GROUP_SKILLS = gql`
+  query GroupSkills($includeArchived: Boolean) {
+    groupSkills(includeArchived: $includeArchived) {
+      _id
+      name
+      parentId
+      scope
+      groupId
+      status
+      taskCount
+      userCount
+    }
+  }
+`;
+
+export const QUERY_PLATFORM_SKILLS = gql`
+  query PlatformSkills($includePending: Boolean) {
+    platformSkills(includePending: $includePending) {
+      _id
+      name
+      parentId
+      scope
+      status
+      taskCount
+      userCount
     }
   }
 `;
