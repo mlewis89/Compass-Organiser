@@ -531,6 +531,11 @@ async function mergeSkillsImpl(targetId: string, sourceIds: string[]) {
   if (sourceRows.length !== sources.length) {
     throw new GraphQLError("One or more skills to merge were not found");
   }
+  if (existingTarget.scope !== "platform") {
+    throw new GraphQLError(
+      "Keep a platform skill when merging. Promote the group skill first, or choose a platform skill to keep.",
+    );
+  }
 
   const sourceSet = new Set(sources);
   let nextParent = existingTarget.parentId;
@@ -582,6 +587,13 @@ async function mergeSkillsImpl(targetId: string, sourceIds: string[]) {
     .where(and(inArray(skills.parentId, sources), ne(skills.id, target)));
 
   await db.delete(skills).where(inArray(skills.id, sources));
+
+  if (existingTarget.status !== "approved") {
+    await db
+      .update(skills)
+      .set({ status: "approved", groupId: null })
+      .where(eq(skills.id, target));
+  }
 
   const [merged] = await db
     .select()
@@ -1677,12 +1689,7 @@ export const resolvers = {
       const rows = await db
         .select()
         .from(skills)
-        .where(
-          and(
-            eq(skills.scope, "platform"),
-            inArray(skills.status, ["approved", "archived"]),
-          ),
-        )
+        .where(eq(skills.scope, "platform"))
         .orderBy(asc(skills.name));
       return hydrateCatalogSkills(rows);
     },
@@ -2224,12 +2231,29 @@ export const resolvers = {
           and(eq(skills.scope, "platform"), eq(skills.name, existing.name)),
         )
         .limit(1);
+      let removedPendingId: string | null = null;
       if (platformExisting) {
-        throw new GraphQLError(
-          `A platform skill named “${existing.name}” already exists. Merge into it instead.`,
-        );
+        const leftoverPending =
+          platformExisting.status === "pending"
+            ? await loadSkillUsageMap([platformExisting.id])
+            : null;
+        const leftoverUsage = leftoverPending?.get(platformExisting.id);
+        const unusedPendingCopy =
+          leftoverUsage &&
+          leftoverUsage.taskCount === 0 &&
+          leftoverUsage.userCount === 0;
+        if (!unusedPendingCopy) {
+          throw new GraphQLError(
+            `A platform skill named “${existing.name}” already exists. Merge into it instead.`,
+          );
+        }
+        await db.delete(skills).where(eq(skills.id, platformExisting.id));
+        removedPendingId = platformExisting.id;
       }
       let parentId = existing.parentId;
+      if (removedPendingId && parentId === removedPendingId) {
+        parentId = null;
+      }
       if (parentId) {
         const parent = await getSkillOrThrow(parentId);
         if (parent.scope !== "platform" || parent.status !== "approved") {

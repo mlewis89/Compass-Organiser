@@ -33,12 +33,17 @@ import {
 import type { Skill } from "@/lib/client/types";
 
 function skillLabel(skill: Skill) {
-  const archived = skill.status === "archived" ? ", archived" : "";
+  const statusNote =
+    skill.status === "archived"
+      ? ", archived"
+      : skill.status === "pending"
+        ? ", pending"
+        : "";
   if (skill.scope === "platform") {
-    return `${skill.name} (platform${archived})`;
+    return `${skill.name} (platform${statusNote})`;
   }
   const groupName = skill.group?.name ?? "group";
-  return `${skill.name} (${groupName}${archived})`;
+  return `${skill.name} (${groupName}${statusNote})`;
 }
 
 export default function PlatformSkillsPanel() {
@@ -71,13 +76,16 @@ export default function PlatformSkillsPanel() {
   const [mergeSkills, { loading: merging }] = useMutation(MERGE_SKILLS);
 
   const platformCatalog = platformData?.platformSkills ?? [];
+  const platformDefaults = platformCatalog.filter(
+    (skill) => skill.status !== "pending",
+  );
   const groupSkills = groupData?.adminGroupSkills ?? [];
   const parentOptions = useMemo(
     () =>
-      platformCatalog.filter(
+      platformDefaults.filter(
         (skill) => !skill.parentId && skill.status === "approved",
       ),
-    [platformCatalog],
+    [platformDefaults],
   );
   const parentNameById = useMemo(() => {
     const map = new Map<string, string>();
@@ -111,7 +119,7 @@ export default function PlatformSkillsPanel() {
     0,
   );
   const canMerge =
-    Boolean(mergeTarget) &&
+    mergeTarget?.scope === "platform" &&
     mergeSources.length > 0 &&
     !mergeSourceIds.includes(mergeTargetId);
 
@@ -227,8 +235,9 @@ export default function PlatformSkillsPanel() {
       <Segment padded>
         <Header as="h3">Merge skills</Header>
         <p>
-          Collapse duplicate skills into one entity. Tasks and users on the
-          merged skills are moved onto the skill you keep.
+          Collapse duplicate skills into one entity. Keep a platform skill so
+          every group can still use it. Tasks and users on the merged skills
+          move onto that platform skill.
         </p>
         <Table celled compact>
           <TableHeader>
@@ -258,6 +267,7 @@ export default function PlatformSkillsPanel() {
                       type="radio"
                       name="merge-target"
                       aria-label={`Keep ${skill.name}`}
+                      disabled={skill.scope !== "platform"}
                       checked={mergeTargetId === skill._id}
                       onChange={() => {
                         setMergeTargetId(skill._id);
@@ -279,9 +289,9 @@ export default function PlatformSkillsPanel() {
                   </TableCell>
                   <TableCell>
                     {skill.name}
-                    {skill.status === "archived" ? (
+                    {skill.status === "archived" || skill.status === "pending" ? (
                       <Label size="mini" style={{ marginLeft: "0.5rem" }}>
-                        archived
+                        {skill.status}
                       </Label>
                     ) : null}
                   </TableCell>
@@ -306,7 +316,10 @@ export default function PlatformSkillsPanel() {
             names: {mergeSources.map((skill) => skill.name).join(", ")}.
           </Message>
         ) : (
-          <p>Select one skill to keep and at least one skill to merge into it.</p>
+          <p>
+            Select a platform skill to keep and at least one skill to merge into
+            it.
+          </p>
         )}
         <Button
           type="button"
@@ -416,7 +429,7 @@ export default function PlatformSkillsPanel() {
                 <TableCell colSpan={6}>Loading…</TableCell>
               </TableRow>
             ) : (
-              platformCatalog.map((skill) => (
+              platformDefaults.map((skill) => (
                 <TableRow key={skill._id}>
                   <TableCell>
                     <Input
