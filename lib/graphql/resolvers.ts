@@ -296,6 +296,48 @@ async function mapTask(task: typeof tasks.$inferSelect) {
   };
 }
 
+type TaskRow = typeof tasks.$inferSelect;
+
+/** Tasks claimed via user_tasks, plus any where the user is Person Responsible. */
+async function loadTasksForUser(
+  userId: string,
+  groupId?: string | null,
+): Promise<TaskRow[]> {
+  const db = getDb();
+  const claimedWhere = groupId
+    ? and(eq(userTasks.userId, userId), eq(tasks.groupId, groupId))
+    : eq(userTasks.userId, userId);
+  const responsibleWhere = groupId
+    ? and(eq(tasks.responsibleUserId, userId), eq(tasks.groupId, groupId))
+    : eq(tasks.responsibleUserId, userId);
+
+  const [claimed, responsible] = await Promise.all([
+    db
+      .select({ task: tasks })
+      .from(userTasks)
+      .innerJoin(tasks, eq(userTasks.taskId, tasks.id))
+      .where(claimedWhere),
+    db.select().from(tasks).where(responsibleWhere),
+  ]);
+
+  const byId = new Map<string, TaskRow>();
+  for (const { task } of claimed) {
+    byId.set(task.id, task);
+  }
+  for (const task of responsible) {
+    byId.set(task.id, task);
+  }
+  return [...byId.values()];
+}
+
+async function ensureUserTaskAssignment(userId: string, taskId: string) {
+  const db = getDb();
+  await db
+    .insert(userTasks)
+    .values({ userId, taskId })
+    .onConflictDoNothing();
+}
+
 async function mapEvent(event: typeof events.$inferSelect) {
   const db = getDb();
   const attendees = await db
@@ -333,11 +375,7 @@ async function hydrateUser(user: UserRow, groupId: string | null) {
     .innerJoin(skills, eq(userSkills.skillId, skills.id))
     .where(eq(userSkills.userId, user.id));
 
-  const assigned = await db
-    .select({ task: tasks })
-    .from(userTasks)
-    .innerJoin(tasks, eq(userTasks.taskId, tasks.id))
-    .where(eq(userTasks.userId, user.id));
+  const assigned = await loadTasksForUser(user.id);
 
   const guardianRows = await db
     .select({ guardian: users })
@@ -416,7 +454,7 @@ async function hydrateUser(user: UserRow, groupId: string | null) {
   return {
     ...mapped,
     skills: skillRows.map(({ skill }) => mapSkillRow(skill)),
-    myTasks: await Promise.all(assigned.map(({ task }) => mapTask(task))),
+    myTasks: await Promise.all(assigned.map((task) => mapTask(task))),
     parentGardian: guardianRows.map(({ guardian }) => mapUser(guardian)),
     ParentGardian: guardianRows.map(({ guardian }) => mapUser(guardian)),
     family,
@@ -667,13 +705,8 @@ export const resolvers = {
       const groupId = requireGroup(context.groupId);
       await requireModule(groupId, "tasks");
       const targetId = userId || user._id;
-      const db = getDb();
-      const rows = await db
-        .select({ task: tasks })
-        .from(userTasks)
-        .innerJoin(tasks, eq(userTasks.taskId, tasks.id))
-        .where(and(eq(userTasks.userId, targetId), eq(tasks.groupId, groupId)));
-      return Promise.all(rows.map(({ task }) => mapTask(task)));
+      const rows = await loadTasksForUser(targetId, groupId);
+      return Promise.all(rows.map((task) => mapTask(task)));
     },
     suggestedTasks: async (
       _parent: unknown,
@@ -736,7 +769,10 @@ export const resolvers = {
 
       const unique = new Map(matching.map(({ task }) => [task.id, task]));
       const sorted = [...unique.values()]
-        .filter((task) => !assignedSet.has(task.id))
+        .filter(
+          (task) =>
+            !assignedSet.has(task.id) && task.responsibleUserId !== targetId,
+        )
         .sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0))
         .slice(0, limit);
 
@@ -1756,6 +1792,9 @@ export const resolvers = {
           skillIds.map((skillId) => ({ taskId: created.id, skillId })),
         );
       }
+      if (created.responsibleUserId) {
+        await ensureUserTaskAssignment(created.responsibleUserId, created.id);
+      }
       return mapTask(created);
     },
     updateTask: async (
@@ -1813,6 +1852,9 @@ export const resolvers = {
             .insert(taskSkills)
             .values(skillIds.map((skillId) => ({ taskId, skillId })));
         }
+      }
+      if (updated.responsibleUserId) {
+        await ensureUserTaskAssignment(updated.responsibleUserId, updated.id);
       }
       return mapTask(updated);
     },
