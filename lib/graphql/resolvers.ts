@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { GraphQLError } from "graphql";
 import { clerkClient } from "@clerk/nextjs/server";
 import { getDb } from "@/lib/db";
+import { getAppUrl } from "@/lib/env";
 import {
   AuthenticationError,
   GroupNotConfiguredError,
@@ -1314,6 +1315,7 @@ export const resolvers = {
             await clerk.invitations.createInvitation({
               emailAddress: email,
               notify: true,
+              redirectUrl: `${getAppUrl()}/sign-up`,
             });
             invitationSent = true;
           } catch (error) {
@@ -1381,6 +1383,7 @@ export const resolvers = {
       await clerk.invitations.createInvitation({
         emailAddress: row.email,
         notify: true,
+        redirectUrl: `${getAppUrl()}/sign-up`,
       });
       return { user: await hydrateUser(row, groupId), invitationSent: true };
     },

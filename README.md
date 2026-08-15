@@ -86,6 +86,10 @@ can invite someone by email and (optionally) pre-assign roles:
   immediately (no email sent).
 - Otherwise a placeholder Neon user + membership + roles are created, and Clerk
   emails them an invitation link (`clerkClient().invitations.createInvitation`).
+  The invitation sets `redirectUrl` to `${NEXT_PUBLIC_APP_URL}/sign-up` so the
+  invitee lands on this app's own sign-up page (not Clerk's `*.accounts.dev`
+  Account Portal, which is confusing for users). Set `NEXT_PUBLIC_APP_URL` in
+  every environment (see [`.env.example`](.env.example)).
   When they create their account, the existing Clerk-to-Neon sync links it by
   email and their roles are already in place.
 - Members who haven't created their account yet show an "Invited" badge and can
