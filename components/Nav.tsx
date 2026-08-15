@@ -44,6 +44,10 @@ export default function Nav() {
     window.location.reload();
   };
 
+  const isOnPlatformSettings =
+    pathname.startsWith("/admin/groups") ||
+    pathname.startsWith("/admin/skills");
+
   const items =
     isLoaded && isSignedIn
       ? [
@@ -83,24 +87,6 @@ export default function Nav() {
                   href="/skills"
                   name="Skills"
                   active={pathname === "/skills"}
-                />,
-              ]
-            : []),
-          ...(permissions.isPlatformAdmin
-            ? [
-                <MenuItem
-                  key="admin-groups"
-                  as="a"
-                  href="/admin/groups"
-                  name="Groups"
-                  active={pathname.startsWith("/admin/groups")}
-                />,
-                <MenuItem
-                  key="admin-skills"
-                  as="a"
-                  href="/admin/skills"
-                  name="Platform skills"
-                  active={pathname.startsWith("/admin/skills")}
                 />,
               ]
             : []),
@@ -194,34 +180,57 @@ export default function Nav() {
                             {group.name}
                           </Dropdown.Item>
                         ))}
-                        {permissions.isPlatformAdmin ? (
-                          <>
-                            <Dropdown.Divider />
-                            <Dropdown.Item
-                              as="a"
-                              href="/admin/groups"
-                              active={pathname.startsWith("/admin/groups")}
-                            >
-                              Edit groups
-                            </Dropdown.Item>
-                            <Dropdown.Item
-                              as="a"
-                              href="/admin/skills"
-                              active={pathname.startsWith("/admin/skills")}
-                            >
-                              Platform skills
-                            </Dropdown.Item>
-                          </>
-                        ) : null}
                       </Dropdown.Menu>
                     </Dropdown>
                   ) : null}
                   <UserButton />
                 </div>
               ) : null}
-              <Menu stackable style={{ width: "100%", marginBottom: 0 }}>
-                {items}
-              </Menu>
+              <div
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  alignItems: "center",
+                  justifyContent: "flex-end",
+                  gap: "0.5rem",
+                  width: "100%",
+                }}
+              >
+                <Menu stackable style={{ flex: 1, marginBottom: 0 }}>
+                  {items}
+                </Menu>
+                {isLoaded && isSignedIn && permissions.isPlatformAdmin ? (
+                  <Dropdown
+                    text="Platform"
+                    button
+                    className="icon"
+                    pointing="top right"
+                    style={{
+                      marginBottom: 0,
+                      ...(isOnPlatformSettings
+                        ? { backgroundColor: "#f3f4f6" }
+                        : {}),
+                    }}
+                  >
+                    <Dropdown.Menu>
+                      <Dropdown.Item
+                        as="a"
+                        href="/admin/groups"
+                        active={pathname.startsWith("/admin/groups")}
+                      >
+                        Groups
+                      </Dropdown.Item>
+                      <Dropdown.Item
+                        as="a"
+                        href="/admin/skills"
+                        active={pathname.startsWith("/admin/skills")}
+                      >
+                        Platform skills
+                      </Dropdown.Item>
+                    </Dropdown.Menu>
+                  </Dropdown>
+                ) : null}
+              </div>
             </div>
           </GridColumn>
         </GridRow>
