@@ -29,7 +29,7 @@ export type Task = {
   duration?: number | null;
   status?: string | null;
   requiredSkills?: Skill[];
-  responsible?: UserSummary | null;
+  responsible?: UserSummary[];
   createdBy?: UserSummary | null;
 };
 

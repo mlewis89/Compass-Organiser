@@ -35,7 +35,10 @@ function formatCell(task: Task, key: (typeof headers)[number]) {
     case "requiredSkills":
       return (task.requiredSkills ?? []).map((skill) => skill.name).join(", ");
     case "responsible":
-      return task.responsible?.displayName ?? "";
+      return (task.responsible ?? [])
+        .map((person) => person.displayName)
+        .filter(Boolean)
+        .join(", ");
     case "dueDate":
       return task.dueDate ? new Date(task.dueDate).toLocaleDateString() : "";
     default:

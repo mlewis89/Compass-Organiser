@@ -48,6 +48,7 @@ import {
   memberships,
   roles,
   skills,
+  taskResponsible,
   taskSkills,
   tasks,
   userGuardians,
@@ -92,7 +93,7 @@ type TaskInput = {
   duration?: number;
   priority?: number;
   requiredSkills?: SkillInput[];
-  responsible?: UserInput | null;
+  responsible?: UserInput[] | null;
 };
 type EventInput = {
   title?: string;
@@ -149,6 +150,49 @@ async function loadSkillsForTask(taskId: string) {
     .innerJoin(skills, eq(taskSkills.skillId, skills.id))
     .where(eq(taskSkills.taskId, taskId));
   return rows.map(({ skill }) => mapSkillRow(skill));
+}
+
+async function loadResponsibleUserIds(taskId: string): Promise<string[]> {
+  const db = getDb();
+  const rows = await db
+    .select({ userId: taskResponsible.userId })
+    .from(taskResponsible)
+    .where(eq(taskResponsible.taskId, taskId));
+  return rows.map((row) => row.userId);
+}
+
+async function loadResponsibleForTask(taskId: string) {
+  const db = getDb();
+  const rows = await db
+    .select({ user: users })
+    .from(taskResponsible)
+    .innerJoin(users, eq(taskResponsible.userId, users.id))
+    .where(eq(taskResponsible.taskId, taskId));
+  return rows.map(({ user }) => mapUser(user));
+}
+
+async function setTaskResponsible(taskId: string, people: UserInput[] | null | undefined) {
+  if (people === undefined) {
+    return;
+  }
+  const db = getDb();
+  const userIds = [
+    ...new Set(
+      (people ?? [])
+        .map((person) => person._id)
+        .filter((id): id is string => Boolean(id)),
+    ),
+  ];
+  await db.delete(taskResponsible).where(eq(taskResponsible.taskId, taskId));
+  if (userIds.length === 0) {
+    return;
+  }
+  await db
+    .insert(taskResponsible)
+    .values(userIds.map((userId) => ({ taskId, userId })));
+  for (const userId of userIds) {
+    await ensureUserTaskAssignment(userId, taskId);
+  }
 }
 
 function mapSkillRow(
@@ -291,7 +335,7 @@ async function mapTask(task: typeof tasks.$inferSelect) {
     Priority: task.priority,
     dueDate: dateString(task.dueDate),
     requiredSkills: await loadSkillsForTask(task.id),
-    responsible: await loadUserById(task.responsibleUserId),
+    responsible: await loadResponsibleForTask(task.id),
     createdBy: await loadUserById(task.createdByUserId),
   };
 }
@@ -308,8 +352,8 @@ async function loadTasksForUser(
     ? and(eq(userTasks.userId, userId), eq(tasks.groupId, groupId))
     : eq(userTasks.userId, userId);
   const responsibleWhere = groupId
-    ? and(eq(tasks.responsibleUserId, userId), eq(tasks.groupId, groupId))
-    : eq(tasks.responsibleUserId, userId);
+    ? and(eq(taskResponsible.userId, userId), eq(tasks.groupId, groupId))
+    : eq(taskResponsible.userId, userId);
 
   const [claimed, responsible] = await Promise.all([
     db
@@ -317,14 +361,18 @@ async function loadTasksForUser(
       .from(userTasks)
       .innerJoin(tasks, eq(userTasks.taskId, tasks.id))
       .where(claimedWhere),
-    db.select().from(tasks).where(responsibleWhere),
+    db
+      .select({ task: tasks })
+      .from(taskResponsible)
+      .innerJoin(tasks, eq(taskResponsible.taskId, tasks.id))
+      .where(responsibleWhere),
   ]);
 
   const byId = new Map<string, TaskRow>();
   for (const { task } of claimed) {
     byId.set(task.id, task);
   }
-  for (const task of responsible) {
+  for (const { task } of responsible) {
     byId.set(task.id, task);
   }
   return [...byId.values()];
@@ -767,11 +815,17 @@ export const resolvers = {
         .where(eq(userTasks.userId, targetId));
       const assignedSet = new Set(assigned.map((row) => row.taskId));
 
+      const responsibleRows = await db
+        .select({ taskId: taskResponsible.taskId })
+        .from(taskResponsible)
+        .where(eq(taskResponsible.userId, targetId));
+      const responsibleSet = new Set(responsibleRows.map((row) => row.taskId));
+
       const unique = new Map(matching.map(({ task }) => [task.id, task]));
       const sorted = [...unique.values()]
         .filter(
           (task) =>
-            !assignedSet.has(task.id) && task.responsibleUserId !== targetId,
+            !assignedSet.has(task.id) && !responsibleSet.has(task.id),
         )
         .sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0))
         .slice(0, limit);
@@ -1778,7 +1832,6 @@ export const resolvers = {
           duration: taskData.duration,
           priority: taskData.priority,
           createdByUserId: user._id,
-          responsibleUserId: taskData.responsible?._id,
         })
         .returning();
 
@@ -1792,9 +1845,7 @@ export const resolvers = {
           skillIds.map((skillId) => ({ taskId: created.id, skillId })),
         );
       }
-      if (created.responsibleUserId) {
-        await ensureUserTaskAssignment(created.responsibleUserId, created.id);
-      }
+      await setTaskResponsible(created.id, taskData.responsible ?? []);
       return mapTask(created);
     },
     updateTask: async (
@@ -1814,10 +1865,11 @@ export const resolvers = {
       if (!existingTask) {
         return null;
       }
+      const responsibleIds = await loadResponsibleUserIds(existingTask.id);
       await requireOwnerOrRole(
         user,
         groupId,
-        [existingTask.createdByUserId, existingTask.responsibleUserId],
+        [existingTask.createdByUserId, ...responsibleIds],
         LEADER_ROLES,
       );
       const [updated] = await db
@@ -1829,10 +1881,6 @@ export const resolvers = {
           dueDate: toDate(taskData.dueDate) ?? undefined,
           duration: taskData.duration,
           priority: taskData.priority,
-          // null clears; omit when not provided so other clients keep existing value
-          ...(taskData.responsible !== undefined
-            ? { responsibleUserId: taskData.responsible?._id ?? null }
-            : {}),
           updatedAt: new Date(),
         })
         .where(and(eq(tasks.id, taskId), eq(tasks.groupId, groupId)))
@@ -1853,9 +1901,7 @@ export const resolvers = {
             .values(skillIds.map((skillId) => ({ taskId, skillId })));
         }
       }
-      if (updated.responsibleUserId) {
-        await ensureUserTaskAssignment(updated.responsibleUserId, updated.id);
-      }
+      await setTaskResponsible(taskId, taskData.responsible);
       return mapTask(updated);
     },
     setTaskStatus: async (
@@ -1875,10 +1921,11 @@ export const resolvers = {
       if (!existingTask) {
         return null;
       }
+      const responsibleIds = await loadResponsibleUserIds(existingTask.id);
       await requireOwnerOrRole(
         user,
         groupId,
-        [existingTask.createdByUserId, existingTask.responsibleUserId],
+        [existingTask.createdByUserId, ...responsibleIds],
         LEADER_ROLES,
       );
       const [updated] = await db
@@ -1905,10 +1952,11 @@ export const resolvers = {
       if (!existingTask) {
         return null;
       }
+      const responsibleIds = await loadResponsibleUserIds(existingTask.id);
       await requireOwnerOrRole(
         user,
         groupId,
-        [existingTask.createdByUserId, existingTask.responsibleUserId],
+        [existingTask.createdByUserId, ...responsibleIds],
         LEADER_ROLES,
       );
       const [removed] = await db

@@ -154,6 +154,7 @@ export const QUERY_TASKS = gql`
       }
       responsible {
         displayName
+        _id
       }
       status
     }

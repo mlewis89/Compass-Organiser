@@ -175,7 +175,6 @@ export const tasks = pgTable("tasks", {
   status: text("status"),
   dueDate: timestamp("due_date", { withTimezone: true }),
   duration: real("duration"),
-  responsibleUserId: uuid("responsible_user_id").references(() => users.id),
   createdByUserId: uuid("created_by_user_id").references(() => users.id),
   priority: integer("priority"),
   ...timestamps,
@@ -189,6 +188,15 @@ export const taskSkills = pgTable("task_skills", {
     .notNull()
     .references(() => skills.id, { onDelete: "cascade" }),
 }, (table) => [primaryKey({ columns: [table.taskId, table.skillId] })]);
+
+export const taskResponsible = pgTable("task_responsible", {
+  taskId: uuid("task_id")
+    .notNull()
+    .references(() => tasks.id, { onDelete: "cascade" }),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+}, (table) => [primaryKey({ columns: [table.taskId, table.userId] })]);
 
 export const userTasks = pgTable("user_tasks", {
   userId: uuid("user_id")
@@ -267,6 +275,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   memberships: many(memberships),
   userSkills: many(userSkills),
   userTasks: many(userTasks),
+  taskResponsible: many(taskResponsible),
   organisedEvents: many(events),
   createdPosts: many(boardPosts),
   familyMembers: many(familyMembers),
@@ -338,23 +347,24 @@ export const eventAttendeesRelations = relations(eventAttendees, ({ one }) => ({
 
 export const tasksRelations = relations(tasks, ({ one, many }) => ({
   group: one(groups, { fields: [tasks.groupId], references: [groups.id] }),
-  responsible: one(users, {
-    fields: [tasks.responsibleUserId],
-    references: [users.id],
-    relationName: "taskResponsible",
-  }),
   createdBy: one(users, {
     fields: [tasks.createdByUserId],
     references: [users.id],
     relationName: "taskCreatedBy",
   }),
   taskSkills: many(taskSkills),
+  taskResponsible: many(taskResponsible),
   userTasks: many(userTasks),
 }));
 
 export const taskSkillsRelations = relations(taskSkills, ({ one }) => ({
   task: one(tasks, { fields: [taskSkills.taskId], references: [tasks.id] }),
   skill: one(skills, { fields: [taskSkills.skillId], references: [skills.id] }),
+}));
+
+export const taskResponsibleRelations = relations(taskResponsible, ({ one }) => ({
+  task: one(tasks, { fields: [taskResponsible.taskId], references: [tasks.id] }),
+  user: one(users, { fields: [taskResponsible.userId], references: [users.id] }),
 }));
 
 export const userTasksRelations = relations(userTasks, ({ one }) => ({

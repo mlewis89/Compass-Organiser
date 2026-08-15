@@ -169,7 +169,7 @@ export const typeDefs = `#graphql
     requiredSkills: [Skill]
     dueDate: String
     duration: Float
-    responsible: User
+    responsible: [User]
     createdBy: User
     priority: Int
     Priority: Int
@@ -183,7 +183,7 @@ export const typeDefs = `#graphql
     requiredSkills: [updateSkill]
     dueDate: String
     duration: Float
-    responsible: updateUser
+    responsible: [updateUser]
     createdBy: updateUser
     priority: Int
     description: String

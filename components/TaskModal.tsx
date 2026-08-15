@@ -44,7 +44,7 @@ const emptyTask: Task = {
   status: "toDo",
   dueDate: "",
   requiredSkills: [],
-  responsible: { _id: "", displayName: "" },
+  responsible: [],
   createdBy: { _id: "", displayName: "" },
 };
 
@@ -95,16 +95,14 @@ export default function TaskModal({
       value: member._id,
       text: memberLabel(member),
     }));
-    const responsibleId = taskData.responsible?._id;
-    if (
-      responsibleId &&
-      !options.some((option) => option.value === responsibleId)
-    ) {
-      options.unshift({
-        key: responsibleId,
-        value: responsibleId,
-        text: taskData.responsible?.displayName?.trim() || "Current responsible",
-      });
+    for (const person of taskData.responsible ?? []) {
+      if (person._id && !options.some((option) => option.value === person._id)) {
+        options.unshift({
+          key: person._id,
+          value: person._id,
+          text: person.displayName?.trim() || "Current responsible",
+        });
+      }
     }
     return options;
   }, [membersData?.members, taskData.responsible]);
@@ -154,9 +152,9 @@ export default function TaskModal({
                 name: skill.name,
                 parentId: skill.parentId || undefined,
               })),
-              responsible: taskData.responsible?._id
-                ? { _id: taskData.responsible._id }
-                : null,
+              responsible: (taskData.responsible ?? [])
+                .filter((person) => person._id)
+                .map((person) => ({ _id: person._id })),
             };
             if (isCreateMode) {
               void addTask({ variables: { taskData: variables } }).then(() => {
@@ -250,34 +248,38 @@ export default function TaskModal({
             />
           </FormField>
           <FormField>
-            <label>Person Responsible</label>
+            <label>People Responsible</label>
             <Dropdown
               placeholder="Search members…"
               fluid
+              multiple
               search
               selection
               clearable
               options={memberOptions}
-              value={taskData.responsible?._id || undefined}
+              value={(taskData.responsible ?? [])
+                .map((person) => person._id)
+                .filter(Boolean)}
               disabled={!canManage}
               onChange={(_event, dropdownData) => {
-                const memberId = String(dropdownData.value ?? "");
-                if (!memberId) {
-                  setTaskData({
-                    ...taskData,
-                    responsible: { _id: "", displayName: "" },
-                  });
-                  return;
-                }
-                const selected = memberOptions.find(
-                  (option) => option.value === memberId,
-                );
+                const selectedIds = Array.isArray(dropdownData.value)
+                  ? dropdownData.value.map(String)
+                  : [];
                 setTaskData({
                   ...taskData,
-                  responsible: {
-                    _id: memberId,
-                    displayName: selected?.text ?? "",
-                  },
+                  responsible: selectedIds.map((memberId) => {
+                    const selected = memberOptions.find(
+                      (option) => option.value === memberId,
+                    );
+                    const existing = (taskData.responsible ?? []).find(
+                      (person) => person._id === memberId,
+                    );
+                    return {
+                      _id: memberId,
+                      displayName:
+                        selected?.text ?? existing?.displayName ?? "",
+                    };
+                  }),
                 });
               }}
             />
