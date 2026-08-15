@@ -9,6 +9,7 @@ import type { Task, UnitBucket } from "@/lib/client/types";
 import { usePermissions } from "@/lib/client/usePermissions";
 import TaskKanban from "@/components/TaskKanban";
 import TaskList, { type TaskColumn } from "@/components/TaskList";
+import BulkTaskModal from "@/components/BulkTaskModal";
 import TaskModal from "@/components/TaskModal";
 import { isCompleteStatus, isWishlistStatus, TASK_STATUS } from "@/lib/taskStatus";
 import { filterTaskForest, taskForestHasVisible } from "@/lib/client/taskTree";
@@ -77,6 +78,7 @@ export default function AllTasks() {
   const [activeTask, setActiveTask] = useState<string | null>(null);
   const [parentTask, setParentTask] = useState<Task | null>(null);
   const [showTaskModal, setShowTaskModal] = useState(false);
+  const [showBulkModal, setShowBulkModal] = useState(false);
   const [showEmptyBuckets, setShowEmptyBuckets] = useState(false);
   const [hideWishlist, setHideWishlist] = useState(true);
   const [hideCompleted, setHideCompleted] = useState(true);
@@ -200,9 +202,14 @@ export default function AllTasks() {
         <div className="task-bucket-toolbar">
           <div className="task-bucket-toolbar-start">
             {permissions.canManageTasks ? (
-              <Button primary onClick={() => openTask(null)}>
-                New Task
-              </Button>
+              <>
+                <Button primary onClick={() => openTask(null)}>
+                  New Task
+                </Button>
+                <Button type="button" onClick={() => setShowBulkModal(true)}>
+                  Bulk create
+                </Button>
+              </>
             ) : null}
             <Checkbox
               toggle
@@ -286,6 +293,14 @@ export default function AllTasks() {
                 }
               : undefined
           }
+        />
+      ) : null}
+
+      {showBulkModal ? (
+        <BulkTaskModal
+          open={showBulkModal}
+          onClose={() => setShowBulkModal(false)}
+          onSaved={refresh}
         />
       ) : null}
     </>

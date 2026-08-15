@@ -107,6 +107,15 @@ type TaskInput = {
   units?: { _id?: string }[] | null;
   parentTaskId?: string | null;
 };
+type OutlineTaskInput = {
+  name: string;
+  children?: OutlineTaskInput[] | null;
+  responsible?: UserInput[] | null;
+  units?: { _id?: string }[] | null;
+  requiredSkills?: SkillInput[] | null;
+  priority?: number | null;
+  duration?: number | null;
+};
 type EventInput = {
   title?: string;
   startDate?: string;
@@ -2505,6 +2514,77 @@ export const resolvers = {
       }
       await setTaskUnits(created.id, groupId, unitInputs ?? []);
       return mapTask(created);
+    },
+    addTasks: async (
+      _parent: unknown,
+      {
+        roots,
+        units,
+        parentTaskId,
+      }: {
+        roots: OutlineTaskInput[];
+        units?: { _id?: string }[] | null;
+        parentTaskId?: string | null;
+      },
+      context: GraphQLContext,
+    ) => {
+      const user = requireUser(context.user);
+      const groupId = requireGroup(context.groupId);
+      await requireModule(groupId, "tasks");
+      await requireRole(user, groupId, LEADER_ROLES);
+      const resolvedParentId =
+        (await resolveParentTaskId(groupId, parentTaskId)) ?? null;
+      let rootUnits = units ?? [];
+      if (resolvedParentId && rootUnits.length === 0) {
+        const parentUnits = await loadUnitsForTask(resolvedParentId);
+        rootUnits = parentUnits.map((unit) => ({ _id: unit._id }));
+      }
+      const db = getDb();
+      const createdRows: TaskRow[] = [];
+      const dueDate = defaultDueDate();
+
+      const insertNode = async (
+        node: OutlineTaskInput,
+        parentId: string | null,
+        inheritedUnits: { _id?: string }[],
+      ) => {
+        const unitInputs =
+          node.units && node.units.length > 0 ? node.units : inheritedUnits;
+        const [created] = await db
+          .insert(tasks)
+          .values({
+            groupId,
+            name: node.name.trim() || "Untitled task",
+            status: "toDo",
+            dueDate,
+            duration: node.duration ?? 2,
+            priority: node.priority ?? 5,
+            createdByUserId: user._id,
+            parentTaskId: parentId,
+          })
+          .returning();
+        const skillIds = await resolveRequiredSkillIds(
+          node.requiredSkills ?? [],
+          groupId,
+          user._id,
+        );
+        if (skillIds.length > 0) {
+          await db.insert(taskSkills).values(
+            skillIds.map((skillId) => ({ taskId: created.id, skillId })),
+          );
+        }
+        await setTaskUnits(created.id, groupId, unitInputs);
+        await setTaskResponsible(created.id, node.responsible ?? []);
+        createdRows.push(created);
+        for (const child of node.children ?? []) {
+          await insertNode(child, created.id, unitInputs);
+        }
+      };
+
+      for (const root of roots) {
+        await insertNode(root, resolvedParentId, rootUnits);
+      }
+      return mapTasks(createdRows);
     },
     updateTask: async (
       _parent: unknown,

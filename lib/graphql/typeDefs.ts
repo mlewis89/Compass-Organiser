@@ -197,6 +197,16 @@ export const typeDefs = `#graphql
     parentTaskId: ID
   }
 
+  input outlineTaskInput {
+    name: String!
+    children: [outlineTaskInput!]
+    responsible: [updateUser]
+    units: [updateUnit]
+    requiredSkills: [updateSkill]
+    priority: Int
+    duration: Float
+  }
+
   type Unit {
     _id: ID!
     name: String!
@@ -348,6 +358,7 @@ export const typeDefs = `#graphql
     leaveEvent(eventId: ID!): Event
     setEventAttendee(eventId: ID!, userId: ID!, attending: Boolean!): Event
     addTask(taskData: updateTask!): Task
+    addTasks(roots: [outlineTaskInput!]!, units: [updateUnit], parentTaskId: ID): [Task!]!
     updateTask(taskId: ID!, taskData: updateTask!): Task
     deleteTask(taskId: ID!): Task
     setTaskStatus(taskId: ID!, status: String!): Task

@@ -4,7 +4,6 @@ import { useMutation, useQuery } from "@apollo/client";
 import { useEffect, useMemo, useState } from "react";
 import {
   Button,
-  Dropdown,
   Form,
   FormField,
   Input,
@@ -24,6 +23,7 @@ import type { Member, Skill, Task, UnitSummary } from "@/lib/client/types";
 import { TASK_STATUS_OPTIONS } from "@/lib/taskStatus";
 import { usePermissions } from "@/lib/client/usePermissions";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import PeopleUnitsSelect from "@/components/PeopleUnitsSelect";
 import SkillPicker from "@/components/SkillPicker";
 
 function memberLabel(member: Pick<Member, "displayName" | "firstName" | "lastName" | "preferredName" | "scoutName">) {
@@ -293,26 +293,22 @@ export default function TaskModal({
             />
           </FormField>
           <FormField>
-            <label>People Responsible</label>
-            <Dropdown
-              placeholder="Search members…"
-              fluid
-              multiple
-              search
-              selection
-              clearable
-              options={memberOptions}
-              value={(taskData.responsible ?? [])
+            <label>People and units</label>
+            <PeopleUnitsSelect
+              placeholder="Search members or units…"
+              memberOptions={memberOptions}
+              unitOptions={unitOptions}
+              personIds={(taskData.responsible ?? [])
                 .map((person) => person._id)
                 .filter(Boolean)}
+              unitIds={(taskData.units ?? [])
+                .map((unit) => unit._id)
+                .filter((id): id is string => Boolean(id))}
               disabled={!canManage}
-              onChange={(_event, dropdownData) => {
-                const selectedIds = Array.isArray(dropdownData.value)
-                  ? dropdownData.value.map(String)
-                  : [];
+              onChange={({ personIds, unitIds }) => {
                 setTaskData({
                   ...taskData,
-                  responsible: selectedIds.map((memberId) => {
+                  responsible: personIds.map((memberId) => {
                     const selected = memberOptions.find(
                       (option) => option.value === memberId,
                     );
@@ -325,31 +321,7 @@ export default function TaskModal({
                         selected?.text ?? existing?.displayName ?? "",
                     };
                   }),
-                });
-              }}
-            />
-          </FormField>
-          <FormField>
-            <label>Units</label>
-            <Dropdown
-              placeholder="Search units…"
-              fluid
-              multiple
-              search
-              selection
-              clearable
-              options={unitOptions}
-              value={(taskData.units ?? [])
-                .map((unit) => unit._id)
-                .filter(Boolean)}
-              disabled={!canManage}
-              onChange={(_event, dropdownData) => {
-                const selectedIds = Array.isArray(dropdownData.value)
-                  ? dropdownData.value.map(String)
-                  : [];
-                setTaskData({
-                  ...taskData,
-                  units: selectedIds.map((unitId) => {
+                  units: unitIds.map((unitId) => {
                     const selected = unitOptions.find(
                       (option) => option.value === unitId,
                     );

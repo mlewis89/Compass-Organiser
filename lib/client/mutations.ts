@@ -194,6 +194,43 @@ export const ADD_TASK = gql`
   }
 `;
 
+export const ADD_TASKS = gql`
+  mutation AddTasks(
+    $roots: [outlineTaskInput!]!
+    $units: [updateUnit]
+    $parentTaskId: ID
+  ) {
+    addTasks(roots: $roots, units: $units, parentTaskId: $parentTaskId) {
+      _id
+      name
+      requiredSkills {
+        name
+        _id
+      }
+      dueDate
+      duration
+      responsible {
+        _id
+        displayName
+      }
+      units {
+        _id
+        name
+      }
+      priority
+      description
+      status
+      parentTaskId
+      descendantCount
+      isStub
+      parent {
+        _id
+        name
+      }
+    }
+  }
+`;
+
 export const UPDATE_TASK = gql`
   mutation UpdateTask($taskId: ID!, $taskData: updateTask!) {
     updateTask(taskId: $taskId, taskData: $taskData) {

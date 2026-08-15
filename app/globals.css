@@ -229,6 +229,175 @@
   gap: 1rem;
 }
 
+.bulk-task-grid {
+  margin-top: 0.5rem;
+}
+
+.bulk-task-paste textarea,
+textarea.bulk-task-paste {
+  min-height: 22rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  line-height: 1.45;
+}
+
+.bulk-task-preview-label {
+  display: block;
+  font-weight: 700;
+  margin-bottom: 0.3em;
+}
+
+.bulk-task-preview {
+  min-height: 22rem;
+  max-height: 36rem;
+  overflow: auto;
+}
+
+.bulk-task-preview-empty {
+  color: rgba(0, 0, 0, 0.55);
+  margin: 0;
+}
+
+.bulk-task-preview-header,
+.bulk-task-preview-item {
+  display: grid;
+  grid-template-columns:
+    minmax(7rem, 1.05fr)
+    minmax(8rem, 1.2fr)
+    minmax(8rem, 1.2fr)
+    4.25rem
+    5.75rem;
+  grid-template-areas: "name assign skills pri dur";
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.bulk-task-preview-header {
+  padding: 0 0 0.45rem;
+  margin-bottom: 0.35rem;
+  border-bottom: 1px solid rgba(34, 36, 38, 0.15);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.bulk-task-preview-name {
+  grid-area: name;
+}
+
+.bulk-task-preview-assign {
+  grid-area: assign;
+}
+
+.bulk-task-preview-skills {
+  grid-area: skills;
+}
+
+.bulk-task-preview-priority {
+  grid-area: pri;
+}
+
+.bulk-task-preview-duration {
+  grid-area: dur;
+}
+
+.bulk-task-preview-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.bulk-task-preview-item {
+  padding: 0.35rem 0;
+  font-weight: 600;
+  border-bottom: 1px solid rgba(34, 36, 38, 0.08);
+}
+
+.bulk-task-preview-item:last-child {
+  border-bottom: 0;
+}
+
+.bulk-task-preview-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bulk-task-preview-select.ui.dropdown {
+  min-width: 0;
+  font-weight: 400;
+}
+
+.bulk-task-preview-metric {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 0;
+  font-weight: 400;
+}
+
+.bulk-task-preview-metric-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+}
+
+.bulk-task-preview-metric input {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+  padding: 0.45em 0.5em;
+  border: 1px solid rgba(34, 36, 38, 0.15);
+  border-radius: 0.28571429rem;
+  font: inherit;
+}
+
+.bulk-task-preview-metric-suffix {
+  flex: 0 0 auto;
+  font-size: 0.8rem;
+  color: rgba(0, 0, 0, 0.55);
+}
+
+@media (max-width: 991px) {
+  .bulk-task-preview-header {
+    display: none;
+  }
+
+  .bulk-task-preview-item {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "name name"
+      "assign assign"
+      "skills skills"
+      "pri dur";
+  }
+
+  .bulk-task-preview-metric-label {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip: auto;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: rgba(0, 0, 0, 0.6);
+  }
+}
+
+.ui.label.people-units-label-person {
+  background-color: #e8ecf4 !important;
+  color: #374c7a !important;
+  border: 0;
+}
+
+.ui.label.people-units-label-unit {
+  background-color: #374c7a !important;
+  color: #fff !important;
+  border: 0;
+}
+
 .task-kanban {
   display: grid;
   grid-template-columns: repeat(4, minmax(14rem, 1fr));
