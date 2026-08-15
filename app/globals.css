@@ -7,7 +7,9 @@
 }
 
 .app-nav {
-  overflow: hidden;
+  overflow: visible;
+  position: relative;
+  z-index: 20;
 }
 
 .app-nav .header-logo.ui.image {
@@ -18,6 +20,7 @@
 
 .app-nav .ui.grid > .row > .five.wide.column {
   min-width: 0;
+  overflow: hidden;
 }
 
 @media (min-width: 768px) {
