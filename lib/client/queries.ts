@@ -227,6 +227,66 @@ export const QUERY_MY_PERMISSIONS = gql`
       canManageEvents
       canManagePosts
       canManageMembers
+      isPlatformAdmin
+    }
+  }
+`;
+
+export const QUERY_MY_GROUPS = gql`
+  query MyGroups {
+    myGroups {
+      _id
+      name
+      slug
+      status
+    }
+    activeGroup {
+      _id
+      name
+      slug
+      status
+    }
+  }
+`;
+
+export const QUERY_ADMIN_GROUPS = gql`
+  query AdminGroups {
+    adminGroups {
+      _id
+      name
+      slug
+      status
+      memberCount
+    }
+  }
+`;
+
+export const QUERY_ORPHANED_USERS = gql`
+  query OrphanedUsers {
+    orphanedUsers {
+      _id
+      displayName
+      firstName
+      lastName
+      email
+      accountStatus
+    }
+  }
+`;
+
+export const QUERY_ADMIN_GROUP_MEMBERS = gql`
+  query AdminGroupMembers($groupId: ID!) {
+    adminGroupMembers(groupId: $groupId) {
+      _id
+      displayName
+      firstName
+      lastName
+      email
+      accountStatus
+      role {
+        _id
+        name
+      }
     }
   }
 `;

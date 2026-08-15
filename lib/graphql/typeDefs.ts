@@ -191,6 +191,26 @@ export const typeDefs = `#graphql
     canManageEvents: Boolean
     canManagePosts: Boolean
     canManageMembers: Boolean
+    isPlatformAdmin: Boolean
+  }
+
+  type AdminGroup {
+    _id: ID!
+    name: String!
+    slug: String!
+    status: String
+    memberCount: Int!
+  }
+
+  input createGroupInput {
+    name: String!
+    slug: String!
+  }
+
+  input updateGroupInput {
+    name: String
+    slug: String
+    status: String
   }
 
   input addMemberInput {
@@ -219,6 +239,11 @@ export const typeDefs = `#graphql
     myStats(userId: ID): [Stat]
     roles: [Role]
     myPermissions: Permissions
+    myGroups: [Group]
+    activeGroup: Group
+    adminGroups: [AdminGroup]
+    orphanedUsers: [User]
+    adminGroupMembers(groupId: ID!): [User]
   }
 
   type Mutation {
@@ -251,5 +276,9 @@ export const typeDefs = `#graphql
     updateMember(userId: ID!, user: updateUser!): User
     assignMemberRole(userId: ID!, roleId: ID!): User
     removeMemberRole(userId: ID!, roleId: ID!): User
+    createGroup(group: createGroupInput!): AdminGroup
+    updateGroup(groupId: ID!, group: updateGroupInput!): AdminGroup
+    assignUserToGroup(userId: ID!, groupId: ID!, roleIds: [ID]): User
+    removeUserFromGroup(userId: ID!, groupId: ID!): User
   }
 `;

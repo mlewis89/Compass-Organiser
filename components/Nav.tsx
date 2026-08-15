@@ -1,8 +1,10 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { UserButton, useAuth } from "@clerk/nextjs";
+import { useQuery } from "@apollo/client";
 import {
+  Dropdown,
   Grid,
   GridColumn,
   GridRow,
@@ -11,10 +13,36 @@ import {
   MenuItem,
   Segment,
 } from "semantic-ui-react";
+import { QUERY_MY_GROUPS } from "@/lib/client/queries";
+import { usePermissions } from "@/lib/client/usePermissions";
+import type { GroupSummary } from "@/lib/client/types";
 
 export default function Nav() {
   const pathname = usePathname();
+  const router = useRouter();
   const { isLoaded, isSignedIn } = useAuth();
+  const { permissions } = usePermissions();
+  const { data: groupsData, refetch: refetchGroups } = useQuery<{
+    myGroups: GroupSummary[];
+    activeGroup: GroupSummary | null;
+  }>(QUERY_MY_GROUPS, { skip: !isLoaded || !isSignedIn });
+
+  const myGroups = groupsData?.myGroups ?? [];
+  const activeSlug = groupsData?.activeGroup?.slug ?? myGroups[0]?.slug ?? null;
+
+  const switchGroup = async (slug: string) => {
+    const response = await fetch("/api/active-group", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ slug }),
+    });
+    if (!response.ok) {
+      return;
+    }
+    await refetchGroups();
+    router.refresh();
+    window.location.reload();
+  };
 
   const items =
     isLoaded && isSignedIn
@@ -47,6 +75,17 @@ export default function Nav() {
             name="members"
             active={pathname === "/members"}
           />,
+          ...(permissions.isPlatformAdmin
+            ? [
+                <MenuItem
+                  key="admin-groups"
+                  as="a"
+                  href="/admin/groups"
+                  name="Groups"
+                  active={pathname.startsWith("/admin/groups")}
+                />,
+              ]
+            : []),
         ]
       : [
           <MenuItem
@@ -101,6 +140,24 @@ export default function Nav() {
               <Menu stackable style={{ flex: 1, marginBottom: 0 }}>
                 {items}
               </Menu>
+              {isLoaded && isSignedIn && myGroups.length > 0 ? (
+                <Dropdown
+                  selection
+                  compact
+                  value={activeSlug ?? undefined}
+                  options={myGroups.map((group) => ({
+                    key: group._id,
+                    text: group.name,
+                    value: group.slug,
+                  }))}
+                  onChange={(_event, data) => {
+                    const slug = String(data.value ?? "");
+                    if (slug && slug !== activeSlug) {
+                      void switchGroup(slug);
+                    }
+                  }}
+                />
+              ) : null}
               {isLoaded && isSignedIn ? <UserButton /> : null}
             </div>
           </GridColumn>

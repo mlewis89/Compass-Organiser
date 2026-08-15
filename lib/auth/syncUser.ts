@@ -1,8 +1,7 @@
 import { eq } from "drizzle-orm";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { getDb } from "@/lib/db";
-import { memberships, users } from "@/db/schema";
-import { resolveGroupId } from "@/lib/tenancy";
+import { users } from "@/db/schema";
 import type { JwtUser } from "@/lib/auth/jwt";
 
 function toAppUser(row: {
@@ -70,6 +69,8 @@ export async function syncUserFromClerk(): Promise<JwtUser | null> {
       return toAppUser(updated ?? byEmail);
     }
 
+    // Self-signups are orphans until a platform admin assigns them or they
+    // accept an invite (invite path creates membership separately).
     const [created] = await db
       .insert(users)
       .values({
@@ -80,18 +81,6 @@ export async function syncUserFromClerk(): Promise<JwtUser | null> {
         passwordHash: null,
       })
       .returning();
-
-    const groupId = await resolveGroupId(null);
-    if (groupId) {
-      await db
-        .insert(memberships)
-        .values({
-          userId: created.id,
-          groupId,
-          status: "active",
-        })
-        .onConflictDoNothing();
-    }
 
     return toAppUser(created);
   } catch (error) {

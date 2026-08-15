@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, sql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { GraphQLError } from "graphql";
 import { clerkClient } from "@clerk/nextjs/server";
@@ -11,8 +11,11 @@ import {
   signToken,
 } from "@/lib/auth/jwt";
 import {
+  findGroupById,
   findGroupBySlug,
   hasActiveMembership,
+  listActiveGroups,
+  listUserActiveGroups,
   requireMembership,
 } from "@/lib/tenancy";
 import {
@@ -20,7 +23,9 @@ import {
   LEADER_ROLES,
   getMemberRoles,
   hasAnyRole,
+  isPlatformAdmin,
   requireOwnerOrRole,
+  requirePlatformAdmin,
   requireRole,
 } from "@/lib/authz";
 import {
@@ -29,6 +34,7 @@ import {
   events,
   families,
   familyMembers,
+  groups,
   membershipRoles,
   memberships,
   roles,
@@ -678,15 +684,139 @@ export const resolvers = {
       context: GraphQLContext,
     ) => {
       const user = requireUser(context.user);
-      const groupId = requireGroup(context.groupId);
-      const userRoles = await getMemberRoles(user._id, groupId, user.email);
+      const platformAdmin = isPlatformAdmin(user.email);
+      if (!context.groupId) {
+        return {
+          roles: platformAdmin ? ["GroupLeader"] : [],
+          canManageTasks: platformAdmin,
+          canManageEvents: platformAdmin,
+          canManagePosts: platformAdmin,
+          canManageMembers: platformAdmin,
+          isPlatformAdmin: platformAdmin,
+        };
+      }
+      const userRoles = await getMemberRoles(user._id, context.groupId, user.email);
       return {
         roles: userRoles,
         canManageTasks: hasAnyRole(userRoles, LEADER_ROLES),
         canManageEvents: hasAnyRole(userRoles, LEADER_ROLES),
         canManagePosts: hasAnyRole(userRoles, LEADER_ROLES),
         canManageMembers: hasAnyRole(userRoles, GROUP_ADMIN_ROLES),
+        isPlatformAdmin: platformAdmin,
       };
+    },
+    myGroups: async (
+      _parent: unknown,
+      _args: unknown,
+      context: GraphQLContext,
+    ) => {
+      const user = requireUser(context.user);
+      if (isPlatformAdmin(user.email)) {
+        const rows = await listActiveGroups();
+        return rows.map((g) => ({
+          _id: g.id,
+          name: g.name,
+          slug: g.slug,
+          status: g.status,
+        }));
+      }
+      const rows = await listUserActiveGroups(user._id);
+      return rows.map((g) => ({
+        _id: g.id,
+        name: g.name,
+        slug: g.slug,
+        status: g.status,
+      }));
+    },
+    activeGroup: async (
+      _parent: unknown,
+      _args: unknown,
+      context: GraphQLContext,
+    ) => {
+      requireUser(context.user);
+      if (!context.groupId) {
+        return null;
+      }
+      const group = await findGroupById(context.groupId);
+      if (!group) {
+        return null;
+      }
+      return {
+        _id: group.id,
+        name: group.name,
+        slug: group.slug,
+        status: group.status,
+      };
+    },
+    adminGroups: async (
+      _parent: unknown,
+      _args: unknown,
+      context: GraphQLContext,
+    ) => {
+      requirePlatformAdmin(context.user);
+      const db = getDb();
+      const rows = await db
+        .select({
+          id: groups.id,
+          name: groups.name,
+          slug: groups.slug,
+          status: groups.status,
+          memberCount: count(memberships.id),
+        })
+        .from(groups)
+        .leftJoin(
+          memberships,
+          and(
+            eq(memberships.groupId, groups.id),
+            eq(memberships.status, "active"),
+          ),
+        )
+        .groupBy(groups.id)
+        .orderBy(asc(groups.name));
+      return rows.map((row) => ({
+        _id: row.id,
+        name: row.name,
+        slug: row.slug,
+        status: row.status,
+        memberCount: Number(row.memberCount),
+      }));
+    },
+    orphanedUsers: async (
+      _parent: unknown,
+      _args: unknown,
+      context: GraphQLContext,
+    ) => {
+      requirePlatformAdmin(context.user);
+      const db = getDb();
+      const rows = await db
+        .select()
+        .from(users)
+        .where(
+          sql`not exists (
+            select 1 from ${memberships}
+            where ${memberships.userId} = ${users.id}
+              and ${memberships.status} = 'active'
+          )`,
+        )
+        .orderBy(asc(users.email));
+      return rows.map((row) => mapUser(row));
+    },
+    adminGroupMembers: async (
+      _parent: unknown,
+      { groupId }: { groupId: string },
+      context: GraphQLContext,
+    ) => {
+      requirePlatformAdmin(context.user);
+      const db = getDb();
+      const rows = await db
+        .select({ user: users })
+        .from(memberships)
+        .innerJoin(users, eq(memberships.userId, users.id))
+        .where(
+          and(eq(memberships.groupId, groupId), eq(memberships.status, "active")),
+        )
+        .orderBy(asc(users.lastName), asc(users.firstName));
+      return Promise.all(rows.map(({ user }) => hydrateUser(user, groupId)));
     },
   },
   Mutation: {
@@ -1499,6 +1629,145 @@ export const resolvers = {
         );
       const [row] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
       return row ? hydrateUser(row, groupId) : null;
+    },
+    createGroup: async (
+      _parent: unknown,
+      { group }: { group: { name: string; slug: string } },
+      context: GraphQLContext,
+    ) => {
+      requirePlatformAdmin(context.user);
+      const db = getDb();
+      const slug = group.slug.trim().toLowerCase().replace(/\s+/g, "-");
+      try {
+        const [created] = await db
+          .insert(groups)
+          .values({
+            name: group.name.trim(),
+            slug,
+            status: "active",
+          })
+          .returning();
+        return {
+          _id: created.id,
+          name: created.name,
+          slug: created.slug,
+          status: created.status,
+          memberCount: 0,
+        };
+      } catch (error) {
+        throw new GraphQLError("Could not create group (slug may already exist)", {
+          extensions: { code: "BAD_USER_INPUT", cause: String(error) },
+        });
+      }
+    },
+    updateGroup: async (
+      _parent: unknown,
+      {
+        groupId,
+        group,
+      }: {
+        groupId: string;
+        group: { name?: string; slug?: string; status?: string };
+      },
+      context: GraphQLContext,
+    ) => {
+      requirePlatformAdmin(context.user);
+      const db = getDb();
+      const updates: {
+        name?: string;
+        slug?: string;
+        status?: string;
+        updatedAt: Date;
+      } = { updatedAt: new Date() };
+      if (group.name !== undefined) {
+        updates.name = group.name.trim();
+      }
+      if (group.slug !== undefined) {
+        updates.slug = group.slug.trim().toLowerCase().replace(/\s+/g, "-");
+      }
+      if (group.status !== undefined) {
+        updates.status = group.status;
+      }
+      const [updated] = await db
+        .update(groups)
+        .set(updates)
+        .where(eq(groups.id, groupId))
+        .returning();
+      if (!updated) {
+        throw new GraphQLError("Group not found", {
+          extensions: { code: "NOT_FOUND" },
+        });
+      }
+      const [countRow] = await db
+        .select({ memberCount: count(memberships.id) })
+        .from(memberships)
+        .where(
+          and(eq(memberships.groupId, groupId), eq(memberships.status, "active")),
+        );
+      return {
+        _id: updated.id,
+        name: updated.name,
+        slug: updated.slug,
+        status: updated.status,
+        memberCount: Number(countRow?.memberCount ?? 0),
+      };
+    },
+    assignUserToGroup: async (
+      _parent: unknown,
+      {
+        userId,
+        groupId,
+        roleIds,
+      }: { userId: string; groupId: string; roleIds?: string[] },
+      context: GraphQLContext,
+    ) => {
+      requirePlatformAdmin(context.user);
+      const db = getDb();
+      const group = await findGroupById(groupId);
+      if (!group) {
+        throw new GraphQLError("Group not found", {
+          extensions: { code: "NOT_FOUND" },
+        });
+      }
+      const [existingUser] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
+      if (!existingUser) {
+        throw new GraphQLError("User not found", {
+          extensions: { code: "NOT_FOUND" },
+        });
+      }
+      const [membership] = await db
+        .insert(memberships)
+        .values({ userId, groupId, status: "active" })
+        .onConflictDoUpdate({
+          target: [memberships.userId, memberships.groupId],
+          set: { status: "active", updatedAt: new Date() },
+        })
+        .returning();
+      const ids = (roleIds ?? []).filter((id): id is string => Boolean(id));
+      if (ids.length > 0 && membership) {
+        await db
+          .insert(membershipRoles)
+          .values(ids.map((roleId) => ({ membershipId: membership.id, roleId })))
+          .onConflictDoNothing();
+      }
+      return hydrateUser(existingUser, groupId);
+    },
+    removeUserFromGroup: async (
+      _parent: unknown,
+      { userId, groupId }: { userId: string; groupId: string },
+      context: GraphQLContext,
+    ) => {
+      requirePlatformAdmin(context.user);
+      const db = getDb();
+      const [row] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+      await db
+        .delete(memberships)
+        .where(and(eq(memberships.userId, userId), eq(memberships.groupId, groupId)));
+      return row ? mapUser(row) : null;
     },
   },
 };

@@ -344,3 +344,45 @@ export const REMOVE_MEMBER_ROLE = gql`
     }
   }
 `;
+
+export const CREATE_GROUP = gql`
+  mutation CreateGroup($group: createGroupInput!) {
+    createGroup(group: $group) {
+      _id
+      name
+      slug
+      status
+      memberCount
+    }
+  }
+`;
+
+export const UPDATE_GROUP = gql`
+  mutation UpdateGroup($groupId: ID!, $group: updateGroupInput!) {
+    updateGroup(groupId: $groupId, group: $group) {
+      _id
+      name
+      slug
+      status
+      memberCount
+    }
+  }
+`;
+
+export const ASSIGN_USER_TO_GROUP = gql`
+  mutation AssignUserToGroup($userId: ID!, $groupId: ID!, $roleIds: [ID]) {
+    assignUserToGroup(userId: $userId, groupId: $groupId, roleIds: $roleIds) {
+      ${MEMBER_FIELDS}
+    }
+  }
+`;
+
+export const REMOVE_USER_FROM_GROUP = gql`
+  mutation RemoveUserFromGroup($userId: ID!, $groupId: ID!) {
+    removeUserFromGroup(userId: $userId, groupId: $groupId) {
+      _id
+      email
+      displayName
+    }
+  }
+`;

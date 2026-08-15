@@ -87,4 +87,16 @@ export type Permissions = {
   canManageEvents?: boolean | null;
   canManagePosts?: boolean | null;
   canManageMembers?: boolean | null;
+  isPlatformAdmin?: boolean | null;
+};
+
+export type GroupSummary = {
+  _id: string;
+  name: string;
+  slug: string;
+  status?: string | null;
+};
+
+export type AdminGroup = GroupSummary & {
+  memberCount: number;
 };

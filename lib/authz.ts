@@ -25,17 +25,32 @@ function adminEmails(): Set<string> {
   );
 }
 
+/** Platform admins (GROUP_ADMIN_EMAILS) — group CRUD, orphans, cross-group assign. */
+export function isPlatformAdmin(email?: string | null): boolean {
+  if (!email) {
+    return false;
+  }
+  return adminEmails().has(email.toLowerCase());
+}
+
+export function requirePlatformAdmin(user: JwtUser | null): JwtUser {
+  if (!user || !isPlatformAdmin(user.email)) {
+    throw AuthenticationError;
+  }
+  return user;
+}
+
 /**
- * Fresh Clerk sign-ups get a membership with zero roles (see lib/auth/syncUser.ts),
- * so without this bootstrap nobody could ever assign the first role. Emails listed
- * in GROUP_ADMIN_EMAILS are treated as GroupLeader until real roles are assigned.
+ * Fresh Clerk sign-ups may have no group roles yet, so without this bootstrap
+ * nobody could assign the first in-group role. Emails listed in GROUP_ADMIN_EMAILS
+ * are also treated as GroupLeader inside a group context.
  */
 export async function getMemberRoles(
   userId: string,
   groupId: string,
   email?: string | null,
 ): Promise<string[]> {
-  if (email && adminEmails().has(email.toLowerCase())) {
+  if (isPlatformAdmin(email)) {
     return ["GroupLeader"];
   }
   const db = getDb();

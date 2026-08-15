@@ -52,7 +52,8 @@ Create a Clerk account with `alex.leader@example.com` to pick up the seeded grou
 | `NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL` | `/dashboard` after Account Portal sign-up |
 | `JWT_SECRET` | Still used by leftover GraphQL password mutations |
 | `JWT_EXPIRY` | Token lifetime, e.g. `7d` |
-| `DEFAULT_GROUP_SLUG` | Active group until a group switcher exists |
+| `DEFAULT_GROUP_SLUG` | Seed/bootstrap slug for the first group only (not live tenancy) |
+| `GROUP_ADMIN_EMAILS` | Platform admins (`/admin/groups`); also GroupLeader bootstrap |
 
 Copy [`.env.example`](.env.example) for the list. Do not commit `.env.local`.
 
@@ -73,9 +74,22 @@ Clerk is identity only. Scout groups and roles stay in Neon:
 - First session upserts the Neon user by Clerk id, then by email
 - `groups` + `memberships` + `membership_roles` — UnitLeader, Treasurer, and the rest live here
 - `requireUser()` / `requireMembership()` still gate GraphQL after the Clerk session is mapped
-- Cookie `compass_group` is reserved for a later group switcher
+- Cookie `compass_group` stores **this user's** active group slug (from their memberships, or any group for platform admins)
+- Self-signups are **orphans** (no membership) until invited or assigned by a platform admin
 
 Do **not** use Clerk Organizations as the source of truth for scout roles.
+
+### Multi-group / platform admin
+
+Emails in `GROUP_ADMIN_EMAILS` are platform admins. They can open **Groups** in the
+nav (`/admin/groups`) to:
+
+- Create, rename, activate/deactivate groups
+- View members of a group and remove them
+- Assign orphaned users (no active membership) into a group
+
+Everyone else only sees groups they belong to. The nav dropdown switches the
+active group for that session via `POST /api/active-group` (sets `compass_group`).
 
 ### Inviting new members
 
