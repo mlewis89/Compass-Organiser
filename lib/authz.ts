@@ -22,6 +22,9 @@ export const LEADER_ROLES = [
 
 export const GROUP_ADMIN_ROLES = ["GroupLeader", "AssistGroupLeader", "Secretary"] as const;
 
+/** Group Leader and Assistant Group Leader (not Secretary) — see every unit bucket. */
+export const UNIT_BUCKET_ADMIN_ROLES = ["GroupLeader", "AssistGroupLeader"] as const;
+
 export { MODULE_SETTINGS_ROLES } from "@/lib/groupModules";
 
 function adminEmails(): Set<string> {
@@ -95,6 +98,23 @@ export async function requireRole(
     throw AuthenticationError;
   }
   return userRoles;
+}
+
+export async function canViewAllUnitBuckets(
+  user: JwtUser | null,
+  groupId: string | null,
+): Promise<boolean> {
+  if (!user) {
+    return false;
+  }
+  if (isPlatformAdmin(user.email)) {
+    return true;
+  }
+  if (!groupId) {
+    return false;
+  }
+  const userRoles = await getMemberRoles(user._id, groupId, user.email);
+  return hasAnyRole(userRoles, UNIT_BUCKET_ADMIN_ROLES);
 }
 
 export async function requireOwnerOrRole(

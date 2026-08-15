@@ -20,6 +20,12 @@ export type UserSummary = {
   preferredName?: string | null;
 };
 
+export type UnitSummary = {
+  _id: string;
+  name: string;
+  members?: UserSummary[];
+};
+
 export type Task = {
   _id: string;
   name?: string | null;
@@ -34,10 +40,11 @@ export type Task = {
   createdBy?: UserSummary | null;
 };
 
-export type UnitSummary = {
-  _id: string;
-  name: string;
-  members?: UserSummary[];
+export type UnitBucket = {
+  unit: UnitSummary;
+  tasks: Task[];
+  allocated: number;
+  total: number;
 };
 
 export type EventItem = {
@@ -102,6 +109,7 @@ export type Permissions = {
   canManagePosts?: boolean | null;
   canManageMembers?: boolean | null;
   canManageGroupModules?: boolean | null;
+  canViewAllUnitBuckets?: boolean | null;
   isPlatformAdmin?: boolean | null;
 };
 

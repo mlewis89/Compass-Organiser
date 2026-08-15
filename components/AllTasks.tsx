@@ -1,138 +1,275 @@
 "use client";
 
 import { useMutation, useQuery } from "@apollo/client";
-import { useState } from "react";
-import {
-  Button,
-  Label,
-  Segment,
-  Table,
-  TableBody,
-  TableCell,
-  TableHeader,
-  TableHeaderCell,
-  TableRow,
-} from "semantic-ui-react";
-import { QUERY_TASKS } from "@/lib/client/queries";
+import { useEffect, useState } from "react";
+import { Button, Checkbox, Label, Segment } from "semantic-ui-react";
+import { QUERY_UNIT_BUCKETS, QUERY_UNASSIGNED_TASKS } from "@/lib/client/queries";
 import { SET_TASK_STATUS } from "@/lib/client/mutations";
-import type { Task } from "@/lib/client/types";
+import type { Task, UnitBucket } from "@/lib/client/types";
 import { usePermissions } from "@/lib/client/usePermissions";
+import TaskKanban from "@/components/TaskKanban";
+import TaskList, { type TaskColumn } from "@/components/TaskList";
 import TaskModal from "@/components/TaskModal";
+import { isCompleteStatus, isWishlistStatus, TASK_STATUS } from "@/lib/taskStatus";
 
-const headers = [
-  "name",
-  "description",
-  "priority",
-  "dueDate",
-  "duration",
-  "requiredSkills",
-  "responsible",
-  "units",
-  "status",
-] as const;
+const SHOW_EMPTY_BUCKETS_KEY = "all-tasks-show-empty-buckets";
+const HIDE_WISHLIST_KEY = "all-tasks-hide-wishlist";
+const HIDE_COMPLETED_KEY = "all-tasks-hide-completed";
+const LEGACY_HIDE_WISHLIST_KEY = "suggested-hide-wishlist";
+const VIEW_KEY = "tasks-bucket-view";
+type BucketView = "list" | "kanban";
 
-function formatCell(task: Task, key: (typeof headers)[number]) {
-  switch (key) {
-    case "requiredSkills":
-      return (task.requiredSkills ?? []).map((skill) => skill.name).join(", ");
-    case "responsible":
-      return (task.responsible ?? [])
-        .map((person) => person.displayName)
-        .filter(Boolean)
-        .join(", ");
-    case "units":
-      return (task.units ?? [])
-        .map((unit) => unit.name)
-        .filter(Boolean)
-        .join(", ");
-    case "dueDate":
-      return task.dueDate ? new Date(task.dueDate).toLocaleDateString() : "";
-    default:
-      return String(task[key] ?? "");
+const columns: TaskColumn[] = [
+  { key: "name", label: "Name" },
+  { key: "description", label: "Description" },
+  { key: "priority", label: "Priority" },
+  { key: "dueDate", label: "Due date" },
+  { key: "duration", label: "Duration" },
+  { key: "requiredSkills", label: "Required skills" },
+  { key: "responsible", label: "Responsible" },
+  { key: "status", label: "Status" },
+];
+
+function TaskBucketTable({
+  tasks,
+  onOpen,
+  onComplete,
+}: {
+  tasks: Task[];
+  onOpen: (taskId: string) => void;
+  onComplete: (taskId: string) => void;
+}) {
+  if (tasks.length === 0) {
+    return <p>No tasks in this bucket.</p>;
   }
+
+  return (
+    <TaskList
+      tasks={tasks}
+      columns={columns}
+      mobileSummary={["status", "dueDate", "responsible"]}
+      renderActions={(task) => (
+        <Button.Group size="tiny">
+          <Button onClick={() => onOpen(task._id)}>Open</Button>
+          {task.status !== TASK_STATUS.complete ? (
+            <Button positive onClick={() => onComplete(task._id)}>
+              Complete
+            </Button>
+          ) : null}
+        </Button.Group>
+      )}
+    />
+  );
+}
+
+function visibleTasks(
+  tasks: Task[],
+  hideWishlist: boolean,
+  hideCompleted: boolean,
+): Task[] {
+  return tasks.filter((task) => {
+    if (hideWishlist && isWishlistStatus(task.status)) {
+      return false;
+    }
+    if (hideCompleted && isCompleteStatus(task.status)) {
+      return false;
+    }
+    return true;
+  });
 }
 
 export default function AllTasks() {
-  const { data, loading, refetch } = useQuery<{ tasks: Task[] }>(QUERY_TASKS);
   const { permissions } = usePermissions();
-  const [setTaskStatus] = useMutation(SET_TASK_STATUS, {
-    refetchQueries: [{ query: QUERY_TASKS }],
-  });
+  const canViewAll = Boolean(permissions.canViewAllUnitBuckets);
+  const { data, loading, refetch } = useQuery<{ unitBuckets: UnitBucket[] }>(
+    QUERY_UNIT_BUCKETS,
+  );
+  const { data: unassignedData, refetch: refetchUnassigned } = useQuery<{
+    unassignedTasks: Task[];
+  }>(QUERY_UNASSIGNED_TASKS, { skip: !canViewAll });
+  const [setTaskStatus] = useMutation(SET_TASK_STATUS);
   const [activeTask, setActiveTask] = useState<string | null>(null);
   const [showTaskModal, setShowTaskModal] = useState(false);
+  const [showEmptyBuckets, setShowEmptyBuckets] = useState(false);
+  const [hideWishlist, setHideWishlist] = useState(true);
+  const [hideCompleted, setHideCompleted] = useState(true);
+  const [view, setView] = useState<BucketView>("list");
 
-  if (loading || !data?.tasks) {
+  const buckets = data?.unitBuckets ?? [];
+  const unassigned = unassignedData?.unassignedTasks ?? [];
+  const bucketTasks = (tasks: Task[]) =>
+    visibleTasks(tasks, hideWishlist, hideCompleted);
+  const visibleBuckets = showEmptyBuckets
+    ? buckets
+    : buckets.filter((bucket) => bucketTasks(bucket.tasks).length > 0);
+  const visibleUnassigned = bucketTasks(unassigned);
+  const showUnassigned =
+    canViewAll && (showEmptyBuckets || visibleUnassigned.length > 0);
+  const emptyBucketCount =
+    buckets.filter((bucket) => bucketTasks(bucket.tasks).length === 0).length +
+    (canViewAll && visibleUnassigned.length === 0 ? 1 : 0);
+
+  useEffect(() => {
+    const storedEmpty = window.localStorage.getItem(SHOW_EMPTY_BUCKETS_KEY);
+    if (storedEmpty === "true") {
+      setShowEmptyBuckets(true);
+    }
+    const storedHide =
+      window.localStorage.getItem(HIDE_WISHLIST_KEY) ??
+      window.localStorage.getItem(LEGACY_HIDE_WISHLIST_KEY);
+    if (storedHide === "false") {
+      setHideWishlist(false);
+    }
+    const storedCompleted = window.localStorage.getItem(HIDE_COMPLETED_KEY);
+    if (storedCompleted === "false") {
+      setHideCompleted(false);
+    }
+    const storedView = window.localStorage.getItem(VIEW_KEY);
+    if (storedView === "list" || storedView === "kanban") {
+      setView(storedView);
+    }
+  }, []);
+
+  const persistShowEmptyBuckets = (next: boolean) => {
+    setShowEmptyBuckets(next);
+    window.localStorage.setItem(SHOW_EMPTY_BUCKETS_KEY, String(next));
+  };
+
+  const persistHideWishlist = (next: boolean) => {
+    setHideWishlist(next);
+    window.localStorage.setItem(HIDE_WISHLIST_KEY, String(next));
+  };
+
+  const persistHideCompleted = (next: boolean) => {
+    setHideCompleted(next);
+    window.localStorage.setItem(HIDE_COMPLETED_KEY, String(next));
+  };
+
+  const persistView = (next: BucketView) => {
+    setView(next);
+    window.localStorage.setItem(VIEW_KEY, next);
+  };
+
+  const refresh = () => {
+    void refetch();
+    if (canViewAll) {
+      void refetchUnassigned();
+    }
+  };
+
+  const openTask = (taskId: string | null) => {
+    setActiveTask(taskId);
+    setShowTaskModal(true);
+  };
+
+  const changeTaskStatus = (taskId: string, status: string) => {
+    void setTaskStatus({ variables: { taskId, status } }).then(() => refresh());
+  };
+
+  if (loading || !data?.unitBuckets) {
     return <p>Loading</p>;
   }
+
+  const renderBucket = (tasks: Task[]) =>
+    view === "kanban" ? (
+      <TaskKanban
+        tasks={tasks}
+        hideWishlist={hideWishlist}
+        hideCompleted={hideCompleted}
+        onOpen={openTask}
+        onStatusChange={changeTaskStatus}
+      />
+    ) : (
+      <TaskBucketTable
+        tasks={tasks}
+        onOpen={openTask}
+        onComplete={(taskId) => changeTaskStatus(taskId, TASK_STATUS.complete)}
+      />
+    );
 
   return (
     <>
       <Segment padded>
-        <Label attached="top">All Tasks</Label>
-        {permissions.canManageTasks ? (
-          <Button
-            primary
-            style={{ marginBottom: "1em" }}
-            onClick={() => {
-              setActiveTask(null);
-              setShowTaskModal(true);
-            }}
-          >
-            New Task
-          </Button>
-        ) : null}
-        <Table celled selectable>
-          <TableHeader>
-            <TableRow>
-              {headers.map((header) => (
-                <TableHeaderCell key={header}>{header}</TableHeaderCell>
-              ))}
-              <TableHeaderCell />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {data.tasks.map((task) => (
-              <TableRow key={task._id}>
-                {headers.map((propertyName) => (
-                  <TableCell key={task._id + propertyName}>
-                    {formatCell(task, propertyName)}
-                  </TableCell>
-                ))}
-                <TableCell>
-                  <Button.Group size="tiny">
-                    <Button
-                      onClick={() => {
-                        setActiveTask(task._id);
-                        setShowTaskModal(true);
-                      }}
-                    >
-                      Open
-                    </Button>
-                    {task.status !== "complete" ? (
-                      <Button
-                        positive
-                        onClick={() =>
-                          void setTaskStatus({
-                            variables: { taskId: task._id, status: "complete" },
-                          })
-                        }
-                      >
-                        Complete
-                      </Button>
-                    ) : null}
-                  </Button.Group>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <div className="task-bucket-toolbar">
+          <div className="task-bucket-toolbar-start">
+            {permissions.canManageTasks ? (
+              <Button primary onClick={() => openTask(null)}>
+                New Task
+              </Button>
+            ) : null}
+            <Checkbox
+              toggle
+              label="Hide wishlist items"
+              checked={hideWishlist}
+              onChange={(_event, checkbox) =>
+                persistHideWishlist(Boolean(checkbox.checked))
+              }
+            />
+            <Checkbox
+              toggle
+              label="Hide completed"
+              checked={hideCompleted}
+              onChange={(_event, checkbox) =>
+                persistHideCompleted(Boolean(checkbox.checked))
+              }
+            />
+            {emptyBucketCount > 0 || showEmptyBuckets ? (
+              <Checkbox
+                toggle
+                label="Show empty buckets"
+                checked={showEmptyBuckets}
+                onChange={(_event, checkbox) =>
+                  persistShowEmptyBuckets(Boolean(checkbox.checked))
+                }
+              />
+            ) : null}
+          </div>
+          <Button.Group size="tiny">
+            <Button
+              type="button"
+              active={view === "list"}
+              onClick={() => persistView("list")}
+            >
+              List
+            </Button>
+            <Button
+              type="button"
+              active={view === "kanban"}
+              onClick={() => persistView("kanban")}
+            >
+              Kanban
+            </Button>
+          </Button.Group>
+        </div>
       </Segment>
+
+      {buckets.length === 0 && !canViewAll ? (
+        <Segment padded>
+          <Label attached="top">Unit tasks</Label>
+          <p>You are not in any units yet, so there is no unit task bucket to show.</p>
+        </Segment>
+      ) : null}
+
+      {visibleBuckets.map((bucket) => (
+        <Segment padded key={bucket.unit._id}>
+          <Label attached="top">{bucket.unit.name}</Label>
+          {renderBucket(bucketTasks(bucket.tasks))}
+        </Segment>
+      ))}
+
+      {showUnassigned ? (
+        <Segment padded>
+          <Label attached="top">Unassigned</Label>
+          {renderBucket(visibleUnassigned)}
+        </Segment>
+      ) : null}
+
       {showTaskModal ? (
         <TaskModal
           activeTask={activeTask}
           showTaskModal={showTaskModal}
           setShowTaskModal={setShowTaskModal}
-          onSaved={() => void refetch()}
+          onSaved={refresh}
         />
       ) : null}
     </>

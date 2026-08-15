@@ -129,11 +129,16 @@ export default function Nav() {
         ];
 
   return (
-    <Segment>
-      <Grid columns={3} stackable>
+    <Segment className="app-nav">
+      <Grid columns={3}>
         <GridRow>
           <GridColumn width={5} verticalAlign="middle">
-            <Image src="/header.png" size="medium" alt="Compass Organiser" />
+            <Image
+              className="header-logo"
+              src="/header.png"
+              size="medium"
+              alt="Compass Organiser"
+            />
           </GridColumn>
           <GridColumn width={4} only="tablet computer">
             <Image src="/path.png" alt="" />
@@ -195,7 +200,7 @@ export default function Nav() {
                   width: "100%",
                 }}
               >
-                <Menu stackable style={{ flex: 1, marginBottom: 0 }}>
+                <Menu className="app-nav-menu" style={{ flex: 1, marginBottom: 0 }}>
                   {items}
                 </Menu>
                 {isLoaded && isSignedIn && permissions.isPlatformAdmin ? (

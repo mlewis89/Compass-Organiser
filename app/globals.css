@@ -6,6 +6,13 @@
   background-color: #374c7a !important;
 }
 
+@media (min-width: 768px) {
+  .ui.container.min-100-vh {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+
 .timeSlider {
   width: 100%;
 }
@@ -32,4 +39,248 @@
 .clerk-auth-panel .cl-card {
   margin-left: auto;
   margin-right: auto;
+}
+
+.task-list-desktop {
+  overflow-x: auto;
+}
+
+.task-list-mobile {
+  display: none;
+  border: 1px solid rgba(34, 36, 38, 0.15);
+  border-radius: 0.28571429rem;
+  overflow: hidden;
+}
+
+.task-list-row + .task-list-row {
+  border-top: 1px solid rgba(34, 36, 38, 0.15);
+}
+
+.task-list-row:nth-child(even) {
+  background: #f9fafb;
+}
+
+.task-list-summary {
+  display: block;
+  width: 100%;
+  padding: 0.75rem 0.85rem;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+.task-list-summary-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.task-list-name {
+  flex: 1;
+  min-width: 0;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.task-list-summary-end {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.task-list-summary-end .icon {
+  margin: 0;
+}
+
+.task-list-summary-meta {
+  margin-top: 0.25rem;
+  color: rgba(0, 0, 0, 0.6);
+  font-size: 0.85em;
+}
+
+.task-list-detail {
+  padding: 0 0.85rem 0.85rem;
+  font-size: 0.9em;
+}
+
+.task-list-detail dl {
+  margin: 0 0 0.75rem;
+}
+
+.task-list-detail dt {
+  margin: 0;
+  color: rgba(0, 0, 0, 0.6);
+  font-size: 0.8em;
+  font-weight: 600;
+}
+
+.task-list-detail dd {
+  margin: 0 0 0.45rem;
+}
+
+.task-list-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.task-bucket-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.task-bucket-toolbar-start {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+}
+
+.task-kanban {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(14rem, 1fr));
+  gap: 0.75rem;
+  overflow-x: auto;
+}
+
+.task-kanban-cols-2 {
+  grid-template-columns: repeat(2, minmax(14rem, 1fr));
+}
+
+.task-kanban-cols-3 {
+  grid-template-columns: repeat(3, minmax(14rem, 1fr));
+}
+
+.task-kanban-column {
+  min-height: 10rem;
+  padding: 0.5rem;
+  border: 1px solid rgba(34, 36, 38, 0.15);
+  border-radius: 0.28571429rem;
+  background: #f4f5f7;
+}
+
+.task-kanban-column.is-drop-target {
+  outline: 2px dashed #374c7a;
+  background: #eef2f8;
+}
+
+.task-kanban-column-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  font-weight: 700;
+}
+
+.task-kanban-count {
+  color: rgba(0, 0, 0, 0.55);
+  font-weight: 600;
+  font-size: 0.85em;
+}
+
+.task-kanban-card {
+  margin-bottom: 0.5rem;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid rgba(34, 36, 38, 0.15);
+  border-radius: 0.28571429rem;
+  background: #fff;
+  cursor: grab;
+}
+
+.task-kanban-card:active {
+  cursor: grabbing;
+}
+
+.task-kanban-card-title {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  color: inherit;
+}
+
+.task-kanban-card-meta {
+  margin: 0.3rem 0 0.55rem;
+  color: rgba(0, 0, 0, 0.6);
+  font-size: 0.85em;
+}
+
+@media (max-width: 767px) {
+  .ui.stackable.grid.tasks-page-grid {
+    display: flex !important;
+    flex-direction: column;
+  }
+
+  .ui.stackable.grid.tasks-page-grid > .row {
+    display: contents;
+  }
+
+  .tasks-page-main {
+    order: 1;
+  }
+
+  .tasks-page-all {
+    order: 2;
+  }
+
+  .tasks-page-sidebar {
+    order: 3;
+  }
+
+  .ui.container.min-100-vh {
+    margin-left: 0.5rem !important;
+    margin-right: 0.5rem !important;
+  }
+
+  .task-list-desktop {
+    display: none !important;
+  }
+
+  .task-list-mobile {
+    display: block;
+  }
+
+  .app-nav.ui.segment {
+    padding: 0.75rem;
+  }
+
+  .app-nav .ui.grid > .row > .five.wide.column {
+    width: auto !important;
+    flex: 0 0 auto;
+  }
+
+  .app-nav .ui.grid > .row > .seven.wide.column {
+    width: auto !important;
+    flex: 1 1 auto;
+  }
+
+  .app-nav .header-logo.ui.image {
+    width: 9.5rem;
+    max-width: 9.5rem;
+  }
+
+  .app-nav .ui.menu {
+    flex-wrap: wrap;
+    min-height: 0;
+  }
+
+  .app-nav .ui.menu .item {
+    padding: 0.6em 0.8em;
+  }
 }

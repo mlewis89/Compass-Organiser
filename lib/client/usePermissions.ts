@@ -10,6 +10,7 @@ const emptyPermissions: Permissions = {
   canManagePosts: false,
   canManageMembers: false,
   canManageGroupModules: false,
+  canViewAllUnitBuckets: false,
   isPlatformAdmin: false,
 };
 

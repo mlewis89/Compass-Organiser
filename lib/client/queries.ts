@@ -115,8 +115,16 @@ export const QUERY_SINGLE_TASK = gql`
 `;
 
 export const QUERY_SUGGESTED_TASKS = gql`
-  query SuggestedTasks($userId: ID, $userSkills: [updateSkill], $numberOfTasks: Int) {
-    suggestedTasks(userId: $userId, userSkills: $userSkills, numberOfTasks: $numberOfTasks) {
+  query SuggestedTasks(
+    $userId: ID
+    $userSkills: [updateSkill]
+    $numberOfTasks: Int
+  ) {
+    suggestedTasks(
+      userId: $userId
+      userSkills: $userSkills
+      numberOfTasks: $numberOfTasks
+    ) {
       _id
       name
       dueDate
@@ -281,6 +289,7 @@ export const QUERY_MY_PERMISSIONS = gql`
       canManagePosts
       canManageMembers
       canManageGroupModules
+      canViewAllUnitBuckets
       isPlatformAdmin
     }
   }
@@ -382,6 +391,48 @@ export const QUERY_UNITS = gql`
         preferredName
         scoutName
       }
+    }
+  }
+`;
+
+const UNIT_BUCKET_TASK_FIELDS = `
+  _id
+  description
+  dueDate
+  duration
+  name
+  priority
+  requiredSkills {
+    name
+    _id
+  }
+  responsible {
+    displayName
+    _id
+  }
+  status
+`;
+
+export const QUERY_UNIT_BUCKETS = gql`
+  query UnitBuckets {
+    unitBuckets {
+      allocated
+      total
+      unit {
+        _id
+        name
+      }
+      tasks {
+        ${UNIT_BUCKET_TASK_FIELDS}
+      }
+    }
+  }
+`;
+
+export const QUERY_UNASSIGNED_TASKS = gql`
+  query UnassignedTasks {
+    unassignedTasks {
+      ${UNIT_BUCKET_TASK_FIELDS}
     }
   }
 `;

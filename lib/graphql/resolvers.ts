@@ -22,6 +22,7 @@ import {
   GROUP_ADMIN_ROLES,
   LEADER_ROLES,
   MODULE_SETTINGS_ROLES,
+  canViewAllUnitBuckets,
   getGroupEnabledModules,
   getMemberRoles,
   hasAnyRole,
@@ -37,6 +38,12 @@ import {
   mergeModuleUpdates,
   type StoredEnabledModules,
 } from "@/lib/groupModules";
+import {
+  TASK_STATUS,
+  isCompleteStatus,
+  isTaskOpen,
+  isWishlistStatus,
+} from "@/lib/taskStatus";
 import {
   boardPosts,
   eventAttendees,
@@ -518,6 +525,157 @@ async function loadTasksForUser(
   return [...byId.values()];
 }
 
+async function loadUserUnitIds(userId: string, groupId: string): Promise<string[]> {
+  const db = getDb();
+  const rows = await db
+    .select({ unitId: unitMembers.unitId })
+    .from(unitMembers)
+    .innerJoin(units, eq(unitMembers.unitId, units.id))
+    .where(and(eq(unitMembers.userId, userId), eq(units.groupId, groupId)));
+  return rows.map((row) => row.unitId);
+}
+
+async function loadClaimedTaskIds(userId: string): Promise<Set<string>> {
+  const db = getDb();
+  const rows = await db
+    .select({ taskId: userTasks.taskId })
+    .from(userTasks)
+    .where(eq(userTasks.userId, userId));
+  return new Set(rows.map((row) => row.taskId));
+}
+
+async function loadTaskIdsWithResponsible(taskIds: string[]): Promise<Set<string>> {
+  if (taskIds.length === 0) {
+    return new Set();
+  }
+  const db = getDb();
+  const rows = await db
+    .select({ taskId: taskResponsible.taskId })
+    .from(taskResponsible)
+    .where(inArray(taskResponsible.taskId, taskIds));
+  return new Set(rows.map((row) => row.taskId));
+}
+
+async function loadUnitIdsByTaskIds(
+  taskIds: string[],
+): Promise<Map<string, string[]>> {
+  const byTask = new Map<string, string[]>();
+  if (taskIds.length === 0) {
+    return byTask;
+  }
+  const db = getDb();
+  const rows = await db
+    .select({ taskId: taskUnits.taskId, unitId: taskUnits.unitId })
+    .from(taskUnits)
+    .where(inArray(taskUnits.taskId, taskIds));
+  for (const row of rows) {
+    const current = byTask.get(row.taskId) ?? [];
+    current.push(row.unitId);
+    byTask.set(row.taskId, current);
+  }
+  return byTask;
+}
+
+async function canSeeUnitAssignedTask(
+  task: TaskRow,
+  userId: string,
+  userUnitIds: Set<string>,
+  claimedIds: Set<string>,
+  taskUnitIds: string[],
+): Promise<boolean> {
+  if (taskUnitIds.length === 0) {
+    return true;
+  }
+  if (task.createdByUserId === userId) {
+    return true;
+  }
+  if (claimedIds.has(task.id)) {
+    return true;
+  }
+  if (taskUnitIds.some((unitId) => userUnitIds.has(unitId))) {
+    return true;
+  }
+  const responsibleIds = await loadResponsibleUserIds(task.id);
+  return responsibleIds.includes(userId);
+}
+
+async function filterVisibleTasks(
+  rows: TaskRow[],
+  userId: string,
+  groupId: string,
+  viewAll: boolean,
+): Promise<TaskRow[]> {
+  if (viewAll) {
+    return rows;
+  }
+  const [userUnitIds, claimedIds, unitIdsByTask] = await Promise.all([
+    loadUserUnitIds(userId, groupId).then((ids) => new Set(ids)),
+    loadClaimedTaskIds(userId),
+    loadUnitIdsByTaskIds(rows.map((row) => row.id)),
+  ]);
+  const visible: TaskRow[] = [];
+  for (const task of rows) {
+    const allowed = await canSeeUnitAssignedTask(
+      task,
+      userId,
+      userUnitIds,
+      claimedIds,
+      unitIdsByTask.get(task.id) ?? [],
+    );
+    if (allowed) {
+      visible.push(task);
+    }
+  }
+  return visible;
+}
+
+async function loadVisibleUnits(
+  userId: string,
+  groupId: string,
+  viewAll: boolean,
+): Promise<(typeof units.$inferSelect)[]> {
+  const db = getDb();
+  if (viewAll) {
+    return db
+      .select()
+      .from(units)
+      .where(eq(units.groupId, groupId))
+      .orderBy(asc(units.name));
+  }
+  const rows = await db
+    .select({ unit: units })
+    .from(unitMembers)
+    .innerJoin(units, eq(unitMembers.unitId, units.id))
+    .where(and(eq(unitMembers.userId, userId), eq(units.groupId, groupId)))
+    .orderBy(asc(units.name));
+  return rows.map(({ unit }) => unit);
+}
+
+async function loadTasksForUnit(unitId: string, groupId: string): Promise<TaskRow[]> {
+  const db = getDb();
+  const rows = await db
+    .select({ task: tasks })
+    .from(taskUnits)
+    .innerJoin(tasks, eq(taskUnits.taskId, tasks.id))
+    .where(and(eq(taskUnits.unitId, unitId), eq(tasks.groupId, groupId)))
+    .orderBy(desc(tasks.priority));
+  return rows.map(({ task }) => task);
+}
+
+async function mapUnitBucket(unit: typeof units.$inferSelect, groupId: string) {
+  const unitTasks = await loadTasksForUnit(unit.id, groupId);
+  const openTasks = unitTasks.filter(isTaskOpen);
+  const withResponsible = await loadTaskIdsWithResponsible(
+    openTasks.map((task) => task.id),
+  );
+  return {
+    unit: await mapUnit(unit),
+    tasks: await Promise.all(unitTasks.map(mapTask)),
+    allocated: openTasks.filter((task) => withResponsible.has(task.id)).length,
+    total: openTasks.length,
+  };
+}
+
 async function ensureUserTaskAssignment(userId: string, taskId: string) {
   const db = getDb();
   await db
@@ -876,7 +1034,7 @@ export const resolvers = {
       _args: unknown,
       context: GraphQLContext,
     ) => {
-      requireUser(context.user);
+      const user = requireUser(context.user);
       const groupId = requireGroup(context.groupId);
       await requireModule(groupId, "tasks");
       const db = getDb();
@@ -885,7 +1043,9 @@ export const resolvers = {
         .from(tasks)
         .where(eq(tasks.groupId, groupId))
         .orderBy(desc(tasks.priority));
-      return Promise.all(rows.map(mapTask));
+      const viewAll = await canViewAllUnitBuckets(user, groupId);
+      const visible = await filterVisibleTasks(rows, user._id, groupId, viewAll);
+      return Promise.all(visible.map(mapTask));
     },
     userTasks: async (
       _parent: unknown,
@@ -940,7 +1100,10 @@ export const resolvers = {
         }
       }
 
-      if (!limit || limit <= 0 || skillIds.length === 0) {
+      if (skillIds.length === 0) {
+        return [];
+      }
+      if (!limit || limit <= 0) {
         return [];
       }
 
@@ -972,17 +1135,29 @@ export const resolvers = {
       const unitTaskSet = new Set(unitTaskRows.map((row) => row.taskId));
 
       const unique = new Map(matching.map(({ task }) => [task.id, task]));
-      const sorted = [...unique.values()]
-        .filter(
-          (task) =>
-            !assignedSet.has(task.id) &&
-            !responsibleSet.has(task.id) &&
-            !unitTaskSet.has(task.id),
-        )
-        .sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0))
-        .slice(0, limit);
-
-      return Promise.all(sorted.map(mapTask));
+      const userUnitIds = new Set(await loadUserUnitIds(targetId, groupId));
+      const unitIdsByTask = await loadUnitIdsByTaskIds([...unique.keys()]);
+      const eligible = [...unique.values()].filter((task) => {
+        if (isCompleteStatus(task.status)) {
+          return false;
+        }
+        if (
+          assignedSet.has(task.id) ||
+          responsibleSet.has(task.id) ||
+          unitTaskSet.has(task.id)
+        ) {
+          return false;
+        }
+        const taskUnitIds = unitIdsByTask.get(task.id) ?? [];
+        if (taskUnitIds.length === 0) {
+          return true;
+        }
+        return taskUnitIds.some((unitId) => userUnitIds.has(unitId));
+      });
+      const byPriority = (a: TaskRow, b: TaskRow) =>
+        (b.priority ?? 0) - (a.priority ?? 0);
+      const filled = eligible.sort(byPriority).slice(0, limit);
+      return Promise.all(filled.map(mapTask));
     },
     members: async (
       _parent: unknown,
@@ -1146,7 +1321,7 @@ export const resolvers = {
       { taskId }: { taskId: string },
       context: GraphQLContext,
     ) => {
-      requireUser(context.user);
+      const user = requireUser(context.user);
       const groupId = requireGroup(context.groupId);
       await requireModule(groupId, "tasks");
       const db = getDb();
@@ -1155,7 +1330,12 @@ export const resolvers = {
         .from(tasks)
         .where(and(eq(tasks.id, taskId), eq(tasks.groupId, groupId)))
         .limit(1);
-      return row ? mapTask(row) : null;
+      if (!row) {
+        return null;
+      }
+      const viewAll = await canViewAllUnitBuckets(user, groupId);
+      const visible = await filterVisibleTasks([row], user._id, groupId, viewAll);
+      return visible[0] ? mapTask(visible[0]) : null;
     },
     units: async (_parent: unknown, _args: unknown, context: GraphQLContext) => {
       requireUser(context.user);
@@ -1179,6 +1359,49 @@ export const resolvers = {
       await requireModule(groupId, "tasks");
       const unit = await requireGroupUnit(groupId, unitId);
       return mapUnit(unit);
+    },
+    unitBuckets: async (
+      _parent: unknown,
+      _args: unknown,
+      context: GraphQLContext,
+    ) => {
+      const user = requireUser(context.user);
+      const groupId = requireGroup(context.groupId);
+      await requireModule(groupId, "tasks");
+      const viewAll = await canViewAllUnitBuckets(user, groupId);
+      const visibleUnits = await loadVisibleUnits(user._id, groupId, viewAll);
+      return Promise.all(visibleUnits.map((unit) => mapUnitBucket(unit, groupId)));
+    },
+    unassignedTasks: async (
+      _parent: unknown,
+      _args: unknown,
+      context: GraphQLContext,
+    ) => {
+      const user = requireUser(context.user);
+      const groupId = requireGroup(context.groupId);
+      await requireModule(groupId, "tasks");
+      const viewAll = await canViewAllUnitBuckets(user, groupId);
+      if (!viewAll) {
+        return [];
+      }
+      const db = getDb();
+      const rows = await db
+        .select()
+        .from(tasks)
+        .where(eq(tasks.groupId, groupId))
+        .orderBy(desc(tasks.priority));
+      const assignedIds = new Set(
+        (
+          await db
+            .select({ taskId: taskUnits.taskId })
+            .from(taskUnits)
+            .innerJoin(tasks, eq(taskUnits.taskId, tasks.id))
+            .where(eq(tasks.groupId, groupId))
+        ).map((row) => row.taskId),
+      );
+      return Promise.all(
+        rows.filter((task) => !assignedIds.has(task.id)).map(mapTask),
+      );
     },
     singleMember: async (
       _parent: unknown,
@@ -1212,6 +1435,7 @@ export const resolvers = {
           canManagePosts: platformAdmin,
           canManageMembers: platformAdmin,
           canManageGroupModules: platformAdmin,
+          canViewAllUnitBuckets: platformAdmin,
           isPlatformAdmin: platformAdmin,
         };
       }
@@ -1223,6 +1447,7 @@ export const resolvers = {
         canManagePosts: hasAnyRole(userRoles, LEADER_ROLES),
         canManageMembers: hasAnyRole(userRoles, GROUP_ADMIN_ROLES),
         canManageGroupModules: hasAnyRole(userRoles, MODULE_SETTINGS_ROLES),
+        canViewAllUnitBuckets: await canViewAllUnitBuckets(user, context.groupId),
         isPlatformAdmin: platformAdmin,
       };
     },
@@ -1703,6 +1928,17 @@ export const resolvers = {
         await requireRole(user, context.groupId, LEADER_ROLES);
       }
       const db = getDb();
+      const [existingTask] = await db
+        .select()
+        .from(tasks)
+        .where(and(eq(tasks.id, taskId), eq(tasks.groupId, groupId)))
+        .limit(1);
+      if (existingTask && isWishlistStatus(existingTask.status)) {
+        await db
+          .update(tasks)
+          .set({ status: TASK_STATUS.toDo, updatedAt: new Date() })
+          .where(eq(tasks.id, existingTask.id));
+      }
       await db
         .insert(userTasks)
         .values({ userId: targetId, taskId })

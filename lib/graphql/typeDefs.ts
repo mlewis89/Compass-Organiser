@@ -198,6 +198,13 @@ export const typeDefs = `#graphql
     members: [User]
   }
 
+  type UnitBucket {
+    unit: Unit!
+    tasks: [Task!]!
+    allocated: Int!
+    total: Int!
+  }
+
   input updateUnit {
     _id: ID
     name: String
@@ -240,6 +247,7 @@ export const typeDefs = `#graphql
     canManagePosts: Boolean
     canManageMembers: Boolean
     canManageGroupModules: Boolean
+    canViewAllUnitBuckets: Boolean
     isPlatformAdmin: Boolean
   }
 
@@ -290,6 +298,8 @@ export const typeDefs = `#graphql
     singleTask(taskId: ID!): Task
     units: [Unit]
     singleUnit(unitId: ID!): Unit
+    unitBuckets: [UnitBucket!]!
+    unassignedTasks: [Task!]!
     members: [User]
     singleMember(userId: ID!): User
     me: User

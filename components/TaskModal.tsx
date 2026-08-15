@@ -13,7 +13,7 @@ import {
   Segment,
   Select,
 } from "semantic-ui-react";
-import { QUERY_MEMBERS, QUERY_SINGLE_TASK, QUERY_TASKS, QUERY_UNITS } from "@/lib/client/queries";
+import { QUERY_MEMBERS, QUERY_SINGLE_TASK, QUERY_TASKS, QUERY_UNIT_BUCKETS, QUERY_UNITS, QUERY_UNASSIGNED_TASKS } from "@/lib/client/queries";
 import {
   ADD_TASK,
   DELETE_TASK,
@@ -21,6 +21,7 @@ import {
   UPDATE_TASK,
 } from "@/lib/client/mutations";
 import type { Member, Skill, Task, UnitSummary } from "@/lib/client/types";
+import { TASK_STATUS_OPTIONS } from "@/lib/taskStatus";
 import { usePermissions } from "@/lib/client/usePermissions";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import SkillPicker from "@/components/SkillPicker";
@@ -48,12 +49,6 @@ const emptyTask: Task = {
   units: [],
   createdBy: { _id: "", displayName: "" },
 };
-
-const taskStatusOptions = [
-  { text: "To Do", value: "toDo" },
-  { text: "In Progress", value: "inProgress" },
-  { text: "Complete", value: "complete" },
-];
 
 type Props = {
   activeTask: string | null;
@@ -130,7 +125,11 @@ export default function TaskModal({
     return options;
   }, [unitsData?.units, taskData.units]);
 
-  const refetchQueries = [{ query: QUERY_TASKS }];
+  const refetchQueries = [
+    { query: QUERY_TASKS },
+    { query: QUERY_UNIT_BUCKETS },
+    { query: QUERY_UNASSIGNED_TASKS },
+  ];
 
   const [removeUserFromTask] = useMutation(REMOVE_USER_TASK);
   const [addTask] = useMutation(ADD_TASK, { refetchQueries });
@@ -253,7 +252,8 @@ export default function TaskModal({
           <FormField
             control={Select}
             placeholder={taskData.status ?? "toDo"}
-            options={taskStatusOptions}
+            value={taskData.status ?? "toDo"}
+            options={TASK_STATUS_OPTIONS}
             label="Status"
             name="status"
             onChange={(

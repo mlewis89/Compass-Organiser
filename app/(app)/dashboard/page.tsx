@@ -5,6 +5,7 @@ import BoardPostList from "@/components/BoardPostList";
 import EventList from "@/components/EventList";
 import MyTasks from "@/components/MyTasks";
 import MyStats from "@/components/MyStats";
+import UnitBucketStats from "@/components/UnitBucketStats";
 import { useGroupModules } from "@/lib/client/useGroupModules";
 
 export default function DashboardPage() {
@@ -43,6 +44,7 @@ export default function DashboardPage() {
             <GridColumn width={showNoticeBoard ? 9 : 16}>
               {showEvents ? <EventList /> : null}
               {showTasks ? <MyTasks /> : null}
+              {showTasks ? <UnitBucketStats /> : null}
             </GridColumn>
           ) : null}
         </GridRow>
