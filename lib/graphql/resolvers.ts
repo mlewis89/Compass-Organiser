@@ -21,13 +21,22 @@ import {
 import {
   GROUP_ADMIN_ROLES,
   LEADER_ROLES,
+  MODULE_SETTINGS_ROLES,
+  getGroupEnabledModules,
   getMemberRoles,
   hasAnyRole,
   isPlatformAdmin,
+  requireModule,
   requireOwnerOrRole,
   requirePlatformAdmin,
   requireRole,
 } from "@/lib/authz";
+import {
+  expandEnabledModules,
+  isModuleEnabled,
+  mergeModuleUpdates,
+  type StoredEnabledModules,
+} from "@/lib/groupModules";
 import {
   boardPosts,
   eventAttendees,
@@ -270,6 +279,7 @@ async function requireSkillCatalogAccess(
   if (!skill.groupId || skill.groupId !== groupId) {
     throw new GraphQLError("Skill does not belong to the active group");
   }
+  await requireModule(groupId, "skills");
   await requireRole(user, groupId, GROUP_ADMIN_ROLES);
 }
 
@@ -447,6 +457,22 @@ function requireGroup(groupId: string | null) {
   return groupId;
 }
 
+function mapGroup(group: {
+  id: string;
+  name: string;
+  slug: string;
+  status: string | null;
+  enabledModules?: unknown;
+}) {
+  return {
+    _id: group.id,
+    name: group.name,
+    slug: group.slug,
+    status: group.status,
+    enabledModules: expandEnabledModules(group.enabledModules),
+  };
+}
+
 async function scopedGroupId(
   context: GraphQLContext,
   groupSlug?: string | null,
@@ -467,6 +493,7 @@ async function deleteEventImpl(
 ) {
   const user = requireUser(context.user);
   const groupId = requireGroup(context.groupId);
+  await requireModule(groupId, "events");
   const db = getDb();
   const [existingEvent] = await db
     .select()
@@ -527,12 +554,7 @@ export const resolvers = {
       if (!group) {
         return null;
       }
-      return {
-        _id: group.id,
-        name: group.name,
-        slug: group.slug,
-        status: group.status,
-      };
+      return mapGroup(group);
     },
     boardPosts: async (
       _parent: unknown,
@@ -541,6 +563,10 @@ export const resolvers = {
     ) => {
       const groupId = await scopedGroupId(context, groupSlug);
       if (!groupId) {
+        return [];
+      }
+      const modules = await getGroupEnabledModules(groupId);
+      if (!isModuleEnabled(modules, "noticeBoard")) {
         return [];
       }
       const db = getDb();
@@ -569,6 +595,10 @@ export const resolvers = {
       if (!groupId) {
         return [];
       }
+      const modules = await getGroupEnabledModules(groupId);
+      if (!isModuleEnabled(modules, "events")) {
+        return [];
+      }
       const db = getDb();
       const includePrivate = await canSeePrivateContent(context, groupId);
       const rows = includePrivate
@@ -593,6 +623,10 @@ export const resolvers = {
       if (!groupId) {
         return null;
       }
+      const modules = await getGroupEnabledModules(groupId);
+      if (!isModuleEnabled(modules, "events")) {
+        return null;
+      }
       const db = getDb();
       const [row] = await db
         .select()
@@ -615,6 +649,7 @@ export const resolvers = {
     ) => {
       requireUser(context.user);
       const groupId = requireGroup(context.groupId);
+      await requireModule(groupId, "tasks");
       const db = getDb();
       const rows = await db
         .select()
@@ -629,13 +664,15 @@ export const resolvers = {
       context: GraphQLContext,
     ) => {
       const user = requireUser(context.user);
+      const groupId = requireGroup(context.groupId);
+      await requireModule(groupId, "tasks");
       const targetId = userId || user._id;
       const db = getDb();
       const rows = await db
         .select({ task: tasks })
         .from(userTasks)
         .innerJoin(tasks, eq(userTasks.taskId, tasks.id))
-        .where(eq(userTasks.userId, targetId));
+        .where(and(eq(userTasks.userId, targetId), eq(tasks.groupId, groupId)));
       return Promise.all(rows.map(({ task }) => mapTask(task)));
     },
     suggestedTasks: async (
@@ -649,6 +686,7 @@ export const resolvers = {
     ) => {
       const user = requireUser(context.user);
       const groupId = requireGroup(context.groupId);
+      await requireModule(groupId, "tasks");
       const db = getDb();
       const targetId = args.userId || user._id;
 
@@ -749,6 +787,7 @@ export const resolvers = {
     ) => {
       const user = requireUser(context.user);
       const groupId = requireGroup(context.groupId);
+      await requireModule(groupId, "skills");
       const targetId = userId || user._id;
       const db = getDb();
       const visible = await db
@@ -780,6 +819,7 @@ export const resolvers = {
     ) => {
       const user = requireUser(context.user);
       const groupId = requireGroup(context.groupId);
+      await requireModule(groupId, "skills");
       await requireRole(user, groupId, GROUP_ADMIN_ROLES);
       const db = getDb();
       const conditions = [
@@ -833,6 +873,7 @@ export const resolvers = {
     ) => {
       requireUser(context.user);
       const groupId = requireGroup(context.groupId);
+      await requireModule(groupId, "memberStats");
       const db = getDb();
 
       const counts = await db
@@ -865,6 +906,7 @@ export const resolvers = {
     ) => {
       requireUser(context.user);
       const groupId = requireGroup(context.groupId);
+      await requireModule(groupId, "tasks");
       const db = getDb();
       const [row] = await db
         .select()
@@ -904,6 +946,7 @@ export const resolvers = {
           canManageEvents: platformAdmin,
           canManagePosts: platformAdmin,
           canManageMembers: platformAdmin,
+          canManageGroupModules: platformAdmin,
           isPlatformAdmin: platformAdmin,
         };
       }
@@ -914,6 +957,7 @@ export const resolvers = {
         canManageEvents: hasAnyRole(userRoles, LEADER_ROLES),
         canManagePosts: hasAnyRole(userRoles, LEADER_ROLES),
         canManageMembers: hasAnyRole(userRoles, GROUP_ADMIN_ROLES),
+        canManageGroupModules: hasAnyRole(userRoles, MODULE_SETTINGS_ROLES),
         isPlatformAdmin: platformAdmin,
       };
     },
@@ -925,20 +969,10 @@ export const resolvers = {
       const user = requireUser(context.user);
       if (isPlatformAdmin(user.email)) {
         const rows = await listActiveGroups();
-        return rows.map((g) => ({
-          _id: g.id,
-          name: g.name,
-          slug: g.slug,
-          status: g.status,
-        }));
+        return rows.map(mapGroup);
       }
       const rows = await listUserActiveGroups(user._id);
-      return rows.map((g) => ({
-        _id: g.id,
-        name: g.name,
-        slug: g.slug,
-        status: g.status,
-      }));
+      return rows.map(mapGroup);
     },
     activeGroup: async (
       _parent: unknown,
@@ -953,12 +987,7 @@ export const resolvers = {
       if (!group) {
         return null;
       }
-      return {
-        _id: group.id,
-        name: group.name,
-        slug: group.slug,
-        status: group.status,
-      };
+      return mapGroup(group);
     },
     adminGroups: async (
       _parent: unknown,
@@ -1134,6 +1163,8 @@ export const resolvers = {
       context: GraphQLContext,
     ) => {
       const user = requireUser(context.user);
+      const groupId = requireGroup(context.groupId);
+      await requireModule(groupId, "tasks");
       const db = getDb();
       const [updated] = await db
         .update(users)
@@ -1148,6 +1179,8 @@ export const resolvers = {
       context: GraphQLContext,
     ) => {
       const user = requireUser(context.user);
+      const groupId = requireGroup(context.groupId);
+      await requireModule(groupId, "skills");
       if (!skillId) {
         return null;
       }
@@ -1169,6 +1202,8 @@ export const resolvers = {
       context: GraphQLContext,
     ) => {
       const user = requireUser(context.user);
+      const groupId = requireGroup(context.groupId);
+      await requireModule(groupId, "skills");
       if (!skillId) {
         return null;
       }
@@ -1190,6 +1225,7 @@ export const resolvers = {
     ) => {
       const user = requireUser(context.user);
       const groupId = requireGroup(context.groupId);
+      await requireModule(groupId, "skills");
       await requireRole(user, groupId, LEADER_ROLES);
       const name = skill.name.trim();
       if (!name) {
@@ -1257,6 +1293,7 @@ export const resolvers = {
     ) => {
       const user = requireUser(context.user);
       const groupId = requireGroup(context.groupId);
+      await requireModule(groupId, "skills");
       await requireRole(user, groupId, GROUP_ADMIN_ROLES);
       const existing = await getSkillOrThrow(skillId);
       if (existing.scope !== "group" || existing.groupId !== groupId) {
@@ -1394,6 +1431,8 @@ export const resolvers = {
       context: GraphQLContext,
     ) => {
       const user = requireUser(context.user);
+      const groupId = requireGroup(context.groupId);
+      await requireModule(groupId, "tasks");
       const targetId = userId || user._id;
       if (targetId !== user._id) {
         await requireRole(user, context.groupId, LEADER_ROLES);
@@ -1412,6 +1451,8 @@ export const resolvers = {
       context: GraphQLContext,
     ) => {
       const user = requireUser(context.user);
+      const groupId = requireGroup(context.groupId);
+      await requireModule(groupId, "tasks");
       const targetId = userId || user._id;
       if (targetId !== user._id) {
         await requireRole(user, context.groupId, LEADER_ROLES);
@@ -1430,6 +1471,7 @@ export const resolvers = {
     ) => {
       const user = requireUser(context.user);
       const groupId = requireGroup(context.groupId);
+      await requireModule(groupId, "noticeBoard");
       await requireRole(user, groupId, LEADER_ROLES);
       const db = getDb();
       const [created] = await db
@@ -1454,6 +1496,7 @@ export const resolvers = {
     ) => {
       const user = requireUser(context.user);
       const groupId = requireGroup(context.groupId);
+      await requireModule(groupId, "noticeBoard");
       const db = getDb();
       const [existingPost] = await db
         .select()
@@ -1491,6 +1534,7 @@ export const resolvers = {
     ) => {
       const user = requireUser(context.user);
       const groupId = requireGroup(context.groupId);
+      await requireModule(groupId, "noticeBoard");
       const db = getDb();
       const [existingPost] = await db
         .select()
@@ -1519,6 +1563,7 @@ export const resolvers = {
     ) => {
       const user = requireUser(context.user);
       const groupId = requireGroup(context.groupId);
+      await requireModule(groupId, "events");
       await requireRole(user, groupId, LEADER_ROLES);
       const db = getDb();
       const [created] = await db
@@ -1547,6 +1592,7 @@ export const resolvers = {
     ) => {
       const user = requireUser(context.user);
       const groupId = requireGroup(context.groupId);
+      await requireModule(groupId, "events");
       const db = getDb();
       const [existingEvent] = await db
         .select()
@@ -1598,6 +1644,7 @@ export const resolvers = {
     ) => {
       const user = requireUser(context.user);
       const groupId = requireGroup(context.groupId);
+      await requireModule(groupId, "events");
       await requireMembership(user, groupId);
       const db = getDb();
       const [event] = await db
@@ -1621,6 +1668,7 @@ export const resolvers = {
     ) => {
       const user = requireUser(context.user);
       const groupId = requireGroup(context.groupId);
+      await requireModule(groupId, "events");
       const db = getDb();
       const [event] = await db
         .select()
@@ -1648,6 +1696,7 @@ export const resolvers = {
     ) => {
       const user = requireUser(context.user);
       const groupId = requireGroup(context.groupId);
+      await requireModule(groupId, "events");
       const db = getDb();
       const [event] = await db
         .select()
@@ -1679,6 +1728,7 @@ export const resolvers = {
     ) => {
       const user = requireUser(context.user);
       const groupId = requireGroup(context.groupId);
+      await requireModule(groupId, "tasks");
       await requireRole(user, groupId, LEADER_ROLES);
       const db = getDb();
       const [created] = await db
@@ -1715,6 +1765,7 @@ export const resolvers = {
     ) => {
       const user = requireUser(context.user);
       const groupId = requireGroup(context.groupId);
+      await requireModule(groupId, "tasks");
       const db = getDb();
       const [existingTask] = await db
         .select()
@@ -1769,6 +1820,7 @@ export const resolvers = {
     ) => {
       const user = requireUser(context.user);
       const groupId = requireGroup(context.groupId);
+      await requireModule(groupId, "tasks");
       const db = getDb();
       const [existingTask] = await db
         .select()
@@ -1798,6 +1850,7 @@ export const resolvers = {
     ) => {
       const user = requireUser(context.user);
       const groupId = requireGroup(context.groupId);
+      await requireModule(groupId, "tasks");
       const db = getDb();
       const [existingTask] = await db
         .select()
@@ -2132,6 +2185,45 @@ export const resolvers = {
         status: updated.status,
         memberCount: Number(countRow?.memberCount ?? 0),
       };
+    },
+    updateGroupModules: async (
+      _parent: unknown,
+      {
+        modules,
+      }: {
+        modules: Partial<StoredEnabledModules>;
+      },
+      context: GraphQLContext,
+    ) => {
+      const user = requireUser(context.user);
+      const groupId = requireGroup(context.groupId);
+      await requireRole(user, groupId, MODULE_SETTINGS_ROLES);
+      const db = getDb();
+      const [existing] = await db
+        .select()
+        .from(groups)
+        .where(eq(groups.id, groupId))
+        .limit(1);
+      if (!existing) {
+        throw new GraphQLError("Group not found", {
+          extensions: { code: "NOT_FOUND" },
+        });
+      }
+      const nextModules = mergeModuleUpdates(existing.enabledModules, modules);
+      const [updated] = await db
+        .update(groups)
+        .set({
+          enabledModules: nextModules,
+          updatedAt: new Date(),
+        })
+        .where(eq(groups.id, groupId))
+        .returning();
+      if (!updated) {
+        throw new GraphQLError("Group not found", {
+          extensions: { code: "NOT_FOUND" },
+        });
+      }
+      return mapGroup(updated);
     },
     assignUserToGroup: async (
       _parent: unknown,

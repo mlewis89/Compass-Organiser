@@ -4,25 +4,46 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Header, Message, Segment } from "semantic-ui-react";
 import { usePermissions } from "@/lib/client/usePermissions";
+import { useGroupModules } from "@/lib/client/useGroupModules";
 import GroupSkillsPanel from "@/components/GroupSkillsPanel";
 
 export default function GroupSkillsPage() {
   const router = useRouter();
-  const { permissions, loading } = usePermissions();
+  const { permissions, loading: permissionsLoading } = usePermissions();
+  const { enabledModules, loading: modulesLoading } = useGroupModules();
+
+  const loading = permissionsLoading || modulesLoading;
+  const canAccess =
+    enabledModules.skills &&
+    (permissions.canManageMembers || permissions.isPlatformAdmin);
 
   useEffect(() => {
-    if (!loading && !permissions.canManageMembers && !permissions.isPlatformAdmin) {
+    if (!loading && !canAccess) {
       const timer = window.setTimeout(() => {
         router.replace("/dashboard");
       }, 4000);
       return () => window.clearTimeout(timer);
     }
-  }, [loading, permissions.canManageMembers, permissions.isPlatformAdmin, router]);
+  }, [loading, canAccess, router]);
 
   if (loading) {
     return (
       <Segment padded>
         <p>Loading…</p>
+      </Segment>
+    );
+  }
+
+  if (!enabledModules.skills) {
+    return (
+      <Segment padded>
+        <Message warning>
+          <Message.Header>Skills are disabled</Message.Header>
+          <p>
+            Skills are available when the Tasks module is enabled. Ask a group
+            leader to turn Tasks on under Settings.
+          </p>
+        </Message>
       </Segment>
     );
   }

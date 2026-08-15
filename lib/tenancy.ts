@@ -36,6 +36,7 @@ export async function listUserActiveGroups(userId: string) {
       name: groups.name,
       slug: groups.slug,
       status: groups.status,
+      enabledModules: groups.enabledModules,
     })
     .from(memberships)
     .innerJoin(groups, eq(memberships.groupId, groups.id))

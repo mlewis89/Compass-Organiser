@@ -94,7 +94,16 @@ export type Permissions = {
   canManageEvents?: boolean | null;
   canManagePosts?: boolean | null;
   canManageMembers?: boolean | null;
+  canManageGroupModules?: boolean | null;
   isPlatformAdmin?: boolean | null;
+};
+
+export type EnabledModules = {
+  tasks: boolean;
+  events: boolean;
+  noticeBoard: boolean;
+  memberStats: boolean;
+  skills: boolean;
 };
 
 export type GroupSummary = {
@@ -102,6 +111,7 @@ export type GroupSummary = {
   name: string;
   slug: string;
   status?: string | null;
+  enabledModules?: EnabledModules | null;
 };
 
 export type AdminGroup = GroupSummary & {

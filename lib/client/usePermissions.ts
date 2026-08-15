@@ -9,6 +9,7 @@ const emptyPermissions: Permissions = {
   canManageEvents: false,
   canManagePosts: false,
   canManageMembers: false,
+  canManageGroupModules: false,
   isPlatformAdmin: false,
 };
 

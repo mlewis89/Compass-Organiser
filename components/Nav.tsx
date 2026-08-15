@@ -15,6 +15,7 @@ import {
 } from "semantic-ui-react";
 import { QUERY_MY_GROUPS } from "@/lib/client/queries";
 import { usePermissions } from "@/lib/client/usePermissions";
+import { useGroupModules } from "@/lib/client/useGroupModules";
 import type { GroupSummary } from "@/lib/client/types";
 
 export default function Nav() {
@@ -22,6 +23,7 @@ export default function Nav() {
   const router = useRouter();
   const { isLoaded, isSignedIn } = useAuth();
   const { permissions } = usePermissions();
+  const { enabledModules } = useGroupModules();
   const { data: groupsData, refetch: refetchGroups } = useQuery<{
     myGroups: GroupSummary[];
     activeGroup: GroupSummary | null;
@@ -58,20 +60,28 @@ export default function Nav() {
             name="Dashboard"
             active={pathname === "/dashboard"}
           />,
-          <MenuItem
-            key="tasks"
-            as="a"
-            href="/tasks"
-            name="Tasks"
-            active={pathname === "/tasks"}
-          />,
-          <MenuItem
-            key="events"
-            as="a"
-            href="/events"
-            name="Events"
-            active={pathname === "/events"}
-          />,
+          ...(enabledModules.tasks
+            ? [
+                <MenuItem
+                  key="tasks"
+                  as="a"
+                  href="/tasks"
+                  name="Tasks"
+                  active={pathname === "/tasks"}
+                />,
+              ]
+            : []),
+          ...(enabledModules.events
+            ? [
+                <MenuItem
+                  key="events"
+                  as="a"
+                  href="/events"
+                  name="Events"
+                  active={pathname === "/events"}
+                />,
+              ]
+            : []),
           <MenuItem
             key="members"
             as="a"
@@ -79,7 +89,8 @@ export default function Nav() {
             name="members"
             active={pathname === "/members"}
           />,
-          ...(permissions.canManageMembers || permissions.isPlatformAdmin
+          ...(enabledModules.skills &&
+          (permissions.canManageMembers || permissions.isPlatformAdmin)
             ? [
                 <MenuItem
                   key="skills"
@@ -87,6 +98,17 @@ export default function Nav() {
                   href="/skills"
                   name="Skills"
                   active={pathname === "/skills"}
+                />,
+              ]
+            : []),
+          ...(permissions.canManageGroupModules || permissions.isPlatformAdmin
+            ? [
+                <MenuItem
+                  key="settings"
+                  as="a"
+                  href="/settings"
+                  name="Settings"
+                  active={pathname === "/settings"}
                 />,
               ]
             : []),

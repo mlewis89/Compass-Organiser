@@ -205,6 +205,15 @@ export const typeDefs = `#graphql
     name: String!
     slug: String!
     status: String
+    enabledModules: EnabledModules!
+  }
+
+  type EnabledModules {
+    tasks: Boolean!
+    events: Boolean!
+    noticeBoard: Boolean!
+    memberStats: Boolean!
+    skills: Boolean!
   }
 
   type Permissions {
@@ -213,6 +222,7 @@ export const typeDefs = `#graphql
     canManageEvents: Boolean
     canManagePosts: Boolean
     canManageMembers: Boolean
+    canManageGroupModules: Boolean
     isPlatformAdmin: Boolean
   }
 
@@ -233,6 +243,13 @@ export const typeDefs = `#graphql
     name: String
     slug: String
     status: String
+  }
+
+  input updateGroupModulesInput {
+    tasks: Boolean
+    events: Boolean
+    noticeBoard: Boolean
+    memberStats: Boolean
   }
 
   input addMemberInput {
@@ -309,6 +326,7 @@ export const typeDefs = `#graphql
     removeMemberRole(userId: ID!, roleId: ID!): User
     createGroup(group: createGroupInput!): AdminGroup
     updateGroup(groupId: ID!, group: updateGroupInput!): AdminGroup
+    updateGroupModules(modules: updateGroupModulesInput!): Group
     assignUserToGroup(userId: ID!, groupId: ID!, roleIds: [ID]): User
     removeUserFromGroup(userId: ID!, groupId: ID!): User
   }

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import GroupPublicView from "@/components/GroupPublicView";
 import { findGroupBySlug } from "@/lib/tenancy";
+import { expandEnabledModules } from "@/lib/groupModules";
 
 export const dynamic = "force-dynamic";
 
@@ -30,5 +31,11 @@ export default async function GroupPublicPage({ params }: PageProps) {
     notFound();
   }
 
-  return <GroupPublicView groupName={group.name} groupSlug={group.slug} />;
+  return (
+    <GroupPublicView
+      groupName={group.name}
+      groupSlug={group.slug}
+      enabledModules={expandEnabledModules(group.enabledModules)}
+    />
+  );
 }

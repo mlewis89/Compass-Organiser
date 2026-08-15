@@ -467,3 +467,21 @@ export const REMOVE_USER_FROM_GROUP = gql`
     }
   }
 `;
+
+export const UPDATE_GROUP_MODULES = gql`
+  mutation UpdateGroupModules($modules: updateGroupModulesInput!) {
+    updateGroupModules(modules: $modules) {
+      _id
+      name
+      slug
+      status
+      enabledModules {
+        tasks
+        events
+        noticeBoard
+        memberStats
+        skills
+      }
+    }
+  }
+`;

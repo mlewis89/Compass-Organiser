@@ -1,7 +1,13 @@
 import { and, eq } from "drizzle-orm";
+import { GraphQLError } from "graphql";
 import { getDb } from "@/lib/db";
-import { membershipRoles, memberships, roles } from "@/db/schema";
+import { groups, membershipRoles, memberships, roles } from "@/db/schema";
 import { AuthenticationError, type JwtUser } from "@/lib/auth/jwt";
+import {
+  expandEnabledModules,
+  isModuleEnabled,
+  type ModuleKey,
+} from "@/lib/groupModules";
 
 export const LEADER_ROLES = [
   "GroupLeader",
@@ -15,6 +21,8 @@ export const LEADER_ROLES = [
 ] as const;
 
 export const GROUP_ADMIN_ROLES = ["GroupLeader", "AssistGroupLeader", "Secretary"] as const;
+
+export { MODULE_SETTINGS_ROLES } from "@/lib/groupModules";
 
 function adminEmails(): Set<string> {
   return new Set(
@@ -102,4 +110,30 @@ export async function requireOwnerOrRole(
     return;
   }
   await requireRole(user, groupId, allowed);
+}
+
+export async function getGroupEnabledModules(groupId: string) {
+  const db = getDb();
+  const [row] = await db
+    .select({ enabledModules: groups.enabledModules })
+    .from(groups)
+    .where(eq(groups.id, groupId))
+    .limit(1);
+  return expandEnabledModules(row?.enabledModules);
+}
+
+/** Reject when a group module is disabled. Use for authenticated mutations/queries. */
+export async function requireModule(
+  groupId: string | null,
+  module: ModuleKey,
+): Promise<void> {
+  if (!groupId) {
+    throw AuthenticationError;
+  }
+  const modules = await getGroupEnabledModules(groupId);
+  if (!isModuleEnabled(modules, module)) {
+    throw new GraphQLError(`The ${module} module is disabled for this group`, {
+      extensions: { code: "MODULE_DISABLED", module },
+    });
+  }
 }

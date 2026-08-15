@@ -23,12 +23,28 @@ const timestamps = {
     .notNull(),
 };
 
+export type GroupEnabledModules = {
+  tasks: boolean;
+  events: boolean;
+  noticeBoard: boolean;
+  memberStats: boolean;
+};
+
 export const groups = pgTable("groups", {
   id: uuid("id").defaultRandom().primaryKey(),
   name: text("name").notNull(),
   slug: text("slug").notNull(),
   status: text("status").notNull().default("active"),
   clerkOrgId: text("clerk_org_id"),
+  enabledModules: jsonb("enabled_modules")
+    .$type<GroupEnabledModules>()
+    .notNull()
+    .default({
+      tasks: true,
+      events: true,
+      noticeBoard: true,
+      memberStats: true,
+    }),
   ...timestamps,
 }, (table) => [uniqueIndex("groups_slug_idx").on(table.slug)]);
 

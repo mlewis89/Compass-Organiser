@@ -7,6 +7,13 @@ export const QUERY_PUBLIC_GROUP = gql`
       name
       slug
       status
+      enabledModules {
+        tasks
+        events
+        noticeBoard
+        memberStats
+        skills
+      }
     }
   }
 `;
@@ -260,6 +267,7 @@ export const QUERY_MY_PERMISSIONS = gql`
       canManageEvents
       canManagePosts
       canManageMembers
+      canManageGroupModules
       isPlatformAdmin
     }
   }
@@ -272,12 +280,26 @@ export const QUERY_MY_GROUPS = gql`
       name
       slug
       status
+      enabledModules {
+        tasks
+        events
+        noticeBoard
+        memberStats
+        skills
+      }
     }
     activeGroup {
       _id
       name
       slug
       status
+      enabledModules {
+        tasks
+        events
+        noticeBoard
+        memberStats
+        skills
+      }
     }
   }
 `;
