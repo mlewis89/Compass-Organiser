@@ -362,6 +362,7 @@ export const typeDefs = `#graphql
     updateTask(taskId: ID!, taskData: updateTask!): Task
     deleteTask(taskId: ID!): Task
     setTaskStatus(taskId: ID!, status: String!): Task
+    setTaskUnits(taskId: ID!, unitIds: [ID!]!): Task
     addUnit(unit: createUnitInput!): Unit
     updateUnit(unitId: ID!, unit: updateUnit!): Unit
     deleteUnit(unitId: ID!): Unit

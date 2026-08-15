@@ -40,8 +40,12 @@ export default function SkillPicker({
   const [createParentId, setCreateParentId] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
 
-  const { data, refetch } = useQuery<{ pageSkills: Skill[] }>(QUERY_USER_SKILLS);
-  const [createSkill, { loading: creating }] = useMutation(CREATE_SKILL);
+  const { data, refetch } = useQuery<{ pageSkills: Skill[] }>(QUERY_USER_SKILLS, {
+    fetchPolicy: "cache-and-network",
+  });
+  const [createSkill, { loading: creating }] = useMutation(CREATE_SKILL, {
+    refetchQueries: [{ query: QUERY_USER_SKILLS }],
+  });
 
   const catalog = data?.pageSkills ?? [];
   const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds]);
@@ -171,7 +175,12 @@ export default function SkillPicker({
                   }
                 />
                 {skill.scope === "group" ? (
-                  <Label size="mini" basic style={{ marginLeft: "0.5rem" }}>
+                  <Label
+                    size="mini"
+                    basic
+                    as="span"
+                    style={{ marginLeft: "0.5rem" }}
+                  >
                     Group
                   </Label>
                 ) : null}

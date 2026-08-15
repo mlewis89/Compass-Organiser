@@ -13,6 +13,7 @@ import {
   isWishlistStatus,
   type TaskStatus,
 } from "@/lib/taskStatus";
+import { getTaskDragId, setTaskDragData } from "@/lib/client/taskDrag";
 
 type Props = {
   tasks: Task[];
@@ -20,9 +21,10 @@ type Props = {
   hideCompleted?: boolean;
   onOpen: (taskId: string) => void;
   onStatusChange: (taskId: string, status: string) => void;
+  onMoveToBucket?: (taskId: string, status: TaskStatus) => void;
+  onTaskDragStart?: (taskId: string) => void;
+  onTaskDragEnd?: () => void;
 };
-
-const TASK_ID_MIME = "text/plain";
 
 function formatDuration(value?: number | null): string {
   if (value == null) {
@@ -51,12 +53,14 @@ function KanbanCard({
   nested = false,
   onOpen,
   onStatusChange,
+  onDragStart,
   onDragEnd,
 }: {
   task: TaskTreeNode;
   nested?: boolean;
   onOpen: (taskId: string) => void;
   onStatusChange: (taskId: string, status: string) => void;
+  onDragStart?: (taskId: string) => void;
   onDragEnd: () => void;
 }) {
   if (task.isStub) {
@@ -72,6 +76,7 @@ function KanbanCard({
                 nested
                 onOpen={onOpen}
                 onStatusChange={onStatusChange}
+                onDragStart={onDragStart}
                 onDragEnd={onDragEnd}
               />
             ))}
@@ -88,8 +93,8 @@ function KanbanCard({
       role="listitem"
       onDragStart={(event) => {
         event.stopPropagation();
-        event.dataTransfer.effectAllowed = "move";
-        event.dataTransfer.setData(TASK_ID_MIME, task._id);
+        setTaskDragData(event.dataTransfer, task._id);
+        onDragStart?.(task._id);
       }}
       onDragEnd={onDragEnd}
     >
@@ -116,7 +121,7 @@ function KanbanCard({
             positive
             onClick={() => onStatusChange(task._id, TASK_STATUS.complete)}
           >
-            Complete
+            Mark as complete
           </Button>
         )}
       </Button.Group>
@@ -129,11 +134,12 @@ function KanbanCard({
               nested
               onOpen={onOpen}
               onStatusChange={onStatusChange}
+              onDragStart={onDragStart}
               onDragEnd={onDragEnd}
             />
           ))}
-        </div>
-      ) : null}
+          </div>
+        ) : null}
     </article>
   );
 }
@@ -144,6 +150,9 @@ export default function TaskKanban({
   hideCompleted = false,
   onOpen,
   onStatusChange,
+  onMoveToBucket,
+  onTaskDragStart,
+  onTaskDragEnd,
 }: Props) {
   const [dropTarget, setDropTarget] = useState<TaskStatus | null>(null);
   const statuses = useMemo(
@@ -188,16 +197,26 @@ export default function TaskKanban({
 
   const handleDrop = (status: TaskStatus, event: DragEvent<HTMLElement>) => {
     event.preventDefault();
+    event.stopPropagation();
     setDropTarget(null);
-    const taskId = event.dataTransfer.getData(TASK_ID_MIME);
+    const taskId = getTaskDragId(event.dataTransfer);
     if (!taskId) {
       return;
     }
     const current = tasks.find((task) => task._id === taskId);
-    if (!current || columnForStatus(current.status) === status) {
+    if (!current) {
+      onMoveToBucket?.(taskId, status);
+      return;
+    }
+    if (columnForStatus(current.status) === status) {
       return;
     }
     onStatusChange(taskId, status);
+  };
+
+  const handleCardDragEnd = () => {
+    setDropTarget(null);
+    onTaskDragEnd?.();
   };
 
   return (
@@ -237,7 +256,8 @@ export default function TaskKanban({
                 task={task}
                 onOpen={onOpen}
                 onStatusChange={onStatusChange}
-                onDragEnd={() => setDropTarget(null)}
+                onDragStart={onTaskDragStart}
+                onDragEnd={handleCardDragEnd}
               />
             ))}
           </section>

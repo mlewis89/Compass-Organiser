@@ -229,6 +229,11 @@
   gap: 1rem;
 }
 
+.task-bucket.is-drop-target {
+  outline: 2px dashed #374c7a;
+  outline-offset: 2px;
+}
+
 .bulk-task-grid {
   margin-top: 0.5rem;
 }
@@ -560,6 +565,18 @@ textarea.bulk-task-paste {
 
 .task-list-row-open {
   cursor: pointer;
+}
+
+.task-list-draggable,
+.ui.table tr.task-list-draggable {
+  cursor: grab;
+  user-select: none;
+  -webkit-user-drag: element;
+}
+
+.task-list-draggable:active,
+.ui.table tr.task-list-draggable:active {
+  cursor: grabbing;
 }
 
 .task-list-parent-label {

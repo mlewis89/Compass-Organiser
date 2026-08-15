@@ -297,6 +297,18 @@ export const SET_TASK_STATUS = gql`
   }
 `;
 
+export const SET_TASK_UNITS = gql`
+  mutation SetTaskUnits($taskId: ID!, $unitIds: [ID!]!) {
+    setTaskUnits(taskId: $taskId, unitIds: $unitIds) {
+      _id
+      units {
+        _id
+        name
+      }
+    }
+  }
+`;
+
 const EVENT_FIELDS = `
   _id
   title

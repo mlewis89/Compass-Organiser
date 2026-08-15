@@ -185,7 +185,8 @@ export default function UnitsPanel() {
       <Header as="h3">Units</Header>
       <p>
         Units are named teams inside this group. Assign members here, then pick a
-        unit on a task so everyone in it sees that task in My Tasks.
+        unit on a task so members can be suggested that work. It only appears in
+        My Tasks after someone is named as responsible or adds it themselves.
       </p>
       {message ? <Message positive content={message} /> : null}
       {error ? <Message negative content={error} /> : null}

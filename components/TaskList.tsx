@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useLayoutEffect, useMemo, useRef, useState, type DragEvent, type ReactNode } from "react";
 import {
   Button,
   Icon,
@@ -20,6 +20,7 @@ import {
   type TaskTreeNode,
 } from "@/lib/client/taskTree";
 import { isCompleteStatus, isWishlistStatus } from "@/lib/taskStatus";
+import { getTaskDragId, setTaskDragData } from "@/lib/client/taskDrag";
 
 export type TaskColumnKey =
   | "name"
@@ -50,6 +51,11 @@ type TaskListProps = {
   onComplete?: (task: Task) => void;
   onAddSubtask?: (task: Task) => void;
   nameExtraAction?: (task: Task) => ReactNode;
+  statusExtraAction?: (task: Task) => ReactNode;
+  canDrag?: boolean;
+  onTaskDragStart?: (taskId: string) => void;
+  onTaskDragEnd?: () => void;
+  onTaskDrop?: (taskId: string) => void;
 };
 
 type StatusMeta = {
@@ -299,9 +305,15 @@ export default function TaskList({
   onComplete,
   onAddSubtask,
   nameExtraAction,
+  statusExtraAction,
+  canDrag = false,
+  onTaskDragStart,
+  onTaskDragEnd,
+  onTaskDrop,
 }: TaskListProps) {
   const listRef = useRef<HTMLDivElement>(null);
   const tableWrapRef = useRef<HTMLDivElement>(null);
+  const skipClickRef = useRef(false);
   const [compact, setCompact] = useState(false);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(() => new Set());
@@ -415,8 +427,22 @@ export default function TaskList({
           onComplete(task);
         }}
       >
-        Complete
+        Mark as complete
       </Button>
+    );
+  };
+
+  const statusExtraFor = (task: TaskTreeNode) => {
+    if (task.isStub || !statusExtraAction) {
+      return null;
+    }
+    return (
+      <span
+        onClick={(event) => event.stopPropagation()}
+        onKeyDown={(event) => event.stopPropagation()}
+      >
+        {statusExtraAction(task)}
+      </span>
     );
   };
 
@@ -426,18 +452,63 @@ export default function TaskList({
     }
     const nameActions = nameActionsFor(task);
     const completeButton = completeButtonFor(task);
-    if (!nameActions && !completeButton) {
+    const statusExtra = statusExtraFor(task);
+    if (!nameActions && !completeButton && !statusExtra) {
       return null;
     }
     return (
       <>
         {nameActions}
         {completeButton}
+        {statusExtra}
       </>
     );
   };
 
-  const showActions = Boolean(onOpen || onComplete || onAddSubtask || nameExtraAction);
+  const showActions = Boolean(
+    onOpen || onComplete || onAddSubtask || nameExtraAction || statusExtraAction,
+  );
+
+  const beginTaskDrag = (task: TaskTreeNode, event: DragEvent<HTMLElement>) => {
+    event.stopPropagation();
+    skipClickRef.current = true;
+    setTaskDragData(event.dataTransfer, task._id);
+    onTaskDragStart?.(task._id);
+  };
+
+  const finishTaskDrag = () => {
+    onTaskDragEnd?.();
+    window.setTimeout(() => {
+      skipClickRef.current = false;
+    }, 0);
+  };
+
+  const handleListDragOver = (event: DragEvent<HTMLDivElement>) => {
+    if (!onTaskDrop) {
+      return;
+    }
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+  };
+
+  const handleListDrop = (event: DragEvent<HTMLDivElement>) => {
+    if (!onTaskDrop) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    const taskId = getTaskDragId(event.dataTransfer);
+    if (taskId) {
+      onTaskDrop(taskId);
+    }
+  };
+
+  const handleRowClick = (task: TaskTreeNode) => {
+    if (skipClickRef.current) {
+      return;
+    }
+    onOpen?.(task);
+  };
 
   const renderCell = (task: TaskTreeNode, key: TaskColumnKey) => {
     if (key === "name") {
@@ -461,6 +532,7 @@ export default function TaskList({
         <div className="task-list-status-cell">
           <StatusLabel status={task.status} />
           {completeButtonFor(task)}
+          {statusExtraFor(task)}
         </div>
       );
     }
@@ -500,6 +572,8 @@ export default function TaskList({
     <div
       ref={listRef}
       className={compact ? "task-list is-compact" : "task-list"}
+      onDragOver={handleListDragOver}
+      onDrop={handleListDrop}
     >
       <div className="task-list-desktop" ref={tableWrapRef}>
         <Table celled selectable unstackable>
@@ -513,18 +587,27 @@ export default function TaskList({
           <TableBody>
             {rows.map((task) => {
               const canOpen = Boolean(onOpen) && !task.isStub;
+              const rowDraggable = canDrag && !task.isStub;
               return (
                 <TableRow
                   key={task._id}
+                  draggable={rowDraggable}
                   className={
                     [
                       task.isStub ? "task-list-stub-row" : null,
                       canOpen ? "task-list-row-open" : null,
+                      rowDraggable ? "task-list-draggable" : null,
                     ]
                       .filter(Boolean)
                       .join(" ") || undefined
                   }
-                  onClick={canOpen ? () => onOpen?.(task) : undefined}
+                  onDragStart={
+                    rowDraggable
+                      ? (event: DragEvent<HTMLElement>) => beginTaskDrag(task, event)
+                      : undefined
+                  }
+                  onDragEnd={rowDraggable ? finishTaskDrag : undefined}
+                  onClick={canOpen ? () => handleRowClick(task) : undefined}
                 >
                   {columns.map((column) => (
                     <TableCell key={`${task._id}-${column.key}`}>
@@ -552,6 +635,9 @@ export default function TaskList({
               showParentLabel={showParentLabel}
               showActions={showActions}
               actionsFor={actionsFor}
+              canDrag={canDrag}
+              onTaskDragStart={onTaskDragStart}
+              onTaskDragEnd={onTaskDragEnd}
             />
           ))}
         </div>
@@ -570,6 +656,9 @@ function MobileTaskBranch({
   showParentLabel,
   showActions,
   actionsFor,
+  canDrag,
+  onTaskDragStart,
+  onTaskDragEnd,
 }: {
   node: TaskTreeNode;
   detailColumns: TaskColumn[];
@@ -580,14 +669,38 @@ function MobileTaskBranch({
   showParentLabel: boolean;
   showActions: boolean;
   actionsFor: (task: TaskTreeNode) => ReactNode;
+  canDrag: boolean;
+  onTaskDragStart?: (taskId: string) => void;
+  onTaskDragEnd?: () => void;
 }) {
   const expanded = expandedIds.has(node._id);
   const detailId = `task-detail-${node._id}`;
   const meta = node.isStub ? [] : summaryMetaParts(node, mobileSummary);
   const nestedChildren = nest ? node.children : [];
+  const rowDraggable = canDrag && !node.isStub;
 
   return (
-    <div className={expanded ? "task-list-row is-expanded" : "task-list-row"}>
+    <div
+      className={
+        [
+          expanded ? "task-list-row is-expanded" : "task-list-row",
+          rowDraggable ? "task-list-draggable" : null,
+        ]
+          .filter(Boolean)
+          .join(" ")
+      }
+      draggable={rowDraggable}
+      onDragStart={
+        rowDraggable
+          ? (event) => {
+              event.stopPropagation();
+              setTaskDragData(event.dataTransfer, node._id);
+              onTaskDragStart?.(node._id);
+            }
+          : undefined
+      }
+      onDragEnd={rowDraggable ? onTaskDragEnd : undefined}
+    >
       <button
         type="button"
         className="task-list-summary"
@@ -664,6 +777,9 @@ function MobileTaskBranch({
                   showParentLabel={showParentLabel}
                   showActions={showActions}
                   actionsFor={actionsFor}
+                  canDrag={canDrag}
+                  onTaskDragStart={onTaskDragStart}
+                  onTaskDragEnd={onTaskDragEnd}
                 />
               ))}
             </div>

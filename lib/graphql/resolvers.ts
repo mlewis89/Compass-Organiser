@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, inArray, ne, or, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, isNull, ne, or, sql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { GraphQLError } from "graphql";
 import { clerkClient } from "@clerk/nextjs/server";
@@ -455,6 +455,20 @@ async function getSkillOrThrow(skillId: string) {
   return skill;
 }
 
+async function assertSkillAssignable(skillId: string, groupId: string) {
+  const skill = await getSkillOrThrow(skillId);
+  if (skill.status === "archived") {
+    throw new GraphQLError("That skill is archived");
+  }
+  const inPlatformCatalog =
+    skill.scope === "platform" && skill.status === "approved";
+  const inGroupCatalog = skill.scope === "group" && skill.groupId === groupId;
+  if (!inPlatformCatalog && !inGroupCatalog) {
+    throw new GraphQLError("That skill is not available in this group");
+  }
+  return skill;
+}
+
 async function requireSkillCatalogAccess(
   user: NonNullable<GraphQLContext["user"]>,
   skill: typeof skills.$inferSelect,
@@ -706,7 +720,7 @@ async function resolveParentTaskId(
   return parentTaskId;
 }
 
-/** Tasks claimed via user_tasks, personally responsible, or assigned via a unit. */
+/** Tasks claimed via user_tasks or personally responsible. */
 async function loadTasksForUser(
   userId: string,
   groupId?: string | null,
@@ -718,11 +732,8 @@ async function loadTasksForUser(
   const responsibleWhere = groupId
     ? and(eq(taskResponsible.userId, userId), eq(tasks.groupId, groupId))
     : eq(taskResponsible.userId, userId);
-  const unitWhere = groupId
-    ? and(eq(unitMembers.userId, userId), eq(tasks.groupId, groupId))
-    : eq(unitMembers.userId, userId);
 
-  const [claimed, responsible, unitAssigned] = await Promise.all([
+  const [claimed, responsible] = await Promise.all([
     db
       .select({ task: tasks })
       .from(userTasks)
@@ -733,12 +744,6 @@ async function loadTasksForUser(
       .from(taskResponsible)
       .innerJoin(tasks, eq(taskResponsible.taskId, tasks.id))
       .where(responsibleWhere),
-    db
-      .select({ task: tasks })
-      .from(unitMembers)
-      .innerJoin(taskUnits, eq(unitMembers.unitId, taskUnits.unitId))
-      .innerJoin(tasks, eq(taskUnits.taskId, tasks.id))
-      .where(unitWhere),
   ]);
 
   const byId = new Map<string, TaskRow>();
@@ -746,9 +751,6 @@ async function loadTasksForUser(
     byId.set(task.id, task);
   }
   for (const { task } of responsible) {
-    byId.set(task.id, task);
-  }
-  for (const { task } of unitAssigned) {
     byId.set(task.id, task);
   }
   return [...byId.values()];
@@ -1175,6 +1177,9 @@ export const resolvers = {
   Event: {
     _id: (parent: { id?: string; _id?: string }) => parent._id ?? parent.id,
   },
+  Skill: {
+    _id: (parent: { id?: string; _id?: string }) => parent._id ?? parent.id,
+  },
   Query: {
     publicGroup: async (_parent: unknown, { slug }: { slug: string }) => {
       const group = await findGroupBySlug(slug);
@@ -1341,52 +1346,78 @@ export const resolvers = {
         }
       }
 
-      if (skillIds.length === 0) {
-        return [];
-      }
       if (!limit || limit <= 0) {
         return [];
       }
 
-      const matching = await db
-        .select({ task: tasks })
-        .from(taskSkills)
-        .innerJoin(tasks, eq(taskSkills.taskId, tasks.id))
-        .where(
-          and(eq(tasks.groupId, groupId), inArray(taskSkills.skillId, skillIds)),
-        );
+      const userUnitIdList = await loadUserUnitIds(targetId, groupId);
+      const userUnitIds = new Set(userUnitIdList);
 
-      const assigned = await db
-        .select({ taskId: userTasks.taskId })
-        .from(userTasks)
-        .where(eq(userTasks.userId, targetId));
-      const assignedSet = new Set(assigned.map((row) => row.taskId));
+      const [matching, unskilled, unitAssigned] = await Promise.all([
+        skillIds.length === 0
+          ? Promise.resolve([] as Array<{ task: TaskRow }>)
+          : db
+              .select({ task: tasks })
+              .from(taskSkills)
+              .innerJoin(tasks, eq(taskSkills.taskId, tasks.id))
+              .where(
+                and(eq(tasks.groupId, groupId), inArray(taskSkills.skillId, skillIds)),
+              ),
+        db
+          .select({ task: tasks })
+          .from(tasks)
+          .leftJoin(taskSkills, eq(tasks.id, taskSkills.taskId))
+          .where(and(eq(tasks.groupId, groupId), isNull(taskSkills.taskId))),
+        userUnitIdList.length === 0
+          ? Promise.resolve([] as Array<{ task: TaskRow }>)
+          : db
+              .select({ task: tasks })
+              .from(taskUnits)
+              .innerJoin(tasks, eq(taskUnits.taskId, tasks.id))
+              .where(
+                and(
+                  eq(tasks.groupId, groupId),
+                  inArray(taskUnits.unitId, userUnitIdList),
+                ),
+              ),
+      ]);
 
-      const responsibleRows = await db
-        .select({ taskId: taskResponsible.taskId })
-        .from(taskResponsible)
-        .where(eq(taskResponsible.userId, targetId));
-      const responsibleSet = new Set(responsibleRows.map((row) => row.taskId));
+      const unique = new Map<string, TaskRow>();
+      for (const { task } of matching) {
+        unique.set(task.id, task);
+      }
+      for (const { task } of unskilled) {
+        unique.set(task.id, task);
+      }
+      for (const { task } of unitAssigned) {
+        unique.set(task.id, task);
+      }
 
-      const unitTaskRows = await db
-        .select({ taskId: taskUnits.taskId })
-        .from(unitMembers)
-        .innerJoin(taskUnits, eq(unitMembers.unitId, taskUnits.unitId))
-        .where(eq(unitMembers.userId, targetId));
-      const unitTaskSet = new Set(unitTaskRows.map((row) => row.taskId));
+      const candidateIds = [...unique.keys()];
+      if (candidateIds.length === 0) {
+        return [];
+      }
 
-      const unique = new Map(matching.map(({ task }) => [task.id, task]));
-      const userUnitIds = new Set(await loadUserUnitIds(targetId, groupId));
-      const unitIdsByTask = await loadUnitIdsByTaskIds([...unique.keys()]);
+      const [claimedRows, responsibleRows, unitIdsByTask] = await Promise.all([
+        db
+          .select({ taskId: userTasks.taskId })
+          .from(userTasks)
+          .where(inArray(userTasks.taskId, candidateIds)),
+        db
+          .select({ taskId: taskResponsible.taskId })
+          .from(taskResponsible)
+          .where(inArray(taskResponsible.taskId, candidateIds)),
+        loadUnitIdsByTaskIds(candidateIds),
+      ]);
+      const takenSet = new Set([
+        ...claimedRows.map((row) => row.taskId),
+        ...responsibleRows.map((row) => row.taskId),
+      ]);
       const eligible = [...unique.values()].filter((task) => {
         if (isCompleteStatus(task.status)) {
           return false;
         }
-        if (
-          assignedSet.has(task.id) ||
-          responsibleSet.has(task.id) ||
-          unitTaskSet.has(task.id)
-        ) {
+        if (takenSet.has(task.id)) {
           return false;
         }
         const taskUnitIds = unitIdsByTask.get(task.id) ?? [];
@@ -1914,8 +1945,9 @@ export const resolvers = {
       const groupId = requireGroup(context.groupId);
       await requireModule(groupId, "skills");
       if (!skillId) {
-        return null;
+        throw new GraphQLError("Skill is required");
       }
+      await assertSkillAssignable(skillId, groupId);
       const targetId = userId || user._id;
       if (targetId !== user._id) {
         await requireRole(user, context.groupId, GROUP_ADMIN_ROLES);
@@ -2675,6 +2707,36 @@ export const resolvers = {
         .update(tasks)
         .set({ status, updatedAt: new Date() })
         .where(eq(tasks.id, taskId))
+        .returning();
+      return updated ? mapTask(updated) : null;
+    },
+    setTaskUnits: async (
+      _parent: unknown,
+      { taskId, unitIds }: { taskId: string; unitIds: string[] },
+      context: GraphQLContext,
+    ) => {
+      const user = requireUser(context.user);
+      const groupId = requireGroup(context.groupId);
+      await requireModule(groupId, "tasks");
+      await requireRole(user, groupId, LEADER_ROLES);
+      const db = getDb();
+      const [existingTask] = await db
+        .select()
+        .from(tasks)
+        .where(and(eq(tasks.id, taskId), eq(tasks.groupId, groupId)))
+        .limit(1);
+      if (!existingTask) {
+        return null;
+      }
+      await setTaskUnits(
+        taskId,
+        groupId,
+        unitIds.map((unitId) => ({ _id: unitId })),
+      );
+      const [updated] = await db
+        .update(tasks)
+        .set({ updatedAt: new Date() })
+        .where(and(eq(tasks.id, taskId), eq(tasks.groupId, groupId)))
         .returning();
       return updated ? mapTask(updated) : null;
     },

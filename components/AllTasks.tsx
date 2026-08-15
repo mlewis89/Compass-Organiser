@@ -1,10 +1,10 @@
 "use client";
 
 import { useMutation, useQuery } from "@apollo/client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type DragEvent, type ReactNode } from "react";
 import { Button, Checkbox, Label, Segment } from "semantic-ui-react";
 import { QUERY_UNIT_BUCKETS, QUERY_UNASSIGNED_TASKS } from "@/lib/client/queries";
-import { SET_TASK_STATUS } from "@/lib/client/mutations";
+import { SET_TASK_STATUS, SET_TASK_UNITS } from "@/lib/client/mutations";
 import type { Task, UnitBucket } from "@/lib/client/types";
 import { usePermissions } from "@/lib/client/usePermissions";
 import TaskKanban from "@/components/TaskKanban";
@@ -13,6 +13,7 @@ import BulkTaskModal from "@/components/BulkTaskModal";
 import TaskModal from "@/components/TaskModal";
 import { isCompleteStatus, isWishlistStatus, TASK_STATUS } from "@/lib/taskStatus";
 import { filterTaskForest, taskForestHasVisible } from "@/lib/client/taskTree";
+import { getTaskDragId } from "@/lib/client/taskDrag";
 
 const SHOW_EMPTY_BUCKETS_KEY = "all-tasks-show-empty-buckets";
 const HIDE_WISHLIST_KEY = "all-tasks-hide-wishlist";
@@ -20,6 +21,33 @@ const HIDE_COMPLETED_KEY = "all-tasks-hide-completed";
 const LEGACY_HIDE_WISHLIST_KEY = "suggested-hide-wishlist";
 const VIEW_KEY = "tasks-bucket-view";
 type BucketView = "list" | "kanban";
+const UNASSIGNED_KEY = "__unassigned__";
+
+function bucketKey(unitId: string | null): string {
+  return unitId ?? UNASSIGNED_KEY;
+}
+
+function taskBelongsToBucket(task: Task, unitId: string | null): boolean {
+  const ids = (task.units ?? []).map((unit) => unit._id);
+  if (unitId == null) {
+    return ids.length === 0;
+  }
+  return ids.includes(unitId);
+}
+
+function findTaskInBuckets(
+  taskId: string,
+  buckets: UnitBucket[],
+  unassigned: Task[],
+): Task | undefined {
+  for (const bucket of buckets) {
+    const found = bucket.tasks.find((task) => task._id === taskId);
+    if (found) {
+      return found;
+    }
+  }
+  return unassigned.find((task) => task._id === taskId);
+}
 
 const columns: TaskColumn[] = [
   { key: "name", label: "Name" },
@@ -39,6 +67,11 @@ function TaskBucketTable({
   onOpen,
   onComplete,
   onAddSubtask,
+  dropHint,
+  canDrag,
+  onTaskDragStart,
+  onTaskDragEnd,
+  onTaskDrop,
 }: {
   tasks: Task[];
   hideWishlist: boolean;
@@ -46,9 +79,14 @@ function TaskBucketTable({
   onOpen: (taskId: string) => void;
   onComplete: (taskId: string) => void;
   onAddSubtask?: (task: Task) => void;
+  dropHint?: boolean;
+  canDrag?: boolean;
+  onTaskDragStart?: (taskId: string) => void;
+  onTaskDragEnd?: () => void;
+  onTaskDrop?: (taskId: string) => void;
 }) {
   if (tasks.length === 0) {
-    return <p>No tasks in this bucket.</p>;
+    return <p>{dropHint ? "Drop a task here." : "No tasks in this bucket."}</p>;
   }
 
   return (
@@ -61,7 +99,67 @@ function TaskBucketTable({
       onOpen={(task) => onOpen(task._id)}
       onComplete={(task) => onComplete(task._id)}
       onAddSubtask={onAddSubtask}
+      canDrag={canDrag}
+      onTaskDragStart={onTaskDragStart}
+      onTaskDragEnd={onTaskDragEnd}
+      onTaskDrop={onTaskDrop}
     />
+  );
+}
+
+function TaskBucketSection({
+  label,
+  unitId,
+  dropActive,
+  canDrop,
+  onDragOverBucket,
+  onDragLeaveBucket,
+  onDropTask,
+  children,
+}: {
+  label: string;
+  unitId: string | null;
+  dropActive: boolean;
+  canDrop: boolean;
+  onDragOverBucket: (unitId: string | null) => void;
+  onDragLeaveBucket: (unitId: string | null) => void;
+  onDropTask: (unitId: string | null, event: DragEvent<HTMLElement>) => void;
+  children: ReactNode;
+}) {
+  return (
+    <Segment
+      padded
+      className={dropActive ? "task-bucket is-drop-target" : "task-bucket"}
+      onDragOver={
+        canDrop
+          ? (event: DragEvent<HTMLElement>) => {
+              event.preventDefault();
+              event.dataTransfer.dropEffect = "move";
+              onDragOverBucket(unitId);
+            }
+          : undefined
+      }
+      onDragLeave={
+        canDrop
+          ? (event: DragEvent<HTMLElement>) => {
+              if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+                onDragLeaveBucket(unitId);
+              }
+            }
+          : undefined
+      }
+      onDrop={
+        canDrop
+          ? (event: DragEvent<HTMLElement>) => {
+              event.preventDefault();
+              onDropTask(unitId, event);
+            }
+          : undefined
+      }
+    >
+      <Label attached="top">{label}</Label>
+      {children}
+    </Segment>
   );
 }
 
@@ -75,6 +173,7 @@ export default function AllTasks() {
     unassignedTasks: Task[];
   }>(QUERY_UNASSIGNED_TASKS, { skip: !canViewAll });
   const [setTaskStatus] = useMutation(SET_TASK_STATUS);
+  const [setTaskUnits] = useMutation(SET_TASK_UNITS);
   const [activeTask, setActiveTask] = useState<string | null>(null);
   const [parentTask, setParentTask] = useState<Task | null>(null);
   const [showTaskModal, setShowTaskModal] = useState(false);
@@ -83,7 +182,11 @@ export default function AllTasks() {
   const [hideWishlist, setHideWishlist] = useState(true);
   const [hideCompleted, setHideCompleted] = useState(true);
   const [view, setView] = useState<BucketView>("list");
+  const [dragTaskId, setDragTaskId] = useState<string | null>(null);
+  const [dropBucketId, setDropBucketId] = useState<string | null>(null);
 
+  const canMoveBuckets = Boolean(permissions.canManageTasks);
+  const isDragging = dragTaskId != null;
   const buckets = data?.unitBuckets ?? [];
   const unassigned = unassignedData?.unassignedTasks ?? [];
   const bucketVisible = (tasks: Task[]) =>
@@ -99,14 +202,18 @@ export default function AllTasks() {
         })
       : tasks;
   const hasVisible = (tasks: Task[]) => taskForestHasVisible(bucketVisible(tasks));
-  const visibleBuckets = showEmptyBuckets
-    ? buckets
-    : buckets.filter((bucket) => hasVisible(bucket.tasks));
+  const visibleBuckets =
+    showEmptyBuckets || isDragging
+      ? buckets
+      : buckets.filter((bucket) => hasVisible(bucket.tasks));
   const showUnassigned =
-    canViewAll && (showEmptyBuckets || hasVisible(unassigned));
+    canViewAll && (showEmptyBuckets || isDragging || hasVisible(unassigned));
   const emptyBucketCount =
     buckets.filter((bucket) => !hasVisible(bucket.tasks)).length +
     (canViewAll && !hasVisible(unassigned) ? 1 : 0);
+  const dragTask = dragTaskId
+    ? findTaskInBuckets(dragTaskId, buckets, unassigned)
+    : undefined;
 
   useEffect(() => {
     const storedEmpty = window.localStorage.getItem(SHOW_EMPTY_BUCKETS_KEY);
@@ -172,11 +279,47 @@ export default function AllTasks() {
     void setTaskStatus({ variables: { taskId, status } }).then(() => refresh());
   };
 
+  const clearDrag = () => {
+    setDragTaskId(null);
+    setDropBucketId(null);
+  };
+
+  const moveTaskToBucket = (taskId: string, unitId: string | null, status?: string) => {
+    const task = findTaskInBuckets(taskId, buckets, unassigned);
+    if (!task) {
+      return;
+    }
+    const ops: Promise<unknown>[] = [];
+    if (!taskBelongsToBucket(task, unitId)) {
+      ops.push(
+        setTaskUnits({
+          variables: { taskId, unitIds: unitId ? [unitId] : [] },
+        }),
+      );
+    }
+    if (status && task.status !== status) {
+      ops.push(setTaskStatus({ variables: { taskId, status } }));
+    }
+    if (ops.length === 0) {
+      return;
+    }
+    void Promise.all(ops).then(() => refresh());
+  };
+
+  const handleBucketDrop = (unitId: string | null, event: DragEvent<HTMLElement>) => {
+    setDropBucketId(null);
+    const taskId = getTaskDragId(event.dataTransfer);
+    if (!taskId) {
+      return;
+    }
+    moveTaskToBucket(taskId, unitId);
+  };
+
   if (loading || !data?.unitBuckets) {
     return <p>Loading</p>;
   }
 
-  const renderBucket = (tasks: Task[]) =>
+  const renderBucket = (tasks: Task[], unitId: string | null) =>
     view === "kanban" ? (
       <TaskKanban
         tasks={tasks}
@@ -184,6 +327,13 @@ export default function AllTasks() {
         hideCompleted={hideCompleted}
         onOpen={openTask}
         onStatusChange={changeTaskStatus}
+        onMoveToBucket={
+          canMoveBuckets
+            ? (taskId, status) => moveTaskToBucket(taskId, unitId, status)
+            : undefined
+        }
+        onTaskDragStart={canMoveBuckets ? setDragTaskId : undefined}
+        onTaskDragEnd={clearDrag}
       />
     ) : (
       <TaskBucketTable
@@ -193,6 +343,11 @@ export default function AllTasks() {
         onOpen={openTask}
         onComplete={(taskId) => changeTaskStatus(taskId, TASK_STATUS.complete)}
         onAddSubtask={permissions.canManageTasks ? openSubtask : undefined}
+        dropHint={isDragging}
+        canDrag={canMoveBuckets}
+        onTaskDragStart={setDragTaskId}
+        onTaskDragEnd={clearDrag}
+        onTaskDrop={(taskId) => moveTaskToBucket(taskId, unitId)}
       />
     );
 
@@ -265,17 +420,42 @@ export default function AllTasks() {
       ) : null}
 
       {visibleBuckets.map((bucket) => (
-        <Segment padded key={bucket.unit._id}>
-          <Label attached="top">{bucket.unit.name}</Label>
-          {renderBucket(bucket.tasks)}
-        </Segment>
+        <TaskBucketSection
+          key={bucket.unit._id}
+          label={bucket.unit.name}
+          unitId={bucket.unit._id}
+          dropActive={
+            dropBucketId === bucketKey(bucket.unit._id) &&
+            Boolean(dragTask && !taskBelongsToBucket(dragTask, bucket.unit._id))
+          }
+          canDrop={canMoveBuckets}
+          onDragOverBucket={(unitId) => setDropBucketId(bucketKey(unitId))}
+          onDragLeaveBucket={(unitId) =>
+            setDropBucketId((current) => (current === bucketKey(unitId) ? null : current))
+          }
+          onDropTask={handleBucketDrop}
+        >
+          {renderBucket(bucket.tasks, bucket.unit._id)}
+        </TaskBucketSection>
       ))}
 
       {showUnassigned ? (
-        <Segment padded>
-          <Label attached="top">Unassigned</Label>
-          {renderBucket(unassigned)}
-        </Segment>
+        <TaskBucketSection
+          label="Unassigned"
+          unitId={null}
+          dropActive={
+            dropBucketId === UNASSIGNED_KEY &&
+            Boolean(dragTask && !taskBelongsToBucket(dragTask, null))
+          }
+          canDrop={canMoveBuckets}
+          onDragOverBucket={(unitId) => setDropBucketId(bucketKey(unitId))}
+          onDragLeaveBucket={(unitId) =>
+            setDropBucketId((current) => (current === bucketKey(unitId) ? null : current))
+          }
+          onDropTask={handleBucketDrop}
+        >
+          {renderBucket(unassigned, null)}
+        </TaskBucketSection>
       ) : null}
 
       {showTaskModal ? (

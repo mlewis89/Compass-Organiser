@@ -43,7 +43,9 @@ export default function GroupSkillsPanel() {
   );
   const { data: catalogData } = useQuery<{ pageSkills: Skill[] }>(QUERY_USER_SKILLS);
 
-  const [createSkill, { loading: creating }] = useMutation(CREATE_SKILL);
+  const [createSkill, { loading: creating }] = useMutation(CREATE_SKILL, {
+    refetchQueries: [{ query: QUERY_USER_SKILLS }, { query: QUERY_GROUP_SKILLS }],
+  });
   const [updateSkill] = useMutation(UPDATE_SKILL_CATALOG);
   const [archiveSkill] = useMutation(ARCHIVE_SKILL);
   const [promoteSkill] = useMutation(REQUEST_PROMOTE_SKILL);

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery } from "@apollo/client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Button,
   Icon,
@@ -16,52 +16,81 @@ import {
 import { QUERY_USER_SKILLS } from "@/lib/client/queries";
 import { ASSIGN_USER_SKILLS, REMOVE_USER_SKILLS } from "@/lib/client/mutations";
 import { useCompassContext } from "@/lib/client/CompassContext";
-import { ADD_SKILLS, REMOVE_SKILLS, UPDATE_SKILLS } from "@/lib/client/actions";
+import { UPDATE_SKILLS } from "@/lib/client/actions";
 import type { Skill } from "@/lib/client/types";
 import SkillPicker from "@/components/SkillPicker";
+
+function withActiveIds(skills: Skill[], activeIds: Set<string>): Skill[] {
+  return skills.map((skill) => ({
+    ...skill,
+    isActiveForUser: activeIds.has(skill._id),
+  }));
+}
 
 export default function MySkills() {
   const [state, dispatch] = useCompassContext();
   const [addOpen, setAddOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useQuery<{ pageSkills: Skill[] }>(QUERY_USER_SKILLS, {
-    onCompleted: (result) => {
-      dispatch({ type: UPDATE_SKILLS, payload: result.pageSkills });
-    },
+  const { data, refetch } = useQuery<{ pageSkills: Skill[] }>(QUERY_USER_SKILLS, {
+    fetchPolicy: "cache-and-network",
   });
   const [addUserSkill] = useMutation(ASSIGN_USER_SKILLS);
   const [removeUserSkill] = useMutation(REMOVE_USER_SKILLS);
+
+  useEffect(() => {
+    if (data?.pageSkills) {
+      dispatch({ type: UPDATE_SKILLS, payload: data.pageSkills });
+    }
+  }, [data, dispatch]);
+
+  useEffect(() => {
+    if (addOpen) {
+      void refetch();
+    }
+  }, [addOpen, refetch]);
 
   const mySkills = state.skills.filter((skill) => skill.isActiveForUser);
   const selectedIds = mySkills.map((skill) => skill._id);
 
   const handleToggle = async (nextSkills: Skill[]) => {
     setError(null);
-    const nextIds = new Set(nextSkills.map((skill) => skill._id));
+    const nextIds = new Set(nextSkills.map((skill) => skill._id).filter(Boolean));
     const currentIds = new Set(selectedIds);
 
     const toAdd = [...nextIds].filter((id) => !currentIds.has(id));
     const toRemove = [...currentIds].filter((id) => !nextIds.has(id));
-
-    for (const skillId of toAdd) {
-      dispatch({ type: ADD_SKILLS, payload: skillId });
-      try {
-        await addUserSkill({ variables: { skillId } });
-      } catch (err) {
-        dispatch({ type: REMOVE_SKILLS, payload: skillId });
-        setError(err instanceof Error ? err.message : "Could not add skill");
-      }
+    if (toAdd.length === 0 && toRemove.length === 0) {
+      return;
     }
 
-    for (const skillId of toRemove) {
-      dispatch({ type: REMOVE_SKILLS, payload: skillId });
-      try {
-        await removeUserSkill({ variables: { skillId } });
-      } catch (err) {
-        dispatch({ type: ADD_SKILLS, payload: skillId });
-        setError(err instanceof Error ? err.message : "Could not remove skill");
+    const byId = new Map(
+      [...(data?.pageSkills ?? state.skills), ...nextSkills].map((skill) => [
+        skill._id,
+        skill,
+      ]),
+    );
+    dispatch({
+      type: UPDATE_SKILLS,
+      payload: withActiveIds([...byId.values()], nextIds),
+    });
+
+    try {
+      for (const skillId of toAdd) {
+        await addUserSkill({ variables: { skillId } });
       }
+      for (const skillId of toRemove) {
+        await removeUserSkill({ variables: { skillId } });
+      }
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Could not update skills",
+      );
+    }
+
+    const refreshed = await refetch();
+    if (refreshed.data?.pageSkills) {
+      dispatch({ type: UPDATE_SKILLS, payload: refreshed.data.pageSkills });
     }
   };
 
@@ -113,14 +142,16 @@ export default function MySkills() {
             Search the catalog or browse the full list. Check skills you have;
             uncheck to remove.
           </p>
-          <SkillPicker
-            mode="possession"
-            selectedIds={selectedIds}
-            onChange={(skills) => {
-              void handleToggle(skills);
-            }}
-            allowCreate={false}
-          />
+          {addOpen ? (
+            <SkillPicker
+              mode="possession"
+              selectedIds={selectedIds}
+              onChange={(skills) => {
+                void handleToggle(skills);
+              }}
+              allowCreate={false}
+            />
+          ) : null}
         </ModalContent>
         <ModalActions>
           <Button type="button" onClick={() => setAddOpen(false)}>
