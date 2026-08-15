@@ -1,7 +1,5 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import Members from "@/components/Members";
-
-export default function MembersPage() {
-  return <Members />;
+export default function MembersRedirectPage() {
+  redirect("/settings/members");
 }
