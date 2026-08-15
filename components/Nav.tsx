@@ -83,35 +83,12 @@ export default function Nav() {
               ]
             : []),
           <MenuItem
-            key="members"
+            key="settings"
             as="a"
-            href="/members"
-            name="members"
-            active={pathname === "/members"}
+            href="/settings"
+            name="Settings"
+            active={pathname.startsWith("/settings")}
           />,
-          ...(enabledModules.skills &&
-          (permissions.canManageMembers || permissions.isPlatformAdmin)
-            ? [
-                <MenuItem
-                  key="skills"
-                  as="a"
-                  href="/skills"
-                  name="Skills"
-                  active={pathname === "/skills"}
-                />,
-              ]
-            : []),
-          ...(permissions.canManageGroupModules || permissions.isPlatformAdmin
-            ? [
-                <MenuItem
-                  key="settings"
-                  as="a"
-                  href="/settings"
-                  name="Settings"
-                  active={pathname === "/settings"}
-                />,
-              ]
-            : []),
         ]
       : [
           <MenuItem
