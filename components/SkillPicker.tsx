@@ -5,8 +5,6 @@ import { useMutation, useQuery } from "@apollo/client";
 import {
   Button,
   Checkbox,
-  Form,
-  FormField,
   Input,
   Label,
   Message,
@@ -39,7 +37,6 @@ export default function SkillPicker({
   allowCreate = false,
 }: Props) {
   const [query, setQuery] = useState("");
-  const [createName, setCreateName] = useState("");
   const [createParentId, setCreateParentId] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
 
@@ -54,6 +51,13 @@ export default function SkillPicker({
   const tree = buildSkillTree(filtered);
   const flat = flattenSkillTree(tree);
   const parentOptions = catalog.filter((skill) => !skill.parentId);
+
+  const createName = query.trim();
+  const exactMatch = catalog.some(
+    (skill) => (skill.name ?? "").toLowerCase() === createName.toLowerCase(),
+  );
+  const showCreate =
+    allowCreate && !disabled && createName.length > 0 && !exactMatch;
 
   const toggleSkill = (skill: Skill, checked: boolean) => {
     if (disabled) {
@@ -71,7 +75,7 @@ export default function SkillPicker({
   };
 
   const handleCreate = async () => {
-    const name = (createName || query).trim();
+    const name = createName;
     if (!name) {
       setError("Enter a skill name to create");
       return;
@@ -94,19 +98,12 @@ export default function SkillPicker({
           created,
         ]);
       }
-      setCreateName("");
       setCreateParentId("");
       setQuery("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not create skill");
     }
   };
-
-  const exactMatch = catalog.some(
-    (skill) =>
-      (skill.name ?? "").toLowerCase() ===
-      (createName || query).trim().toLowerCase(),
-  );
 
   return (
     <div>
@@ -149,7 +146,11 @@ export default function SkillPicker({
         }}
       >
         {flat.length === 0 ? (
-          <p style={{ color: "#666", margin: 0 }}>No skills match this search.</p>
+          showCreate ? null : (
+            <p style={{ color: "#666", margin: 0 }}>
+              No skills match this search.
+            </p>
+          )
         ) : (
           flat.map((skill) => {
             const depth = skill.parentId ? 1 : 0;
@@ -178,26 +179,37 @@ export default function SkillPicker({
             );
           })
         )}
-      </Segment>
 
-      {allowCreate && !disabled ? (
-        <Segment secondary>
-          <Form>
-            <FormField
-              control={Input}
-              label="Create new skill"
-              placeholder="Skill name"
-              value={createName || query}
-              onChange={(
-                _event: React.ChangeEvent<HTMLInputElement>,
-                data: { value?: string },
-              ) => setCreateName(data.value ?? "")}
-            />
-            <FormField>
-              <label>Optional parent (subset of)</label>
+        {showCreate ? (
+          <div
+            style={{
+              marginTop: flat.length > 0 ? "0.75rem" : 0,
+              paddingTop: flat.length > 0 ? "0.75rem" : 0,
+              borderTop: flat.length > 0 ? "1px solid rgba(34, 36, 38, 0.15)" : undefined,
+            }}
+          >
+            <Button
+              type="button"
+              size="small"
+              loading={creating}
+              onClick={() => {
+                void handleCreate();
+              }}
+            >
+              {`Create “${createName}” & select`}
+            </Button>
+            <div style={{ marginTop: "0.5rem" }}>
+              <label
+                htmlFor="skill-picker-parent"
+                style={{ display: "block", marginBottom: "0.25rem", fontSize: "0.9em" }}
+              >
+                Optional parent (subset of)
+              </label>
               <select
+                id="skill-picker-parent"
                 value={createParentId}
                 onChange={(event) => setCreateParentId(event.target.value)}
+                style={{ maxWidth: "100%" }}
               >
                 <option value="">None</option>
                 {parentOptions.map((skill) => (
@@ -206,21 +218,10 @@ export default function SkillPicker({
                   </option>
                 ))}
               </select>
-            </FormField>
-            <Button
-              type="button"
-              size="small"
-              loading={creating}
-              disabled={!((createName || query).trim()) || exactMatch}
-              onClick={() => {
-                void handleCreate();
-              }}
-            >
-              {exactMatch ? "Skill already exists" : "Create & select"}
-            </Button>
-          </Form>
-        </Segment>
-      ) : null}
+            </div>
+          </div>
+        ) : null}
+      </Segment>
 
       {error ? <Message negative content={error} /> : null}
     </div>

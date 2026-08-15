@@ -1,9 +1,10 @@
 "use client";
 
 import { useMutation, useQuery } from "@apollo/client";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Button,
+  Dropdown,
   Form,
   FormField,
   Input,
@@ -12,17 +13,27 @@ import {
   Segment,
   Select,
 } from "semantic-ui-react";
-import { QUERY_SINGLE_TASK, QUERY_TASKS } from "@/lib/client/queries";
+import { QUERY_MEMBERS, QUERY_SINGLE_TASK, QUERY_TASKS } from "@/lib/client/queries";
 import {
   ADD_TASK,
   DELETE_TASK,
   REMOVE_USER_TASK,
   UPDATE_TASK,
 } from "@/lib/client/mutations";
-import type { Skill, Task } from "@/lib/client/types";
+import type { Member, Skill, Task } from "@/lib/client/types";
 import { usePermissions } from "@/lib/client/usePermissions";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import SkillPicker from "@/components/SkillPicker";
+
+function memberLabel(member: Pick<Member, "displayName" | "firstName" | "lastName" | "preferredName" | "scoutName">) {
+  return (
+    member.displayName?.trim() ||
+    member.preferredName?.trim() ||
+    member.scoutName?.trim() ||
+    [member.firstName, member.lastName].filter(Boolean).join(" ").trim() ||
+    "Unnamed member"
+  );
+}
 
 const emptyTask: Task = {
   _id: "",
@@ -65,6 +76,9 @@ export default function TaskModal({
     variables: { taskId: activeTask },
     skip: !activeTask,
   });
+  const { data: membersData } = useQuery<{ members: Member[] }>(QUERY_MEMBERS, {
+    skip: !showTaskModal,
+  });
 
   useEffect(() => {
     if (isCreateMode) {
@@ -73,6 +87,27 @@ export default function TaskModal({
       setTaskData(data.singleTask);
     }
   }, [data, isCreateMode]);
+
+  const memberOptions = useMemo(() => {
+    const members = membersData?.members ?? [];
+    const options = members.map((member) => ({
+      key: member._id,
+      value: member._id,
+      text: memberLabel(member),
+    }));
+    const responsibleId = taskData.responsible?._id;
+    if (
+      responsibleId &&
+      !options.some((option) => option.value === responsibleId)
+    ) {
+      options.unshift({
+        key: responsibleId,
+        value: responsibleId,
+        text: taskData.responsible?.displayName?.trim() || "Current responsible",
+      });
+    }
+    return options;
+  }, [membersData?.members, taskData.responsible]);
 
   const refetchQueries = [{ query: QUERY_TASKS }];
 
@@ -119,6 +154,9 @@ export default function TaskModal({
                 name: skill.name,
                 parentId: skill.parentId || undefined,
               })),
+              responsible: taskData.responsible?._id
+                ? { _id: taskData.responsible._id }
+                : null,
             };
             if (isCreateMode) {
               void addTask({ variables: { taskData: variables } }).then(() => {
@@ -211,13 +249,39 @@ export default function TaskModal({
               allowCreate={canManage}
             />
           </FormField>
-          <FormField
-            control={Input}
-            value={taskData.responsible?.displayName ?? ""}
-            label="Person Responsible"
-            name="responsible"
-            readOnly
-          />
+          <FormField>
+            <label>Person Responsible</label>
+            <Dropdown
+              placeholder="Search members…"
+              fluid
+              search
+              selection
+              clearable
+              options={memberOptions}
+              value={taskData.responsible?._id || undefined}
+              disabled={!canManage}
+              onChange={(_event, dropdownData) => {
+                const memberId = String(dropdownData.value ?? "");
+                if (!memberId) {
+                  setTaskData({
+                    ...taskData,
+                    responsible: { _id: "", displayName: "" },
+                  });
+                  return;
+                }
+                const selected = memberOptions.find(
+                  (option) => option.value === memberId,
+                );
+                setTaskData({
+                  ...taskData,
+                  responsible: {
+                    _id: memberId,
+                    displayName: selected?.text ?? "",
+                  },
+                });
+              }}
+            />
+          </FormField>
           {!isCreateMode ? <p>created by: {taskData.createdBy?.displayName}</p> : null}
           <Button type="submit">{isCreateMode ? "Create" : "Update"}</Button>
           {!isCreateMode ? (

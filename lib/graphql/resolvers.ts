@@ -92,7 +92,7 @@ type TaskInput = {
   duration?: number;
   priority?: number;
   requiredSkills?: SkillInput[];
-  responsible?: UserInput;
+  responsible?: UserInput | null;
 };
 type EventInput = {
   title?: string;
@@ -1790,7 +1790,10 @@ export const resolvers = {
           dueDate: toDate(taskData.dueDate) ?? undefined,
           duration: taskData.duration,
           priority: taskData.priority,
-          responsibleUserId: taskData.responsible?._id,
+          // null clears; omit when not provided so other clients keep existing value
+          ...(taskData.responsible !== undefined
+            ? { responsibleUserId: taskData.responsible?._id ?? null }
+            : {}),
           updatedAt: new Date(),
         })
         .where(and(eq(tasks.id, taskId), eq(tasks.groupId, groupId)))

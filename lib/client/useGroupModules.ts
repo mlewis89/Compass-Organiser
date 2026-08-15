@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useQuery } from "@apollo/client";
 import { useAuth } from "@clerk/nextjs";
 import { QUERY_MY_GROUPS } from "@/lib/client/queries";
@@ -13,8 +14,16 @@ export function useGroupModules() {
     activeGroup: GroupSummary | null;
   }>(QUERY_MY_GROUPS, { skip: !isLoaded || !isSignedIn });
 
-  const enabledModules = expandEnabledModules(
-    data?.activeGroup?.enabledModules ?? defaultModules,
+  const rawModules = data?.activeGroup?.enabledModules;
+  const enabledModules = useMemo(
+    () => expandEnabledModules(rawModules ?? defaultModules),
+    [
+      rawModules?.tasks,
+      rawModules?.events,
+      rawModules?.noticeBoard,
+      rawModules?.memberStats,
+      rawModules?.skills,
+    ],
   );
 
   return {

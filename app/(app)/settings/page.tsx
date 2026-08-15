@@ -70,16 +70,26 @@ export default function GroupSettingsPage() {
     }
   }, [loading, canManage, router]);
 
+  // Sync from server only when loaded values change — not on every render.
+  // useGroupModules() returns a new object each time; depending on it would
+  // reset draft and make toggles appear stuck.
   useEffect(() => {
-    if (!modulesLoading && enabledModules) {
-      setDraft({
-        tasks: enabledModules.tasks,
-        events: enabledModules.events,
-        noticeBoard: enabledModules.noticeBoard,
-        memberStats: enabledModules.memberStats,
-      });
+    if (modulesLoading) {
+      return;
     }
-  }, [modulesLoading, enabledModules]);
+    setDraft({
+      tasks: enabledModules.tasks,
+      events: enabledModules.events,
+      noticeBoard: enabledModules.noticeBoard,
+      memberStats: enabledModules.memberStats,
+    });
+  }, [
+    modulesLoading,
+    enabledModules.tasks,
+    enabledModules.events,
+    enabledModules.noticeBoard,
+    enabledModules.memberStats,
+  ]);
 
   if (loading || !draft) {
     return (
