@@ -35,6 +35,20 @@ export function isWishlistStatus(status?: string | null): boolean {
   return status === TASK_STATUS.wishlist;
 }
 
+/** One more than the 0–10 priority slider, so wishlist always sorts below open work. */
+export const WISHLIST_PRIORITY_DEMOTE = 11;
+
+export function interpretedPriority(task: {
+  status?: string | null;
+  priority?: number | null;
+}): number {
+  const stored = task.priority ?? 0;
+  if (isWishlistStatus(task.status)) {
+    return stored - WISHLIST_PRIORITY_DEMOTE;
+  }
+  return stored;
+}
+
 export function isCompleteStatus(status?: string | null): boolean {
   return status === TASK_STATUS.complete;
 }

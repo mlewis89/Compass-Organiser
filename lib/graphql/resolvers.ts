@@ -40,10 +40,10 @@ import {
 } from "@/lib/groupModules";
 import {
   TASK_STATUS,
-  isCompleteStatus,
   isTaskOpen,
   isWishlistStatus,
 } from "@/lib/taskStatus";
+import { pickSuggestedTasks } from "@/lib/suggestedTasks";
 import {
   boardPosts,
   eventAttendees,
@@ -1325,7 +1325,7 @@ export const resolvers = {
         .filter((id): id is string => Boolean(id));
       let limit = args.numberOfTasks;
 
-      if (skillIds.length === 0 || !limit) {
+      if (skillIds.length === 0 || limit == null) {
         const [profile] = await db
           .select()
           .from(users)
@@ -1341,19 +1341,16 @@ export const resolvers = {
             .where(eq(userSkills.userId, targetId));
           skillIds = owned.map((row) => row.skillId);
         }
-        if (!limit) {
+        if (limit == null) {
           limit = profile.taskAvailability;
         }
       }
 
-      if (!limit || limit <= 0) {
+      if (limit == null || limit <= 0) {
         return [];
       }
 
-      const userUnitIdList = await loadUserUnitIds(targetId, groupId);
-      const userUnitIds = new Set(userUnitIdList);
-
-      const [matching, unskilled, unitAssigned] = await Promise.all([
+      const [matching, unskilled, userUnitIdList, viewAll] = await Promise.all([
         skillIds.length === 0
           ? Promise.resolve([] as Array<{ task: TaskRow }>)
           : db
@@ -1368,28 +1365,17 @@ export const resolvers = {
           .from(tasks)
           .leftJoin(taskSkills, eq(tasks.id, taskSkills.taskId))
           .where(and(eq(tasks.groupId, groupId), isNull(taskSkills.taskId))),
-        userUnitIdList.length === 0
-          ? Promise.resolve([] as Array<{ task: TaskRow }>)
-          : db
-              .select({ task: tasks })
-              .from(taskUnits)
-              .innerJoin(tasks, eq(taskUnits.taskId, tasks.id))
-              .where(
-                and(
-                  eq(tasks.groupId, groupId),
-                  inArray(taskUnits.unitId, userUnitIdList),
-                ),
-              ),
+        loadUserUnitIds(targetId, groupId),
+        canViewAllUnitBuckets(user, groupId),
       ]);
 
       const unique = new Map<string, TaskRow>();
+      const skillMatchedIds = new Set<string>();
       for (const { task } of matching) {
         unique.set(task.id, task);
+        skillMatchedIds.add(task.id);
       }
       for (const { task } of unskilled) {
-        unique.set(task.id, task);
-      }
-      for (const { task } of unitAssigned) {
         unique.set(task.id, task);
       }
 
@@ -1409,26 +1395,19 @@ export const resolvers = {
           .where(inArray(taskResponsible.taskId, candidateIds)),
         loadUnitIdsByTaskIds(candidateIds),
       ]);
-      const takenSet = new Set([
+      const takenIds = new Set([
         ...claimedRows.map((row) => row.taskId),
         ...responsibleRows.map((row) => row.taskId),
       ]);
-      const eligible = [...unique.values()].filter((task) => {
-        if (isCompleteStatus(task.status)) {
-          return false;
-        }
-        if (takenSet.has(task.id)) {
-          return false;
-        }
-        const taskUnitIds = unitIdsByTask.get(task.id) ?? [];
-        if (taskUnitIds.length === 0) {
-          return true;
-        }
-        return taskUnitIds.some((unitId) => userUnitIds.has(unitId));
+      const filled = pickSuggestedTasks({
+        candidates: [...unique.values()],
+        skillMatchedIds,
+        takenIds,
+        unitIdsByTask,
+        userUnitIds: new Set(userUnitIdList),
+        viewAll,
+        limit,
       });
-      const byPriority = (a: TaskRow, b: TaskRow) =>
-        (b.priority ?? 0) - (a.priority ?? 0);
-      const filled = eligible.sort(byPriority).slice(0, limit);
       return mapTasks(filled);
     },
     members: async (

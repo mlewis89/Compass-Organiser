@@ -9,6 +9,7 @@ import {
   TASK_STATUSES,
   TASK_STATUS_LABELS,
   columnForStatus,
+  interpretedPriority,
   isCompleteStatus,
   isWishlistStatus,
   type TaskStatus,
@@ -86,6 +87,11 @@ function KanbanCard({
     );
   }
 
+  const listedPriority =
+    task.priority != null || isWishlistStatus(task.status)
+      ? interpretedPriority(task)
+      : null;
+
   return (
     <article
       className={nested ? "task-kanban-card is-nested" : "task-kanban-card"}
@@ -107,8 +113,8 @@ function KanbanCard({
       </button>
       <div className="task-kanban-card-meta">
         {nested ? `${TASK_STATUS_LABELS[columnForStatus(task.status)]} · ` : null}
-        {task.priority != null ? `Priority ${task.priority}` : null}
-        {task.priority != null && task.duration != null ? " · " : null}
+        {listedPriority != null ? `Priority ${listedPriority}` : null}
+        {listedPriority != null && task.duration != null ? " · " : null}
         {formatDuration(task.duration)}
       </div>
       <Button.Group size="tiny">

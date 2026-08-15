@@ -1,4 +1,5 @@
 import type { Task } from "@/lib/client/types";
+import { interpretedPriority } from "@/lib/taskStatus";
 
 export type TaskTreeNode = Task & {
   children: TaskTreeNode[];
@@ -6,7 +7,7 @@ export type TaskTreeNode = Task & {
 };
 
 function sortByPriority(nodes: TaskTreeNode[]) {
-  nodes.sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
+  nodes.sort((a, b) => interpretedPriority(b) - interpretedPriority(a));
   for (const node of nodes) {
     sortByPriority(node.children);
   }

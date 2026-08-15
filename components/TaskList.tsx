@@ -19,7 +19,11 @@ import {
   filterTaskForest,
   type TaskTreeNode,
 } from "@/lib/client/taskTree";
-import { isCompleteStatus, isWishlistStatus } from "@/lib/taskStatus";
+import {
+  interpretedPriority,
+  isCompleteStatus,
+  isWishlistStatus,
+} from "@/lib/taskStatus";
 import { getTaskDragId, setTaskDragData } from "@/lib/client/taskDrag";
 
 export type TaskColumnKey =
@@ -183,7 +187,9 @@ function renderField(task: Task, key: TaskColumnKey): ReactNode {
     case "status":
       return <StatusLabel status={task.status} />;
     case "priority":
-      return task.priority ?? "";
+      return task.priority == null && !isWishlistStatus(task.status)
+        ? ""
+        : interpretedPriority(task);
     case "name":
       return task.name ?? "";
     case "description":
